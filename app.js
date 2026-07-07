@@ -983,15 +983,16 @@ function renderScoreboard() {
 
   $("btnEndSet").hidden = !hasActiveSet;
   $("btnEndSet").disabled = !hasActiveSet;
-  $("btnStartNextSet").hidden = !isBetweenSets;
+  // Hide "Start Next Set" when the game is already decided or all sets are done
+  $("btnStartNextSet").hidden = !isBetweenSets || state.gameCanEnd;
   $("btnStartNextSet").disabled = isGameOver;
   $("nextSetNum").textContent = state.nextSetNum;
   $("btnEndGame").hidden = isGameOver;
   $("btnEndGame").disabled = !state.gameCanEnd && !hasActiveSet && !isBetweenSets;
   $("btnNewGame").hidden = !isGameOver;
 
-  // Between-sets serve picker
-  $("servePicker").hidden = !isBetweenSets;
+  // Between-sets serve picker — also hide when no more sets can be started
+  $("servePicker").hidden = !isBetweenSets || state.gameCanEnd;
   if (isBetweenSets) {
     $("servePickerSetNum").textContent = state.nextSetNum;
     // Pre-suggest server (alternates from last set's first server)
