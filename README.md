@@ -74,8 +74,8 @@ The active phase is highlighted in green. The indicator advances automatically w
 |------|-------------|----------------|
 | Yellow card | Official warning | No |
 | Red card | Penalty | Yes (to opponent) |
-| Red + Yellow (together) | Expulsion | Yes (to opponent) |
-| Red + Yellow (separate) | Disqualification | Yes (to opponent) |
+| Red + Yellow (together) | Expulsion | No |
+| Red + Yellow (separate) | Disqualification | No |
 | Delay Warning | Team delay caution | No |
 | Delay Penalty | Team delay infraction | Yes (to opponent) |
 

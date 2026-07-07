@@ -1467,8 +1467,10 @@ details[open] .event-log-summary::before {
   margin-bottom: 0.5rem;
 }
 
-.player-num-input {
+/* input[type="text"] has specificity 0,0,1,1; use element+class to match and win by order */
+input.player-num-input {
   width: 70px;
+  min-height: unset;
   flex-shrink: 0;
 }
 
