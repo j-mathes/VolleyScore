@@ -260,6 +260,7 @@ details summary::-webkit-details-marker { display: none; }
   border-radius: 20px;
   min-height: 30px;
   margin-left: 0.5rem;
+  white-space: nowrap;
 }
 
 .nav-btn-log:hover:not(:disabled) {
