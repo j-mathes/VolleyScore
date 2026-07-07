@@ -648,7 +648,6 @@ async function importGamesFromJson(text) {
   }
   alert("Imported " + imported + " game" + (imported === 1 ? "" : "s") + ".");
   await renderGamesList();
-  renderRecentGames();
 }
 
 // ---- UI Utilities ---------------------------------------
@@ -898,6 +897,7 @@ var _sanctionPlayerNum = "";       // player number from the numeric pad
 var pendingServePickTeam = null;   // for between-sets serve selection
 var selectedLogSetFilter = null;   // null = all sets; number = filter log to that set
 var sidesSwapped = false;          // true when Team B panel is visually on the left
+var _justEndedGame = false;        // true only until user navigates away after End Game
 
 function showScoreboard() {
   $("gameSetupPanel").hidden = true;
@@ -908,9 +908,9 @@ function showScoreboard() {
 function showSetupPanel() {
   $("scoreboard").hidden = true;
   $("gameSetupPanel").hidden = false;
-  $("navLogBtn").hidden = true; // no active game on setup panel
+  $("navLogBtn").hidden = true;
+  _justEndedGame = false; // navigating away clears the undo window
   initGameSetupForm();
-  renderRecentGames();
 }
 
 // Apply team colors from state (or CSS vars)
@@ -1065,8 +1065,8 @@ function renderScoreboard() {
     $("btnPickServeB").classList.toggle("active", pendingServePickTeam === "B");
   }
 
-  // Undo / Redo
-  $("btnUndo").disabled = !state.canUndo;
+  // Undo / Redo — Undo is disabled for completed games unless they were just ended
+  $("btnUndo").disabled = !state.canUndo || (!!state.endedAt && !_justEndedGame);
   $("btnRedo").disabled = !state.canRedo;
 
   // Score buttons disabled when no active set or game over
@@ -1279,7 +1279,7 @@ function wireScoreboardControls() {
   });
 
   // End Game
-  $("btnEndGame").addEventListener("click", function () {
+  $("btnEndGame").addEventListener("click", async function () {
     var state = controller.getState();
     if (!state) return;
     if (!confirm("End the game?")) return;
@@ -1295,12 +1295,16 @@ function wireScoreboardControls() {
       type: "GAME_ENDED",
       timestamp: new Date().toISOString(),
     });
-    // Return to the new game form; completed game appears in Recent Games
-    showSetupPanel();
+    // Force-save immediately so Games page shows the correct status
+    _justEndedGame = true;
+    await persistGame();
+    // Stay on scoreboard — Undo is available here; New Game navigates away
+    renderScoreboard();
   });
 
-  // New Game (shown after game ends)
+  // New Game (shown after game ends) — clear the just-ended flag and go to setup
   $("btnNewGame").addEventListener("click", function () {
+    _justEndedGame = false;
     showSetupPanel();
   });
 
@@ -1779,6 +1783,7 @@ async function loadAndShowGame(gameId) {
   var record = await dbLoadGame(gameId);
   if (!record) { alert("Could not load game."); return; }
   controller.hydrate(record);
+  _justEndedGame = false; // loading from history — undo not available for completed games
   showPage("score");
   showScoreboard();
   renderScoreboard();
@@ -1834,7 +1839,6 @@ async function renderGamesList() {
         if (selectedDetailGameId === g.gameId) clearGameDetail();
         if (controller.currentGameId === g.gameId) controller.clear();
         await renderGamesList();
-        renderRecentGames();
       })();
     });
 
@@ -1906,7 +1910,6 @@ async function selectDetailGame(gameId) {
       await dbDeleteGame(gameId);
       clearGameDetail();
       await renderGamesList();
-      renderRecentGames();
     })();
   };
 
@@ -1945,7 +1948,6 @@ function wireGamesPage() {
       controller.clear();
       clearGameDetail();
       await renderGamesList();
-      renderRecentGames();
     })();
   });
 }
@@ -2054,7 +2056,6 @@ function wireSetupPage() {
       applyFontSize();
       updateTeamColors();
       renderSetupPage();
-      renderRecentGames();
     })();
   });
 }
