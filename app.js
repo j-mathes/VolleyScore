@@ -703,6 +703,7 @@ function showPage(page) {
   $("scorePage").hidden  = page !== "score";
   $("gamesPage").hidden  = page !== "games";
   $("setupPage").hidden  = page !== "setup";
+  $("logPage").hidden    = page !== "log";
 
   document.querySelectorAll(".nav-btn").forEach(function (btn) {
     btn.classList.toggle("active", btn.getAttribute("data-page") === page);
@@ -710,6 +711,7 @@ function showPage(page) {
 
   if (page === "games") { void renderGamesList(); }
   if (page === "setup") { renderSetupPage(); }
+  if (page === "log")   { renderLogPage(); }
 }
 
 // ---- Score Page — Game Setup Form ----------------------
@@ -834,6 +836,7 @@ function showScoreboard() {
 function showSetupPanel() {
   $("scoreboard").hidden = true;
   $("gameSetupPanel").hidden = false;
+  $("navLogBtn").hidden = true; // no active game on setup panel
   initGameSetupForm();
   renderRecentGames();
 }
@@ -873,8 +876,6 @@ function renderScoreboard() {
   $("btnFirstServeB").textContent = state.teamB;
   $("btnPickServeA").textContent = state.teamA;
   $("btnPickServeB").textContent = state.teamB;
-  $("setTblHdrA").textContent = state.teamA;
-  $("setTblHdrB").textContent = state.teamB;
 
   // Game bar
   $("sbGameName").textContent = state.gameName;
@@ -976,11 +977,8 @@ function renderScoreboard() {
     if (el) el.disabled = !scoringActive;
   });
 
-  // Set summary table
-  renderSetSummaryTable(state);
-
-  // Event log
-  renderEventLog();
+  // Show/hide the Match Log nav button
+  $("navLogBtn").hidden = false;
 }
 
 function setScoreDisplay(id, value) {
@@ -1033,8 +1031,8 @@ function renderTripleBall(phase) {
 }
 
 function renderSetSummaryTable(state) {
-  var tbody = $("setTableBody");
-  var tfoot = $("setTableFoot");
+  var tbody = $("logSetTableBody");
+  var tfoot = $("logSetTableFoot");
   if (!tbody || !tfoot) return;
   tbody.innerHTML = "";
   tfoot.innerHTML = "";
@@ -1374,7 +1372,7 @@ function wireSanctionModal() {
 // ---- Score Page — Event Log -----------------------------
 
 function renderEventLog() {
-  var body = $("scoreEventLogBody");
+  var body = $("logEventLogBody");
   if (!body) return;
   var state = controller.getState();
   body.innerHTML = buildEventLogHtml(state, controller.timeline);
@@ -1504,6 +1502,32 @@ function buildEventLogHtml(state, timeline) {
   }
 
   return rows.join("") || '<div class="event-log-empty">No events recorded yet.</div>';
+}
+
+// ---- Match Log Page -------------------------------------
+
+function renderLogPage() {
+  var state = controller.getState();
+
+  // Title and metadata
+  var title = $("logPageTitle");
+  var meta  = $("logPageMeta");
+  if (title) title.textContent = state ? state.gameName : "Match Log";
+  if (meta && state) {
+    var parts = [state.teamA + " vs " + state.teamB, formatLabel(state.gameFormat)];
+    if (state.location) parts.push(state.location);
+    if (state.scheduledAt) parts.push(formatDate(state.scheduledAt));
+    parts.push(state.endedAt ? "Final" : (state.activeSetNumber ? "Set " + state.activeSetNumber + " in progress" : "Between sets"));
+    meta.textContent = parts.join(" \u00B7 ");
+  }
+
+  // Team name headers in the set table
+  var hdrA = $("logSetTblHdrA"), hdrB = $("logSetTblHdrB");
+  if (hdrA && state) hdrA.textContent = state.teamA;
+  if (hdrB && state) hdrB.textContent = state.teamB;
+
+  renderSetSummaryTable(state);
+  renderEventLog();
 }
 
 // ---- Recent Games (on setup panel) ----------------------
@@ -1825,6 +1849,11 @@ function wireNavigation() {
       var page = btn.getAttribute("data-page");
       if (page) showPage(page);
     });
+  });
+
+  // "← Score" button on the log page returns to the scoreboard
+  $("btnLogToScore").addEventListener("click", function () {
+    showPage("score");
   });
 }
 

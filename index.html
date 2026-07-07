@@ -19,6 +19,8 @@
       <button class="nav-btn" data-page="games" aria-label="Games history">Games</button>
       <button class="nav-btn" data-page="setup" aria-label="App settings">Setup</button>
     </div>
+    <!-- Match Log button — only visible during an active game -->
+    <button id="navLogBtn" class="nav-btn nav-btn-log" data-page="log" aria-label="Match log" hidden>Match Log</button>
     <div class="nav-links">
       <a href="https://github.com/j-mathes/VolleyScore" target="_blank" rel="noopener noreferrer"
          class="nav-github" title="View on GitHub" aria-label="View on GitHub">
@@ -250,32 +252,6 @@
         <span class="tb-phase-label" id="tbPhaseLabel"></span>
       </div>
 
-      <!-- Set summary table -->
-      <details class="summary-details" id="setSummaryDetails">
-        <summary class="summary-summary">Set Summary</summary>
-        <div class="summary-body">
-          <table class="set-table" id="setTable">
-            <thead>
-              <tr>
-                <th>Set</th>
-                <th id="setTblHdrA">Team A</th>
-                <th id="setTblHdrB">Team B</th>
-              </tr>
-            </thead>
-            <tbody id="setTableBody"></tbody>
-            <tfoot id="setTableFoot"></tfoot>
-          </table>
-        </div>
-      </details>
-
-      <!-- Event log -->
-      <details class="event-log-card" id="scoreEventLogCard">
-        <summary class="event-log-summary">Event Log</summary>
-        <div class="event-log-body" id="scoreEventLogBody">
-          <div class="event-log-empty">No events recorded yet.</div>
-        </div>
-      </details>
-
     </div><!-- end scoreboard -->
 
   </div><!-- end scorePage -->
@@ -424,6 +400,37 @@
     </div>
 
   </div><!-- end setupPage -->
+
+  <!-- ===== Match Log Page ===== -->
+  <div id="logPage" class="page page-log" hidden>
+
+    <div class="log-header">
+      <div class="log-header-info">
+        <h2 id="logPageTitle" class="log-title"></h2>
+        <div id="logPageMeta" class="log-meta"></div>
+      </div>
+      <button class="ctrl-btn" id="btnLogToScore" aria-label="Back to scoreboard">&#x2190; Score</button>
+    </div>
+
+    <div class="log-set-summary">
+      <table class="set-table" id="logSetTable">
+        <thead>
+          <tr>
+            <th>Set</th>
+            <th id="logSetTblHdrA">Team A</th>
+            <th id="logSetTblHdrB">Team B</th>
+          </tr>
+        </thead>
+        <tbody id="logSetTableBody"></tbody>
+        <tfoot id="logSetTableFoot"></tfoot>
+      </table>
+    </div>
+
+    <div class="event-log-body log-event-log-body" id="logEventLogBody">
+      <div class="event-log-empty">No events recorded yet.</div>
+    </div>
+
+  </div><!-- end logPage -->
 
   <!-- ===== Sanction Modal ===== -->
   <div id="sanctionModal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="sanctionModalTitle">
