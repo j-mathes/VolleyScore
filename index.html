@@ -140,8 +140,6 @@
       <!-- Game info + control bar -->
       <div class="game-bar">
         <div class="game-info">
-          <span id="sbGameName" class="sb-game-name">Game</span>
-          <span class="bar-sep" aria-hidden="true">·</span>
           <span id="sbSetLabel" class="sb-set-label">Set 1</span>
           <span class="bar-sep" aria-hidden="true">·</span>
           <span id="sbFormat" class="sb-format">Best of 3</span>
@@ -174,29 +172,39 @@
 
         <!-- Team A -->
         <div class="team-panel team-panel-a" id="teamAPanel" data-team="A">
-          <div class="team-name-row">
-            <span class="serve-dot" id="serveDotA" aria-hidden="true" title="Serving"></span>
-            <span class="team-name" id="sbTeamAName">Team A</span>
-          </div>
-          <div class="score-row">
-            <button class="score-btn btn-score-minus" id="btnScoreAMinus" aria-label="Remove point from Team A">−</button>
-            <div class="score-val" id="scoreValA" aria-live="polite" aria-label="Team A score">0</div>
-            <button class="score-btn btn-score-plus" id="btnScoreAPlus" aria-label="Add point to Team A">+</button>
-          </div>
-          <div class="team-stats-row">
-            <button class="to-btn" id="btnToA" aria-label="Take timeout for Team A">
-              <span class="to-label">TO</span>
-              <span class="to-dots" id="toDotsA" aria-hidden="true"></span>
-              <span class="to-count" id="toCountA">0/2</span>
-            </button>
-            <button class="sub-btn" id="btnSubA" aria-label="Record substitution for Team A">
-              Sub <span id="subValA">0</span>/<span id="subMaxA">6</span>
-            </button>
-            <button class="sanction-open-btn" id="btnCardA" aria-label="Issue sanction to Team A">
-              <span class="card-icon card-y" aria-hidden="true"></span><span class="card-icon card-r" aria-hidden="true"></span>
+          <!-- Left sidebar: action buttons -->
+          <div class="team-action-sidebar">
+            <button class="action-side-btn to-side-btn" id="btnToA" aria-label="Take timeout for Team A">TO</button>
+            <button class="action-side-btn sub-side-btn" id="btnSubA" aria-label="Record substitution for Team A">Sub</button>
+            <button class="action-side-btn sanction-side-btn" id="btnCardA" aria-label="Issue sanction to Team A">
+              <span class="side-cards"><span class="card-icon card-y" aria-hidden="true"></span><span class="card-icon card-r" aria-hidden="true"></span></span>
             </button>
           </div>
-          <div class="sanctions-bar" id="sanctionsBarA" aria-label="Team A sanctions"></div>
+          <!-- Team content: name, indicators, score -->
+          <div class="team-content">
+            <div class="team-name-row">
+              <span class="serve-dot" id="serveDotA" aria-hidden="true" title="Serving"></span>
+              <span class="team-name" id="sbTeamAName">Team A</span>
+            </div>
+            <div class="team-indicators">
+              <div class="indicator-to-sub">
+                <div class="indicator-to">
+                  <span class="to-label">TO</span>
+                  <span class="to-dots" id="toDotsA" aria-hidden="true"></span>
+                  <span class="to-count" id="toCountA">0/2</span>
+                </div>
+                <div class="indicator-sub">
+                  Sub <span id="subValA">0</span>/<span id="subMaxA">6</span>
+                </div>
+              </div>
+              <div class="sanctions-bar" id="sanctionsBarA" aria-label="Team A sanctions"></div>
+            </div>
+            <div class="score-row">
+              <button class="score-btn btn-score-minus" id="btnScoreAMinus" aria-label="Remove point from Team A">−</button>
+              <div class="score-val" id="scoreValA" aria-live="polite" aria-label="Team A score">0</div>
+              <button class="score-btn btn-score-plus" id="btnScoreAPlus" aria-label="Add point to Team A">+</button>
+            </div>
+          </div>
         </div>
 
         <!-- Center line -->
@@ -204,29 +212,39 @@
 
         <!-- Team B -->
         <div class="team-panel team-panel-b" id="teamBPanel" data-team="B">
-          <div class="team-name-row">
-            <span class="serve-dot" id="serveDotB" aria-hidden="true" title="Serving"></span>
-            <span class="team-name" id="sbTeamBName">Team B</span>
+          <!-- Team content: name, indicators, score -->
+          <div class="team-content">
+            <div class="team-name-row">
+              <span class="serve-dot" id="serveDotB" aria-hidden="true" title="Serving"></span>
+              <span class="team-name" id="sbTeamBName">Team B</span>
+            </div>
+            <div class="team-indicators">
+              <div class="indicator-to-sub">
+                <div class="indicator-to">
+                  <span class="to-label">TO</span>
+                  <span class="to-dots" id="toDotsB" aria-hidden="true"></span>
+                  <span class="to-count" id="toCountB">0/2</span>
+                </div>
+                <div class="indicator-sub">
+                  Sub <span id="subValB">0</span>/<span id="subMaxB">6</span>
+                </div>
+              </div>
+              <div class="sanctions-bar" id="sanctionsBarB" aria-label="Team B sanctions"></div>
+            </div>
+            <div class="score-row">
+              <button class="score-btn btn-score-minus" id="btnScoreBMinus" aria-label="Remove point from Team B">−</button>
+              <div class="score-val" id="scoreValB" aria-live="polite" aria-label="Team B score">0</div>
+              <button class="score-btn btn-score-plus" id="btnScoreBPlus" aria-label="Add point to Team B">+</button>
+            </div>
           </div>
-          <div class="score-row">
-            <button class="score-btn btn-score-minus" id="btnScoreBMinus" aria-label="Remove point from Team B">−</button>
-            <div class="score-val" id="scoreValB" aria-live="polite" aria-label="Team B score">0</div>
-            <button class="score-btn btn-score-plus" id="btnScoreBPlus" aria-label="Add point to Team B">+</button>
-          </div>
-          <div class="team-stats-row">
-            <button class="to-btn" id="btnToB" aria-label="Take timeout for Team B">
-              <span class="to-label">TO</span>
-              <span class="to-dots" id="toDotsB" aria-hidden="true"></span>
-              <span class="to-count" id="toCountB">0/2</span>
-            </button>
-            <button class="sub-btn" id="btnSubB" aria-label="Record substitution for Team B">
-              Sub <span id="subValB">0</span>/<span id="subMaxB">6</span>
-            </button>
-            <button class="sanction-open-btn" id="btnCardB" aria-label="Issue sanction to Team B">
-              <span class="card-icon card-y" aria-hidden="true"></span><span class="card-icon card-r" aria-hidden="true"></span>
+          <!-- Right sidebar: action buttons -->
+          <div class="team-action-sidebar">
+            <button class="action-side-btn to-side-btn" id="btnToB" aria-label="Take timeout for Team B">TO</button>
+            <button class="action-side-btn sub-side-btn" id="btnSubB" aria-label="Record substitution for Team B">Sub</button>
+            <button class="action-side-btn sanction-side-btn" id="btnCardB" aria-label="Issue sanction to Team B">
+              <span class="side-cards"><span class="card-icon card-y" aria-hidden="true"></span><span class="card-icon card-r" aria-hidden="true"></span></span>
             </button>
           </div>
-          <div class="sanctions-bar" id="sanctionsBarB" aria-label="Team B sanctions"></div>
         </div>
 
       </div><!-- end team-panels -->

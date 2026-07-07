@@ -1045,7 +1045,7 @@ function renderScoreboard() {
   $("btnPickServeB").textContent = state.teamB;
 
   // Game bar
-  $("sbGameName").textContent = state.gameName;
+  if ($("sbGameName")) $("sbGameName").textContent = state.gameName;
   $("sbFormat").textContent = formatLabel(state.gameFormat);
 
   var setLabelText;
