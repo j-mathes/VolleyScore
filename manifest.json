@@ -1,0 +1,28 @@
+{
+  "name": "VolleyScore",
+  "short_name": "VolleyScore",
+  "description": "Volleyball scorekeeping — scores, timeouts, substitutions and sanctions.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f0f4f8",
+  "theme_color": "#1e293b",
+  "categories": ["sports", "utilities"],
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/apple-touch-icon.png",
+      "sizes": "1600x1600",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

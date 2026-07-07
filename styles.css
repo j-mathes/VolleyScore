@@ -829,10 +829,15 @@ details summary::-webkit-details-marker { display: none; }
   flex-shrink: 0;
 }
 
-/* Notch padding: push scoreboard content away from the notch side (landscape only) */
+/* Landscape: auto safe-area insets keep content clear of the notch/corners in PWA mode.
+   Manual notch-padding uses max() to take whichever value is larger. */
 @media (orientation: landscape) {
-  body.notch-left  .team-panels { padding-left:  var(--notch-pad); }
-  body.notch-right .team-panels { padding-right: var(--notch-pad); }
+  .team-panels {
+    padding-left:  env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  body.notch-left  .team-panels { padding-left:  max(env(safe-area-inset-left),  var(--notch-pad)); }
+  body.notch-right .team-panels { padding-right: max(env(safe-area-inset-right), var(--notch-pad)); }
 }
 
 /* Side-swapped layout: flip team panels with flex order */

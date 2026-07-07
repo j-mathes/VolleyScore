@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background fills full square (safe for maskable icons) -->
+  <rect width="512" height="512" fill="#1e293b"/>
+  <!-- Volleyball body -->
+  <circle cx="256" cy="205" r="135" fill="#334155" stroke="#e2e8f0" stroke-width="14"/>
+  <!-- Seam lines -->
+  <path d="M 178 80 Q 256 155 256 205 Q 256 255 334 333"
+        fill="none" stroke="#94a3b8" stroke-width="12" stroke-linecap="round"/>
+  <path d="M 127 253 Q 195 205 256 205 Q 317 205 358 142"
+        fill="none" stroke="#94a3b8" stroke-width="12" stroke-linecap="round"/>
+  <!-- App name -->
+  <text x="256" y="420"
+        font-family="system-ui,-apple-system,Segoe UI,sans-serif"
+        font-size="66" font-weight="800" text-anchor="middle"
+        fill="#e2e8f0" letter-spacing="-1">VolleyScore</text>
+</svg>

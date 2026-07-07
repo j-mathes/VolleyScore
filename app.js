@@ -2622,4 +2622,9 @@ async function init() {
 // Start the app when the DOM is ready
 document.addEventListener("DOMContentLoaded", function () {
   void init();
+  // Register service worker for PWA offline support
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js")
+      .catch(function () { /* SW unavailable — app still works fine */ });
+  }
 });
