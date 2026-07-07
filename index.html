@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="description" content="Volleyball scorekeeping app for tracking scores, timeouts, substitutions, and sanctions.">
+  <title>VolleyScore</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ===== Navigation ===== -->
+  <nav class="top-nav" role="navigation" aria-label="Main navigation">
+    <span class="nav-brand">VolleyScore</span>
+    <div class="nav-pages">
+      <button class="nav-btn active" data-page="score" aria-label="Score page">Score</button>
+      <button class="nav-btn" data-page="games" aria-label="Games history">Games</button>
+      <button class="nav-btn" data-page="setup" aria-label="App settings">Setup</button>
+    </div>
+    <div class="nav-links">
+      <a href="https://github.com/j-mathes/volleyball-triangle-stats" target="_blank" rel="noopener noreferrer"
+         class="nav-github" title="View on GitHub" aria-label="View on GitHub">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.09-.745.083-.729.083-.729 1.205.084 1.84 1.236 1.84 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.418-1.305.762-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23a11.52 11.52 0 0 1 3-.405c1.02.005 2.045.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/>
+        </svg>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Storage unavailable banner -->
+  <div id="storageBanner" class="storage-banner" hidden role="alert"></div>
+
+  <!-- ===== Score Page ===== -->
+  <div id="scorePage" class="page page-score">
+
+    <!-- Game Setup Panel (shown when no active game) -->
+    <div id="gameSetupPanel" class="setup-panel">
+
+      <div class="setup-card">
+        <h2>New Game</h2>
+        <div class="setup-team-row">
+          <label class="setup-field">
+            <span class="setup-field-label">Team A</span>
+            <input id="cfgTeamA" type="text" value="Team A" placeholder="Team A" autocomplete="off" spellcheck="false">
+          </label>
+          <label class="setup-field">
+            <span class="setup-field-label">Team B</span>
+            <input id="cfgTeamB" type="text" value="Team B" placeholder="Team B" autocomplete="off" spellcheck="false">
+          </label>
+        </div>
+
+        <div class="setup-optional-row">
+          <label class="setup-field">
+            <span class="setup-field-label">Location <span class="optional">(optional)</span></span>
+            <input id="cfgLocation" type="text" placeholder="e.g. Main Gym" autocomplete="off">
+          </label>
+          <label class="setup-field">
+            <span class="setup-field-label">Date &amp; Time <span class="optional">(optional)</span></span>
+            <input id="cfgScheduledAt" type="datetime-local">
+          </label>
+        </div>
+
+        <div class="setup-row-group">
+          <fieldset class="radio-fieldset">
+            <legend>Game Format</legend>
+            <label><input type="radio" name="gameFormat" value="single"> Single Set</label>
+            <label><input type="radio" name="gameFormat" value="straight2"> 2 Straight Sets</label>
+            <label><input type="radio" name="gameFormat" value="best3" checked> Best of 3</label>
+            <label><input type="radio" name="gameFormat" value="best5"> Best of 5</label>
+          </fieldset>
+
+          <fieldset class="radio-fieldset">
+            <legend>Variation</legend>
+            <label><input type="radio" name="variation" value="standard" checked> Standard</label>
+            <label><input type="radio" name="variation" value="triplebal"> Triple Ball</label>
+          </fieldset>
+        </div>
+
+        <div class="setup-row-group">
+          <div class="stepper-group">
+            <label class="stepper-label">Timeouts / Set</label>
+            <div class="stepper">
+              <button id="btnToDown" type="button" class="stepper-btn" aria-label="Decrease timeouts">&minus;</button>
+              <span id="cfgTimeouts" class="stepper-val">2</span>
+              <button id="btnToUp" type="button" class="stepper-btn" aria-label="Increase timeouts">+</button>
+            </div>
+          </div>
+          <div class="stepper-group">
+            <label class="stepper-label">Substitutions / Set</label>
+            <div class="stepper">
+              <button id="btnSubsDown" type="button" class="stepper-btn" aria-label="Decrease substitutions">&minus;</button>
+              <span id="cfgSubs" class="stepper-val">6</span>
+              <button id="btnSubsUp" type="button" class="stepper-btn" aria-label="Increase substitutions">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setup-serve-row">
+          <span class="setup-field-label">First Serve</span>
+          <div class="serve-pick-group">
+            <button id="btnFirstServeA" class="serve-pick-btn active" data-team="A">Team A</button>
+            <button id="btnFirstServeB" class="serve-pick-btn" data-team="B">Team B</button>
+          </div>
+        </div>
+
+        <button id="btnStartGame" class="start-game-btn">Start Game</button>
+      </div>
+
+      <!-- Recent games -->
+      <div class="setup-card" id="recentGamesCard">
+        <h3>Recent Games</h3>
+        <div id="recentGamesList" class="recent-games-list">
+          <p class="no-data-msg">No saved games yet.</p>
+        </div>
+      </div>
+
+    </div><!-- end gameSetupPanel -->
+
+    <!-- Scoreboard (shown during active game) -->
+    <div id="scoreboard" hidden>
+
+      <!-- Game info + control bar -->
+      <div class="game-bar">
+        <div class="game-info">
+          <span id="sbGameName" class="sb-game-name">Game</span>
+          <span class="bar-sep" aria-hidden="true">·</span>
+          <span id="sbSetLabel" class="sb-set-label">Set 1</span>
+          <span class="bar-sep" aria-hidden="true">·</span>
+          <span id="sbFormat" class="sb-format">Best of 3</span>
+          <span class="bar-sep sets-sep" aria-hidden="true">·</span>
+          <span id="sbSetsA" class="sb-sets-a" title="Sets won by Team A">0</span>
+          <span class="sets-dash" aria-hidden="true">–</span>
+          <span id="sbSetsB" class="sb-sets-b" title="Sets won by Team B">0</span>
+        </div>
+        <div class="game-controls">
+          <button id="btnEndSet" class="ctrl-btn">End Set</button>
+          <button id="btnStartNextSet" class="ctrl-btn" hidden>Start Set <span id="nextSetNum">2</span></button>
+          <button id="btnUndo" class="ctrl-btn" disabled title="Undo last action">↩ Undo</button>
+          <button id="btnRedo" class="ctrl-btn" disabled title="Redo">↪</button>
+          <button id="btnEndGame" class="ctrl-btn ctrl-btn-end">End Game</button>
+          <button id="btnNewGame" class="ctrl-btn ctrl-btn-new">New Game</button>
+        </div>
+      </div>
+
+      <!-- Between-sets serve picker (shown after End Set, before Start Next Set is clicked) -->
+      <div id="servePicker" class="serve-picker" hidden>
+        <span class="serve-picker-label">Who serves Set <span id="servePickerSetNum">2</span>?</span>
+        <button id="btnPickServeA" class="serve-pick-btn" data-team="A">Team A</button>
+        <button id="btnPickServeB" class="serve-pick-btn" data-team="B">Team B</button>
+      </div>
+
+      <!-- Team panels -->
+      <div class="team-panels" id="teamPanels">
+
+        <!-- Team A -->
+        <div class="team-panel team-panel-a" id="teamAPanel" data-team="A">
+          <div class="team-name-row">
+            <span class="serve-dot" id="serveDotA" aria-hidden="true" title="Serving"></span>
+            <span class="team-name" id="sbTeamAName">Team A</span>
+          </div>
+          <div class="score-row">
+            <button class="score-btn btn-score-minus" id="btnScoreAMinus" aria-label="Remove point from Team A">−</button>
+            <div class="score-val" id="scoreValA" aria-live="polite" aria-label="Team A score">0</div>
+            <button class="score-btn btn-score-plus" id="btnScoreAPlus" aria-label="Add point to Team A">+</button>
+          </div>
+          <div class="team-stats-row">
+            <button class="to-btn" id="btnToA" aria-label="Take timeout for Team A">
+              <span class="to-label">TO</span>
+              <span class="to-dots" id="toDotsA" aria-hidden="true"></span>
+              <span class="to-count" id="toCountA">0/2</span>
+            </button>
+            <button class="sub-btn" id="btnSubA" aria-label="Record substitution for Team A">
+              Sub <span id="subValA">0</span>/<span id="subMaxA">6</span>
+            </button>
+            <button class="sanction-open-btn" id="btnCardA" aria-label="Issue sanction to Team A">
+              <span class="card-icon card-y" aria-hidden="true"></span><span class="card-icon card-r" aria-hidden="true"></span>
+            </button>
+          </div>
+          <div class="sanctions-bar" id="sanctionsBarA" aria-label="Team A sanctions"></div>
+        </div>
+
+        <!-- Center line -->
+        <div class="court-divider" aria-hidden="true"></div>
+
+        <!-- Team B -->
+        <div class="team-panel team-panel-b" id="teamBPanel" data-team="B">
+          <div class="team-name-row">
+            <span class="serve-dot" id="serveDotB" aria-hidden="true" title="Serving"></span>
+            <span class="team-name" id="sbTeamBName">Team B</span>
+          </div>
+          <div class="score-row">
+            <button class="score-btn btn-score-minus" id="btnScoreBMinus" aria-label="Remove point from Team B">−</button>
+            <div class="score-val" id="scoreValB" aria-live="polite" aria-label="Team B score">0</div>
+            <button class="score-btn btn-score-plus" id="btnScoreBPlus" aria-label="Add point to Team B">+</button>
+          </div>
+          <div class="team-stats-row">
+            <button class="to-btn" id="btnToB" aria-label="Take timeout for Team B">
+              <span class="to-label">TO</span>
+              <span class="to-dots" id="toDotsB" aria-hidden="true"></span>
+              <span class="to-count" id="toCountB">0/2</span>
+            </button>
+            <button class="sub-btn" id="btnSubB" aria-label="Record substitution for Team B">
+              Sub <span id="subValB">0</span>/<span id="subMaxB">6</span>
+            </button>
+            <button class="sanction-open-btn" id="btnCardB" aria-label="Issue sanction to Team B">
+              <span class="card-icon card-y" aria-hidden="true"></span><span class="card-icon card-r" aria-hidden="true"></span>
+            </button>
+          </div>
+          <div class="sanctions-bar" id="sanctionsBarB" aria-label="Team B sanctions"></div>
+        </div>
+
+      </div><!-- end team-panels -->
+
+      <!-- Triple Ball sequence indicator -->
+      <div id="tripleBallBar" class="triple-ball-bar" hidden aria-label="Triple ball sequence">
+        <span class="tb-label">Triple Ball</span>
+        <div class="tb-seq" id="tbSeq" aria-hidden="true">
+          <div class="tb-phase" data-phase="0">
+            <span class="tb-team-letter tb-a">A</span>
+            <span class="tb-type">Serves</span>
+          </div>
+          <span class="tb-arrow">&#x2192;</span>
+          <div class="tb-phase" data-phase="1">
+            <span class="tb-team-letter tb-b">B</span>
+            <span class="tb-type">Toss</span>
+          </div>
+          <span class="tb-arrow">&#x2192;</span>
+          <div class="tb-phase" data-phase="2">
+            <span class="tb-team-letter tb-a">A</span>
+            <span class="tb-type">Toss</span>
+          </div>
+          <span class="tb-divider" aria-hidden="true">&#x2502;</span>
+          <div class="tb-phase" data-phase="3">
+            <span class="tb-team-letter tb-b">B</span>
+            <span class="tb-type">Serves</span>
+          </div>
+          <span class="tb-arrow">&#x2192;</span>
+          <div class="tb-phase" data-phase="4">
+            <span class="tb-team-letter tb-a">A</span>
+            <span class="tb-type">Toss</span>
+          </div>
+          <span class="tb-arrow">&#x2192;</span>
+          <div class="tb-phase" data-phase="5">
+            <span class="tb-team-letter tb-b">B</span>
+            <span class="tb-type">Toss</span>
+          </div>
+        </div>
+        <span class="tb-phase-label" id="tbPhaseLabel"></span>
+      </div>
+
+      <!-- Set summary table -->
+      <details class="summary-details" id="setSummaryDetails">
+        <summary class="summary-summary">Set Summary</summary>
+        <div class="summary-body">
+          <table class="set-table" id="setTable">
+            <thead>
+              <tr>
+                <th>Set</th>
+                <th id="setTblHdrA">Team A</th>
+                <th id="setTblHdrB">Team B</th>
+              </tr>
+            </thead>
+            <tbody id="setTableBody"></tbody>
+            <tfoot id="setTableFoot"></tfoot>
+          </table>
+        </div>
+      </details>
+
+      <!-- Event log -->
+      <details class="event-log-card" id="scoreEventLogCard">
+        <summary class="event-log-summary">Event Log</summary>
+        <div class="event-log-body" id="scoreEventLogBody">
+          <div class="event-log-empty">No events recorded yet.</div>
+        </div>
+      </details>
+
+    </div><!-- end scoreboard -->
+
+  </div><!-- end scorePage -->
+
+  <!-- ===== Games Page ===== -->
+  <div id="gamesPage" class="page page-games" hidden>
+
+    <div class="games-list-panel">
+      <div class="games-list-header">
+        <h2>Saved Games</h2>
+        <div class="games-list-actions">
+          <button id="btnImportGame" class="icon-btn" title="Import game from JSON">Import</button>
+          <input id="importFileInput" type="file" accept=".json" hidden aria-hidden="true">
+          <button id="btnClearAllGames" class="icon-btn danger-btn" title="Delete all saved games">Clear All</button>
+        </div>
+      </div>
+      <div id="gamesList" class="games-list">
+        <p class="no-data-msg">No saved games yet.</p>
+      </div>
+    </div>
+
+    <div class="game-detail-panel" id="gameDetailPanel">
+      <div id="gameDetailPlaceholder" class="detail-placeholder">
+        <p>Select a game to view details.</p>
+      </div>
+      <div id="gameDetailContent" class="game-detail-content" hidden>
+        <div class="detail-header">
+          <h2 id="detailGameName"></h2>
+          <div id="detailGameMeta" class="detail-meta"></div>
+        </div>
+        <table class="set-table detail-set-table" id="detailSetTable">
+          <thead>
+            <tr>
+              <th>Set</th>
+              <th id="detailHdrA">Team A</th>
+              <th id="detailHdrB">Team B</th>
+            </tr>
+          </thead>
+          <tbody id="detailSetBody"></tbody>
+          <tfoot id="detailSetFoot"></tfoot>
+        </table>
+        <div class="detail-actions" id="detailActions">
+          <button id="btnResumeGame" class="ctrl-btn">Resume Game</button>
+          <button id="btnExportGame" class="ctrl-btn">Export JSON</button>
+          <button id="btnDeleteGame" class="ctrl-btn danger-btn">Delete</button>
+        </div>
+        <details class="event-log-card" id="detailEventLogCard">
+          <summary class="event-log-summary">Event Log</summary>
+          <div class="event-log-body" id="detailEventLogBody"></div>
+        </details>
+      </div>
+    </div>
+
+  </div><!-- end gamesPage -->
+
+  <!-- ===== Setup Page ===== -->
+  <div id="setupPage" class="page page-setup" hidden>
+
+    <div class="setup-card">
+      <h2>Appearance</h2>
+
+      <div class="setting-row">
+        <label class="setting-label" for="cfgDarkMode">Dark Mode</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="cfgDarkMode">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="setting-row">
+        <label class="setting-label" for="cfgFontSize">Font Size</label>
+        <select id="cfgFontSize">
+          <option value="small">Small</option>
+          <option value="medium" selected>Medium</option>
+          <option value="large">Large</option>
+        </select>
+      </div>
+
+      <div class="color-setting-row">
+        <label class="setting-label" for="cfgTeamAColor">Team A Color</label>
+        <input type="color" id="cfgTeamAColor" value="#1d4ed8" class="color-picker">
+      </div>
+      <div class="color-setting-row">
+        <label class="setting-label" for="cfgTeamBColor">Team B Color</label>
+        <input type="color" id="cfgTeamBColor" value="#b91c1c" class="color-picker">
+      </div>
+
+    </div>
+
+    <div class="setup-card">
+      <h2>Game Defaults</h2>
+
+      <div class="setting-row">
+        <label class="setting-label">Default Format</label>
+        <select id="cfgDefaultFormat">
+          <option value="single">Single Set</option>
+          <option value="straight2">2 Straight Sets</option>
+          <option value="best3" selected>Best of 3</option>
+          <option value="best5">Best of 5</option>
+        </select>
+      </div>
+
+      <div class="setting-row">
+        <label class="setting-label">Default Timeouts / Set</label>
+        <div class="stepper">
+          <button id="btnDefToDown" type="button" class="stepper-btn">&minus;</button>
+          <span id="cfgDefTimeouts" class="stepper-val">2</span>
+          <button id="btnDefToUp" type="button" class="stepper-btn">+</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <label class="setting-label">Default Substitutions / Set</label>
+        <div class="stepper">
+          <button id="btnDefSubsDown" type="button" class="stepper-btn">&minus;</button>
+          <span id="cfgDefSubs" class="stepper-val">6</span>
+          <button id="btnDefSubsUp" type="button" class="stepper-btn">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="setup-card">
+      <h2>Data</h2>
+      <p class="setup-hint">Export all saved games as a single JSON file, or import previously exported data.</p>
+      <div class="data-actions">
+        <button id="btnExportAll" class="ctrl-btn">Export All Games</button>
+        <button id="btnImportSetup" class="ctrl-btn">Import Games</button>
+        <input id="importSetupFileInput" type="file" accept=".json" hidden aria-hidden="true">
+      </div>
+      <button id="btnClearAllSetup" class="ctrl-btn danger-btn" style="margin-top:0.8rem">Clear All Data</button>
+    </div>
+
+    <div class="setup-card">
+      <h2>About</h2>
+      <p class="setup-hint">
+        VolleyScore — a browser-based volleyball scorekeeper.<br>
+        No frameworks, no build step. Open directly in any browser or host on GitHub Pages.
+      </p>
+      <p class="setup-hint">
+        &copy; 2025 Jared Mathes &mdash;
+        <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a>
+      </p>
+      <p class="setup-hint">
+        <a href="https://github.com/j-mathes/volleyball-triangle-stats" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </p>
+    </div>
+
+  </div><!-- end setupPage -->
+
+  <!-- ===== Sanction Modal ===== -->
+  <div id="sanctionModal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="sanctionModalTitle">
+    <div class="modal-card">
+      <h3 id="sanctionModalTitle">Sanction &mdash; <span id="sanctionTeamName">Team A</span></h3>
+
+      <div class="modal-section">
+        <h4 class="modal-section-title">Player Sanction</h4>
+        <label class="modal-player-label">
+          Player # <input type="text" id="sanctionPlayerNum" inputmode="numeric" placeholder="Optional" maxlength="3" class="player-num-input">
+        </label>
+        <div class="sanction-btns">
+          <button class="sanction-type-btn btn-sanction-yellow" data-stype="yellow">
+            <span class="card-icon card-y"></span> Warning
+          </button>
+          <button class="sanction-type-btn btn-sanction-red" data-stype="red">
+            <span class="card-icon card-r"></span> Penalty
+          </button>
+          <button class="sanction-type-btn btn-sanction-expulsion" data-stype="expulsion">
+            <span class="card-icon card-y"></span><span class="card-icon card-r"></span> Expulsion
+          </button>
+          <button class="sanction-type-btn btn-sanction-disq" data-stype="disqualification">
+            <span class="card-icon card-y"></span><span class="card-icon card-r card-r-offset"></span> Disqualification
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <h4 class="modal-section-title">Delay Sanction</h4>
+        <div class="sanction-btns">
+          <button class="sanction-type-btn btn-delay-warning" data-dtype="warning">
+            <span class="card-icon card-y card-small"></span> Delay Warning
+          </button>
+          <button class="sanction-type-btn btn-delay-penalty" data-dtype="penalty">
+            <span class="card-icon card-r card-small"></span> Delay Penalty
+          </button>
+        </div>
+      </div>
+
+      <button id="btnCloseSanctionModal" class="modal-close-btn">Cancel</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
