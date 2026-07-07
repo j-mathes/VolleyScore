@@ -651,8 +651,9 @@ details summary::-webkit-details-marker { display: none; }
 
 /* Pulse animation on the Start Next Set button */
 @keyframes btn-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--pulse-rgb), 0.6); }
-  55%       { box-shadow: 0 0 0 8px rgba(var(--pulse-rgb), 0); }
+  0%   { box-shadow: 0 0 0 2px  rgba(var(--pulse-rgb), 0.85); }
+  75%  { box-shadow: 0 0 0 14px rgba(var(--pulse-rgb), 0); }
+  100% { box-shadow: 0 0 0 2px  rgba(var(--pulse-rgb), 0); }
 }
 
 #btnStartNextSet {
@@ -662,7 +663,9 @@ details summary::-webkit-details-marker { display: none; }
 }
 
 #btnStartNextSet:not([hidden]) {
-  animation: btn-pulse 1.8s ease-out infinite;
+  outline: 2px solid var(--serve-color);
+  outline-offset: 3px;
+  animation: btn-pulse 2s ease-out infinite;
 }
 
 /* Side-swapped layout: flip team panels with flex order */
