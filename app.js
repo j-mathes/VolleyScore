@@ -1063,6 +1063,26 @@ function formatLabel(fmt) {
   return { "single": "Single Set", "straight2": "2 Sets", "best3": "Best of 3", "best5": "Best of 5" }[fmt] || fmt;
 }
 
+// Show a temporary toast message at the bottom of the screen.
+var _toastTimer = null;
+function showToast(message, duration) {
+  duration = duration || 4000;
+  // Remove any existing toast immediately
+  var existing = document.querySelector(".toast");
+  if (existing) existing.parentNode.removeChild(existing);
+  if (_toastTimer) { clearTimeout(_toastTimer); _toastTimer = null; }
+
+  var toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  _toastTimer = setTimeout(function () {
+    if (toast.parentNode) toast.parentNode.removeChild(toast);
+    _toastTimer = null;
+  }, duration + 400); // extra time covers the fade-out animation
+}
+
 // ---- Score Page — Game Controls -------------------------
 
 function wireScoreboardControls() {
@@ -1235,6 +1255,12 @@ function openSanctionModal(team) {
   var teamName = state ? (team === "A" ? state.teamA : state.teamB) : ("Team " + team);
   $("sanctionTeamName").textContent = teamName;
   $("sanctionPlayerNum").value = "";
+
+  // Show Triple Ball section only when a Triple Ball game is active
+  var isTb = !!(state && state.variation === "triplebal" && state.activeSetNumber);
+  $("tbPenaltySection").hidden = !isTb;
+  $("cbTbMidRally").checked = false; // always default to "after rally"
+
   $("sanctionModal").removeAttribute("hidden");
   $("sanctionPlayerNum").focus();
 }
@@ -1259,6 +1285,9 @@ function dispatchSanction(stype) {
   // Only Red card (Penalty) awards a point + serve to the opponent.
   // Expulsion and Disqualification remove the player but do not directly award a point.
   if (stype === "red") {
+    // Capture triple ball phase BEFORE the point advances the sequence
+    var tbPhase = (state.variation === "triplebal" && state.activeSetNumber) ? state.tripleBallPhase : -1;
+    var isMidRally = tbPhase >= 0 && $("cbTbMidRally").checked;
     var opponent = sanctionTargetTeam === "A" ? "B" : "A";
     controller.dispatch({
       type: "POINT_SCORED",
@@ -1267,6 +1296,13 @@ function dispatchSanction(stype) {
       delta: 1,
       timestamp: new Date().toISOString(),
     });
+    if (tbPhase >= 0) {
+      if (isMidRally) {
+        showToast("\uD83D\uDFE5 Mid-rally penalty \u2014 replaces \u201c" + TB_PHASE_LABELS[tbPhase] + "\u201d (current ball cancelled)");
+      } else {
+        showToast("\uD83D\uDFE5 Red card penalty \u2014 replaces \u201c" + TB_PHASE_LABELS[tbPhase] + "\u201d (next ball in sequence)");
+      }
+    }
   }
   closeSanctionModal();
   renderScoreboard();
@@ -1282,8 +1318,11 @@ function dispatchDelaySanction(dtype) {
     setNumber: state.activeSetNumber,
     timestamp: new Date().toISOString(),
   });
-  // Delay penalty adds point to opponent
+  // Delay penalty awards a point + serve to the opponent
   if (dtype === "penalty") {
+    // Capture triple ball phase BEFORE the point advances the sequence
+    var tbPhase = (state.variation === "triplebal" && state.activeSetNumber) ? state.tripleBallPhase : -1;
+    var isMidRally = tbPhase >= 0 && $("cbTbMidRally").checked;
     var opp = sanctionTargetTeam === "A" ? "B" : "A";
     controller.dispatch({
       type: "POINT_SCORED",
@@ -1292,6 +1331,13 @@ function dispatchDelaySanction(dtype) {
       delta: 1,
       timestamp: new Date().toISOString(),
     });
+    if (tbPhase >= 0) {
+      if (isMidRally) {
+        showToast("\uD83D\uDFE5 Mid-rally delay penalty \u2014 replaces \u201c" + TB_PHASE_LABELS[tbPhase] + "\u201d (current ball cancelled)");
+      } else {
+        showToast("\uD83D\uDFE5 Delay penalty \u2014 replaces \u201c" + TB_PHASE_LABELS[tbPhase] + "\u201d (next ball in sequence)");
+      }
+    }
   }
   closeSanctionModal();
   renderScoreboard();

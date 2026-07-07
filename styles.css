@@ -1520,6 +1520,89 @@ input.player-num-input {
   font-size: 0.9rem;
 }
 
+/* Triple Ball section inside sanction modal */
+.modal-tb-section {
+  background: rgba(21, 128, 61, 0.07);
+  border: 1.5px solid rgba(21, 128, 61, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.7rem;
+  margin-top: 0.1rem;
+}
+
+.modal-tb-section .modal-section-title {
+  color: var(--serve-color);
+  margin-bottom: 0.35rem;
+}
+
+.tb-penalty-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+
+.tb-penalty-toggle input[type="checkbox"] {
+  margin-top: 0.15rem;
+  accent-color: var(--serve-color);
+  flex-shrink: 0;
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+}
+
+.tb-penalty-toggle-label {
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.modal-hint {
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+.tb-penalty-hint {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  margin: 0.35rem 0 0;
+  line-height: 1.4;
+}
+
+/* ---- Toast notifications ---- */
+.toast {
+  position: fixed;
+  bottom: 1.2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  background: #1e293b;
+  color: #f1f5f9;
+  border-left: 4px solid var(--card-red);
+  padding: 0.65rem 1.1rem;
+  border-radius: var(--radius);
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  z-index: 400;
+  max-width: min(92vw, 420px);
+  text-align: center;
+  pointer-events: none;
+  animation: toast-in 200ms ease, toast-out 350ms ease 3.6s forwards;
+}
+
+[data-theme="dark"] .toast {
+  background: #334155;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: translateX(-50%) translateY(0); }
+  to   { opacity: 0; transform: translateX(-50%) translateY(6px); }
+}
+
 /* ---- Scrollbars (thin) ---- */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }

@@ -18,9 +18,9 @@ Works on desktop and iPad/iPhone. No install required.
 - **Serve tracking** — automatic serve indicator updates with each point scored
 - **Timeouts** — visual filled/empty dot display; alerts when all timeouts are used
 - **Substitutions** — per-team counter with exhaustion warning
-- **Sanctions** — Yellow card (warning), Red card (penalty + automatic point), Expulsion, Disqualification; optional player number
-- **Delay sanctions** — Delay Warning and Delay Penalty per team
-- **Triple Ball** — sequence indicator for all 6 phases (A Serves → Toss B → Toss A → B Serves → Toss A → Toss B), active phase highlighted and advances with each point
+- **Sanctions** — Yellow card (warning), Red card (penalty + point to opponent), Expulsion, Disqualification; optional player number entry
+- **Delay sanctions** — Delay Warning and Delay Penalty (penalty awards a point to opponent) per team
+- **Triple Ball** — sequence indicator for all 6 phases (A Serves → Toss B → Toss A → B Serves → Toss A → Toss B), active phase highlighted, advances with each point; penalty toast notification with mid-rally override
 - **Set management** — End Set, choose who serves next, Start Next Set; set summary table
 - **Undo / Redo** — correct mistakes without disrupting the event timeline
 - **Event log** — time-stamped, color-coded log of every game event (same format as Triangle Stats)
@@ -66,7 +66,20 @@ Triple Ball is a volleyball variation where three balls are fed in sequence befo
 A Serves  →  Toss to B  →  Toss to A  │  B Serves  →  Toss to A  →  Toss to B
 ```
 
-The active phase is highlighted in green. The indicator advances automatically with each point scored.
+The active phase is highlighted in green and advances automatically with each point scored.
+
+### Penalties in Triple Ball
+
+When a Red card penalty or Delay Penalty is issued during a Triple Ball game, a point is awarded to the opponent and the sequence advances — but **the referee must know which ball slot was consumed**. A toast notification appears automatically identifying the replaced slot.
+
+Two scenarios are supported via a toggle in the sanction dialog (only visible during Triple Ball games):
+
+| Scenario | When to use | Toast says |
+|----------|-------------|------------|
+| **After rally** *(default)* | Penalty issued after a rally completed normally | "…replaces next ball in sequence" |
+| **Mid-rally** *(check the box)* | Referee cancels an in-progress rally and awards penalty instead | "…replaces current ball (current ball cancelled)" |
+
+The toggle resets to the default (after rally) each time the sanction dialog opens.
 
 ## Sanctions
 
