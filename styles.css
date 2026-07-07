@@ -694,6 +694,13 @@ details summary::-webkit-details-marker { display: none; }
   padding: 0.45rem 0 0.1rem;
 }
 
+/* Override the disabled-opacity so the preview looks identical to the live button */
+.start-set-preview button {
+  opacity: 1;
+  cursor: default;
+  pointer-events: none;
+}
+
 .preview-label {
   font-size: 0.8rem;
   color: var(--ink-muted);
