@@ -16,21 +16,22 @@ Works on desktop and iPad/iPhone. No install required.
 
 - **Scoring** — large tap-friendly +/− buttons optimized for mobile landscape use
 - **Serve tracking** — automatic serve indicator updates with each point scored
-- **Timeouts** — visual filled/empty dot display; alerts when all timeouts are used; count enforced by fair play rule when applicable
-- **Substitutions** — per-team counter with exhaustion warning; blocked by fair play rules when not permitted
-- **Misconduct sanctions** — Warning, Penalty, Expulsion, Disqualification; issued to Player, Head Coach, Asst. Coach, Trainer, or Medical; all remain in effect for the entire match
-- **Delay sanctions** — Delay Warning and Delay Penalty applied to the entire team; Delay Penalty awards a point to the opponent
+- **Timeouts** — visual filled/empty dot display; count enforced by fair play rule; **blocked mid-sequence in triple ball** (only available before a serve)
+- **Substitutions** — per-team counter; blocked by fair play rules and **by triple ball sequence timing** when applicable; toast fires when Partial FP unlocks subs at 15 points
+- **Misconduct sanctions** — Warning, Penalty, Expulsion, Disqualification; issued to Player, Head Coach, Asst. Coach, Trainer, or Medical; Warning on its own row; all remain in effect for the entire match
+- **Delay sanctions** — Delay Warning 🟨⌚ and Delay Penalty 🟥⌚ applied to the entire team; Delay Penalty awards a point to the opponent
 - **Improper requests** — one free per team per match; tracked and flagged if the free request has already been used
-- **Fair play rules** — None, Triple Ball, Full, or Partial; enforces per-set timeout counts and substitution restrictions automatically
+- **Fair play rules** — None, Triple Ball, Full, or Partial; enforces per-set timeout counts and substitution restrictions automatically; Timeouts/Subs setup fields hidden when a fair play rule is active (the rule sets those values)
 - **Set management** — End Set, choose who serves next (pre-suggested), pulsing Start Next Set button; match ends automatically when all sets are played
+- **End Game flow** — scoreboard stays visible with final score; Undo available immediately to reverse an accidental End Game; press **Done** (also pulsing) to return to the new game screen
 - **Side switching** — ⇄ Sides button swaps which panel each team appears on for court-side tracking; resets on new game
-- **Undo / Redo** — correct mistakes without disrupting the event timeline
+- **Undo / Redo** — available during an active game and immediately after End Game; disabled when reviewing completed games from history
 - **Match Log page** — dedicated nav button (visible during active games) with full event log and set-by-set summary; tap a set number to filter the log to that set
 - **Game history** — browse, resume, review, export, delete saved games
 - **Import / Export** — JSON export per game or all games at once; import from file
 - **Dark mode** — toggle in Setup
-- **Customizable colors** — Team A/B colors, Start Set button fill and pulse/outline color (with live preview)
-- **Triple Ball** — 6-phase sequence indicator; penalty toast notifications with mid-rally override
+- **Customizable colors** — Team A/B colors, Start Set / Done button fill and pulse/outline color (with live preview in Setup)
+- **Triple Ball** — 6-phase sequence indicator; penalty toast notifications with mid-rally override; timeouts and subs enforced at sequence boundaries only
 - **localStorage + IndexedDB** — data persists across sessions; automatic fallback to IndexedDB when localStorage quota is exceeded
 
 ## Game Formats
@@ -73,6 +74,10 @@ A Serves  →  Toss to B  →  Toss to A  │  B Serves  →  Toss to A  →  To
 
 The active phase is highlighted in green and advances automatically with each point scored.
 
+### Timeouts and Substitutions in Triple Ball
+
+In triple ball, timeouts and substitutions (where permitted) can only be called **at the end of a 3-ball sequence — after the last toss and before the next serve**. This corresponds to phases 0 (before A serves) and 3 (before B serves) in the indicator. The TO and Sub buttons are automatically disabled at all other phases.
+
 ### Penalties in Triple Ball
 
 When a Red card penalty or Delay Penalty is issued during a Triple Ball game, a point is awarded to the opponent and the sequence advances — but **the referee must know which ball slot was consumed**. A toast notification appears automatically identifying the replaced slot.
@@ -93,9 +98,11 @@ Selected when setting up a new game. The rule overrides per-set timeout counts a
 | Rule | Sets 1 & 2 | Deciding set |
 |------|------------|--------------|
 | **None** | Standard rules (configured timeouts, subs any time) | Standard rules |
-| **Triple Ball** | 3 timeouts, no substitutions | 2 timeouts, subs after last toss only |
+| **Triple Ball** | 3 timeouts, no substitutions | 2 timeouts, subs after last toss only (enforced automatically) |
 | **Full** | 3 timeouts, no substitutions | 2 timeouts, subs any time |
 | **Partial** | 2 timeouts, subs blocked until a team reaches 15 points | 2 timeouts, subs any time |
+
+When a fair play rule is selected in the new game form, the Timeouts/Set and Subs/Set fields are hidden — those values are determined by the rule.
 
 For **Partial** fair play, a toast notification fires automatically the moment either team's score reaches 15, alerting the referee that substitutions are now permitted for both teams.
 
