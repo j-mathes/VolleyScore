@@ -44,7 +44,9 @@ var DEFAULT_SETTINGS = {
   fontSize: "medium",
   teamAColor: "#1d4ed8",
   teamBColor: "#b91c1c",
-  startSetColor: "#15803d",
+  startSetColor: "#15803d",      // button fill (legacy key, kept for migration)
+  startSetBgColor: "#15803d",    // button fill
+  startSetPulseColor: "#15803d", // outline + pulse ring
   defaultFormat: "best3",
   defaultTimeouts: 2,
   defaultSubs: 6,
@@ -865,10 +867,13 @@ function updateTeamColors() {
   if (aRgb) root.style.setProperty("--team-a-light", "rgba(" + aRgb + ",0.12)");
   root.style.setProperty("--team-b", settings.teamBColor);
   if (bRgb) root.style.setProperty("--team-b-light", "rgba(" + bRgb + ",0.12)");
-  // Start Set button pulse/outline color
-  var ssColor = settings.startSetColor || "#15803d";
-  root.style.setProperty("--start-set-color", ssColor);
-  var ssRgb = hexToRgb(ssColor);
+  // Start Set button: separate fill and pulse/outline colors
+  // Fall back to legacy startSetColor if the newer keys aren't saved yet
+  var ssBg    = settings.startSetBgColor    || settings.startSetColor || "#15803d";
+  var ssPulse = settings.startSetPulseColor || settings.startSetColor || "#15803d";
+  root.style.setProperty("--start-set-color", ssBg);
+  root.style.setProperty("--start-set-pulse-color", ssPulse);
+  var ssRgb = hexToRgb(ssPulse);
   if (ssRgb) root.style.setProperty("--start-set-rgb", ssRgb);
 }
 
@@ -1877,7 +1882,8 @@ function renderSetupPage() {
   $("cfgFontSize").value = settings.fontSize;
   $("cfgTeamAColor").value = settings.teamAColor;
   $("cfgTeamBColor").value = settings.teamBColor;
-  $("cfgStartSetColor").value = settings.startSetColor || "#15803d";
+  $("cfgStartSetColor").value = settings.startSetBgColor || settings.startSetColor || "#15803d";
+  $("cfgStartSetPulseColor").value = settings.startSetPulseColor || settings.startSetColor || "#15803d";
   $("cfgDefaultFormat").value = settings.defaultFormat;
   $("cfgDefTimeouts").textContent = settings.defaultTimeouts;
   $("cfgDefSubs").textContent = settings.defaultSubs;
@@ -1909,7 +1915,13 @@ function wireSetupPage() {
   });
 
   $("cfgStartSetColor").addEventListener("input", function () {
-    settings.startSetColor = this.value;
+    settings.startSetBgColor = this.value;
+    updateTeamColors();
+    saveSettings();
+  });
+
+  $("cfgStartSetPulseColor").addEventListener("input", function () {
+    settings.startSetPulseColor = this.value;
     updateTeamColors();
     saveSettings();
   });

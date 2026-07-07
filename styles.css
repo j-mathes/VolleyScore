@@ -26,7 +26,8 @@
   /* Action colors */
   --serve-color: #15803d;
   --pulse-rgb: 21, 128, 61;   /* legacy alias */
-  --start-set-color: #15803d;
+  --start-set-color: #15803d;       /* button fill */
+  --start-set-pulse-color: #15803d; /* outline and pulse ring */
   --start-set-rgb: 21, 128, 61;
   --neutral: #6b21a8;
   --success: #15803d;
@@ -68,6 +69,7 @@
   --serve-color: #4ade80;
   --pulse-rgb: 74, 222, 128;  /* legacy alias */
   --start-set-color: #4ade80;
+  --start-set-pulse-color: #4ade80;
   --start-set-rgb: 74, 222, 128;
   --nav-bg: #020617;
 }
@@ -668,7 +670,7 @@ details summary::-webkit-details-marker { display: none; }
 }
 
 .start-set-btn-active {
-  outline: 2px solid var(--start-set-color);
+  outline: 2px solid var(--start-set-pulse-color);
   outline-offset: 3px;
   animation: btn-pulse 2s ease-out infinite;
 }
@@ -681,7 +683,7 @@ details summary::-webkit-details-marker { display: none; }
 }
 
 #btnStartNextSet:not([hidden]) {
-  outline: 2px solid var(--start-set-color);
+  outline: 2px solid var(--start-set-pulse-color);
   outline-offset: 3px;
   animation: btn-pulse 2s ease-out infinite;
 }
