@@ -2391,8 +2391,8 @@ input.player-num-input {
   }
 }
 
-/* ---- Very small landscape (short phones) ---- */
-@media (orientation: landscape) and (max-height: 420px) {
+/* ---- Very small landscape (phones — covers up to 500px height, e.g. iPhone Pro Max) ---- */
+@media (orientation: landscape) and (max-height: 500px) {
   /* Narrow sidebar so the score row has room; 100px is fine on desktop but kills phones */
   .team-action-sidebar {
     width: 60px;
