@@ -1912,7 +1912,11 @@ async function renderGamesList() {
       void (async function () {
         await dbDeleteGame(g.gameId);
         if (selectedDetailGameId === g.gameId) clearGameDetail();
-        if (controller.currentGameId === g.gameId) controller.clear();
+        if (controller.currentGameId === g.gameId) {
+          controller.clear();
+          // If the score page is showing the now-deleted game's scoreboard, reset it
+          if (currentPage === "score" && !$("scoreboard").hidden) showSetupPanel();
+        }
         await renderGamesList();
       })();
     });
@@ -1982,8 +1986,13 @@ async function selectDetailGame(gameId) {
   $("btnDeleteGame").onclick = function () {
     if (!confirm('Delete "' + state.gameName + '"? This cannot be undone.')) return;
     void (async function () {
+      var wasActive = controller.currentGameId === gameId;
       await dbDeleteGame(gameId);
       clearGameDetail();
+      if (wasActive) {
+        controller.clear();
+        showPage("games"); // stay on Games page; Score page will show setup next time
+      }
       await renderGamesList();
     })();
   };

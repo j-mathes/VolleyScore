@@ -1771,6 +1771,12 @@ details[open] .event-log-summary::before {
   opacity: 0.45;
 }
 
+/* Full-width button within a sanction-btns row (e.g. Warning, Improper Request) */
+.sanction-btn-full {
+  flex: 1;
+  justify-content: center;
+}
+
 .ir-used-warning {
   font-size: 0.78rem;
   color: var(--warning);
