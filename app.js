@@ -60,7 +60,7 @@ var DEFAULT_SETTINGS = {
   defaultSubs: 6,
   notchEnabled: false,
   notchSide: "left",
-  notchPad: 64,
+  notchPad: 50,
 };
 
 // ---- Settings -------------------------------------------
@@ -1161,6 +1161,7 @@ function renderScoreboard() {
   $("btnEndGame").hidden = isGameOver;
   $("btnEndGame").disabled = !state.gameCanEnd && !hasActiveSet && !isBetweenSets;
   $("btnNewGame").hidden = !isGameOver;
+  $("btnSwitchSides").hidden = isGameOver;
 
   // Between-sets serve picker — also hide when no more sets can be started
   $("servePicker").hidden = !isBetweenSets || state.gameCanEnd;
@@ -2359,7 +2360,7 @@ function renderSetupPage() {
   $("notchOptions").hidden = !settings.notchEnabled;
   var notchSideRadio = document.querySelector('input[name="cfgNotchSide"][value="' + (settings.notchSide || "left") + '"]');
   if (notchSideRadio) notchSideRadio.checked = true;
-  $("cfgNotchPad").textContent = settings.notchPad !== undefined ? settings.notchPad : 64;
+  $("cfgNotchPad").textContent = settings.notchPad !== undefined ? settings.notchPad : 50;
 }
 
 function wireSetupPage() {
@@ -2475,11 +2476,11 @@ function wireSetupPage() {
   });
 
   $("btnNotchPadDown").addEventListener("click", function () {
-    var v = settings.notchPad !== undefined ? settings.notchPad : 64;
+    var v = settings.notchPad !== undefined ? settings.notchPad : 50;
     if (v > 8) { settings.notchPad = v - 4; $("cfgNotchPad").textContent = settings.notchPad; applyNotchPadding(); saveSettings(); }
   });
   $("btnNotchPadUp").addEventListener("click", function () {
-    var v = settings.notchPad !== undefined ? settings.notchPad : 64;
+    var v = settings.notchPad !== undefined ? settings.notchPad : 50;
     if (v < 128) { settings.notchPad = v + 4; $("cfgNotchPad").textContent = settings.notchPad; applyNotchPadding(); saveSettings(); }
   });
 
@@ -2520,7 +2521,7 @@ function wireSetupPage() {
 }
 
 function applyNotchPadding() {
-  var pad = settings.notchEnabled ? (settings.notchPad !== undefined ? settings.notchPad : 64) : 0;
+  var pad = settings.notchEnabled ? (settings.notchPad !== undefined ? settings.notchPad : 50) : 0;
   document.documentElement.style.setProperty("--notch-pad", pad + "px");
   document.body.classList.toggle("notch-left",  settings.notchEnabled && settings.notchSide !== "right");
   document.body.classList.toggle("notch-right", settings.notchEnabled && settings.notchSide === "right");
