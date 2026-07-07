@@ -1242,7 +1242,8 @@ function wireScoreboardControls() {
       type: "GAME_ENDED",
       timestamp: new Date().toISOString(),
     });
-    renderScoreboard();
+    // Return to the new game form; completed game appears in Recent Games
+    showSetupPanel();
   });
 
   // New Game (shown after game ends)
