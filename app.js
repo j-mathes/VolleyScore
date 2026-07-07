@@ -682,6 +682,15 @@ function formatDateTime(iso) {
     d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+// yyyy-mm-dd hh:mm (24-hour) — used in Recent Games list
+function formatDateTimeShort(iso) {
+  if (!iso) return "";
+  var d = new Date(iso);
+  var pad = function (n) { return String(n).padStart(2, "0"); };
+  return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) +
+    " " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+}
+
 function toLocalDatetimeValue(d) {
   var pad = function (n) { return String(n).padStart(2, "0"); };
   return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) +
@@ -822,7 +831,7 @@ function wireGameSetupForm() {
     $("btnFpInfo").setAttribute("aria-expanded", String(open));
   });
   document.addEventListener("click", function (e) {
-    if (!$("fpTooltip").hidden && !e.target.closest("#fairPlayFieldset")) {
+    if (!$("fpTooltip").hidden && !e.target.closest("#btnFpInfo")) {
       $("fpTooltip").hidden = true;
       $("btnFpInfo").setAttribute("aria-expanded", "false");
     }
@@ -1748,7 +1757,7 @@ function renderRecentGames() {
   games.forEach(function (g) {
     var isActive = !g.endedAt;
     var meta = [g.teamA, "vs", g.teamB, "·", formatLabel(g.gameFormat)].join(" ");
-    var dateStr = g.scheduledAt ? formatDate(g.scheduledAt) : formatDate(g.updatedAt);
+    var dateStr = formatDateTimeShort(g.scheduledAt || g.createdAt || g.updatedAt);
     html += '<div class="recent-game-item" data-id="' + esc(g.gameId) + '">' +
       '<span class="recent-game-name">' + esc(g.gameName || meta) + '</span>' +
       '<span class="recent-game-meta">' + esc(dateStr) + '</span>' +
