@@ -58,6 +58,9 @@ var DEFAULT_SETTINGS = {
   defaultFairPlay: "none",
   defaultTimeouts: 2,
   defaultSubs: 6,
+  notchEnabled: false,
+  notchSide: "left",
+  notchPad: 64,
 };
 
 // ---- Settings -------------------------------------------
@@ -2352,6 +2355,11 @@ function renderSetupPage() {
   $("cfgDefFairPlay").value = settings.defaultFairPlay || "none";
   $("cfgDefTimeouts").textContent = settings.defaultTimeouts;
   $("cfgDefSubs").textContent = settings.defaultSubs;
+  $("cfgNotchEnabled").checked = !!settings.notchEnabled;
+  $("notchOptions").hidden = !settings.notchEnabled;
+  var notchSideRadio = document.querySelector('input[name="cfgNotchSide"][value="' + (settings.notchSide || "left") + '"]');
+  if (notchSideRadio) notchSideRadio.checked = true;
+  $("cfgNotchPad").textContent = settings.notchPad !== undefined ? settings.notchPad : 64;
 }
 
 function wireSetupPage() {
@@ -2450,6 +2458,31 @@ function wireSetupPage() {
     if (settings.defaultSubs < 18) { settings.defaultSubs++; $("cfgDefSubs").textContent = settings.defaultSubs; saveSettings(); }
   });
 
+  // Notch padding
+  $("cfgNotchEnabled").addEventListener("change", function () {
+    settings.notchEnabled = this.checked;
+    $("notchOptions").hidden = !this.checked;
+    applyNotchPadding();
+    saveSettings();
+  });
+
+  document.querySelectorAll('input[name="cfgNotchSide"]').forEach(function (radio) {
+    radio.addEventListener("change", function () {
+      settings.notchSide = this.value;
+      applyNotchPadding();
+      saveSettings();
+    });
+  });
+
+  $("btnNotchPadDown").addEventListener("click", function () {
+    var v = settings.notchPad !== undefined ? settings.notchPad : 64;
+    if (v > 8) { settings.notchPad = v - 4; $("cfgNotchPad").textContent = settings.notchPad; applyNotchPadding(); saveSettings(); }
+  });
+  $("btnNotchPadUp").addEventListener("click", function () {
+    var v = settings.notchPad !== undefined ? settings.notchPad : 64;
+    if (v < 128) { settings.notchPad = v + 4; $("cfgNotchPad").textContent = settings.notchPad; applyNotchPadding(); saveSettings(); }
+  });
+
   // Export all
   $("btnExportAll").addEventListener("click", function () {
     void exportAllGames();
@@ -2484,6 +2517,13 @@ function wireSetupPage() {
       renderSetupPage();
     })();
   });
+}
+
+function applyNotchPadding() {
+  var pad = settings.notchEnabled ? (settings.notchPad !== undefined ? settings.notchPad : 64) : 0;
+  document.documentElement.style.setProperty("--notch-pad", pad + "px");
+  document.body.classList.toggle("notch-left",  settings.notchEnabled && settings.notchSide !== "right");
+  document.body.classList.toggle("notch-right", settings.notchEnabled && settings.notchSide === "right");
 }
 
 function applyTheme() {
@@ -2529,6 +2569,7 @@ async function init() {
   applyTheme();
   applyFontSize();
   updateTeamColors();
+  applyNotchPadding();
 
   // Wire up all UI
   wireNavigation();

@@ -365,6 +365,38 @@
     </div>
 
     <div class="setup-card">
+      <h2>Mobile Display</h2>
+      <p class="setup-hint">In landscape mode, a phone&rsquo;s notch can cover the sidebar action buttons. Enable this to add padding on the notch side.</p>
+
+      <div class="setting-row">
+        <label class="setting-label" for="cfgNotchEnabled">Notch Padding</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="cfgNotchEnabled">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div id="notchOptions" hidden>
+        <div class="setting-row">
+          <label class="setting-label">Notch Side</label>
+          <div class="setting-radio-row">
+            <label><input type="radio" name="cfgNotchSide" value="left" checked> Left</label>
+            <label><input type="radio" name="cfgNotchSide" value="right"> Right</label>
+          </div>
+        </div>
+
+        <div class="setting-row">
+          <label class="setting-label">Padding (px)</label>
+          <div class="stepper">
+            <button id="btnNotchPadDown" type="button" class="stepper-btn">&minus;</button>
+            <span id="cfgNotchPad" class="stepper-val">64</span>
+            <button id="btnNotchPadUp" type="button" class="stepper-btn">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="setup-card">
       <h2>Game Defaults</h2>
 
       <div class="setting-row">

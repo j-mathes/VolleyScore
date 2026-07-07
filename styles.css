@@ -57,6 +57,9 @@
   --tb-box-sz: 84px;
   --tb-unit: calc(var(--tb-box-sz) + 16px);
   --tb-highlight: #15803d;
+
+  /* Notch padding (landscape mobile) */
+  --notch-pad: 0px;
 }
 
 /* ---- Dark theme ---- */
@@ -825,6 +828,10 @@ details summary::-webkit-details-marker { display: none; }
   color: var(--ink-muted);
   flex-shrink: 0;
 }
+
+/* Notch padding: push scoreboard content away from the notch side */
+body.notch-left  .team-panels { padding-left:  var(--notch-pad); }
+body.notch-right .team-panels { padding-right: var(--notch-pad); }
 
 /* Side-swapped layout: flip team panels with flex order */
 .team-panels.sides-swapped .team-panel-a { order: 3; }
