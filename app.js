@@ -800,6 +800,7 @@ async function startNewGame() {
 
   controller.clear();
   controller.currentGameId = gameId;
+  selectedLogSetFilter = null; // reset filter for new game
 
   var startEvent = {
     type: "GAME_STARTED",
@@ -836,6 +837,7 @@ async function startNewGame() {
 var sanctionTargetTeam = null;     // "A" or "B"
 var sanctionSelectedRole = "player"; // current role in misconduct sanction
 var pendingServePickTeam = null;   // for between-sets serve selection
+var selectedLogSetFilter = null;   // null = all sets; number = filter log to that set
 
 function showScoreboard() {
   $("gameSetupPanel").hidden = true;
@@ -1067,8 +1069,10 @@ function renderSetSummaryTable(state) {
     var tr = document.createElement("tr");
     var winA = s.endedAt && s.scoreA > s.scoreB;
     var winB = s.endedAt && s.scoreB > s.scoreA;
+    var isFiltered = selectedLogSetFilter === s.setNumber;
+    // Set number cell: pill toggle button — click to filter log to this set
     tr.innerHTML =
-      "<td>" + s.setNumber + "</td>" +
+      "<td><span class='set-filter-pill" + (isFiltered ? " active" : "") + "' data-setnum='" + s.setNumber + "' title='" + (isFiltered ? "Clear filter" : "Filter log to Set " + s.setNumber) + "'>" + s.setNumber + "</span></td>" +
       "<td class='" + (winA ? "set-win-a" : "") + "'>" + s.scoreA + "</td>" +
       "<td class='" + (winB ? "set-win-b" : "") + "'>" + s.scoreB + "</td>";
     tbody.appendChild(tr);
@@ -1443,14 +1447,26 @@ function renderEventLog() {
   var body = $("logEventLogBody");
   if (!body) return;
   var state = controller.getState();
-  body.innerHTML = buildEventLogHtml(state, controller.timeline);
+  body.innerHTML = buildEventLogHtml(state, controller.timeline, selectedLogSetFilter);
 }
 
-function buildEventLogHtml(state, timeline) {
+function buildEventLogHtml(state, timeline, filterSetNumber) {
   if (!state) return '<div class="event-log-empty">No game in progress.</div>';
 
   var events = timeline ? timeline.events.slice(0, timeline.cursor) : [];
   if (!events.length) return '<div class="event-log-empty">No events recorded yet.</div>';
+
+  // When filtering, only include events for the selected set plus global bookends
+  if (filterSetNumber) {
+    events = events.filter(function (e) {
+      return e.type === "GAME_STARTED" ||
+             e.type === "GAME_ENDED"   ||
+             e.setNumber === filterSetNumber;
+    });
+    if (events.length <= 1) {
+      return '<div class="event-log-empty">No events recorded for Set ' + filterSetNumber + '.</div>';
+    }
+  }
 
   // Track running scores for display
   var setScores = {}; // setNumber → { A: n, B: n }
@@ -1608,6 +1624,10 @@ function renderLogPage() {
 
   renderSetSummaryTable(state);
   renderEventLog();
+
+  // Show/hide the filter-active hint
+  var hint = $("logFilterHint");
+  if (hint) hint.hidden = !selectedLogSetFilter;
 }
 
 // ---- Recent Games (on setup panel) ----------------------
@@ -1934,6 +1954,17 @@ function wireNavigation() {
   // "← Score" button on the log page returns to the scoreboard
   $("btnLogToScore").addEventListener("click", function () {
     showPage("score");
+  });
+
+  // Set filter pills — delegated click on the log set table
+  $("logSetTable").addEventListener("click", function (e) {
+    var pill = e.target.closest(".set-filter-pill");
+    if (!pill) return;
+    var setNum = parseInt(pill.getAttribute("data-setnum"), 10);
+    // Toggle: clicking the active set clears the filter
+    selectedLogSetFilter = (selectedLogSetFilter === setNum) ? null : setNum;
+    renderSetSummaryTable(controller.getState());
+    renderEventLog();
   });
 }
 
