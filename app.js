@@ -843,6 +843,7 @@ async function startNewGame() {
 
 var sanctionTargetTeam = null;     // "A" or "B"
 var sanctionSelectedRole = "player"; // current role in misconduct sanction
+var _sanctionPlayerNum = "";       // player number from the numeric pad
 var pendingServePickTeam = null;   // for between-sets serve selection
 var selectedLogSetFilter = null;   // null = all sets; number = filter log to that set
 var sidesSwapped = false;          // true when Team B panel is visually on the left
@@ -1321,10 +1322,11 @@ function dispatchSub(team) {
 function openSanctionModal(team) {
   sanctionTargetTeam = team;
   sanctionSelectedRole = "player";
+  _sanctionPlayerNum = "";
   var state = controller.getState();
   var teamName = state ? (team === "A" ? state.teamA : state.teamB) : ("Team " + team);
   $("sanctionTeamName").textContent = teamName;
-  $("sanctionPlayerNum").value = "";
+  updatePlayerNumDisplay();
 
   // Reset role selector to Player
   document.querySelectorAll(".role-btn").forEach(function (btn) {
@@ -1343,7 +1345,11 @@ function openSanctionModal(team) {
   $("cbTbMidRally").checked = false;
 
   $("sanctionModal").removeAttribute("hidden");
-  $("sanctionPlayerNum").focus();
+}
+
+function updatePlayerNumDisplay() {
+  var el = $("playerNumDisplay");
+  if (el) el.textContent = _sanctionPlayerNum || "\u2014";
 }
 
 function closeSanctionModal() {
@@ -1367,7 +1373,7 @@ function dispatchImproperRequest() {
 function dispatchSanction(stype) {
   var state = controller.getState();
   if (!state || !state.activeSetNumber || !sanctionTargetTeam) return;
-  var player = sanctionSelectedRole === "player" ? ($("sanctionPlayerNum").value.trim() || null) : null;
+  var player = sanctionSelectedRole === "player" ? (_sanctionPlayerNum || null) : null;
   controller.dispatch({
     type: "SANCTION",
     team: sanctionTargetTeam,
@@ -1444,6 +1450,20 @@ function wireSanctionModal() {
   // Close on overlay click
   $("sanctionModal").addEventListener("click", function (e) {
     if (e.target === $("sanctionModal")) closeSanctionModal();
+  });
+
+  // Numeric pad — digit buttons (max 2 digits for jersey number)
+  document.querySelectorAll(".npb[data-digit]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      if (_sanctionPlayerNum.length < 2) {
+        _sanctionPlayerNum += btn.getAttribute("data-digit");
+        updatePlayerNumDisplay();
+      }
+    });
+  });
+  $("btnNumDel").addEventListener("click", function () {
+    _sanctionPlayerNum = _sanctionPlayerNum.slice(0, -1);
+    updatePlayerNumDisplay();
   });
 
   // Role selector buttons

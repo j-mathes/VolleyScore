@@ -1703,6 +1703,61 @@ details[open] .event-log-summary::before {
   margin-bottom: 0.5rem;
 }
 
+/* Numeric pad replacing the text input for player number */
+.player-num-pad {
+  margin-bottom: 0.5rem;
+}
+
+.num-pad-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.num-pad-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.num-pad-display {
+  font-size: 1.1rem;
+  font-weight: 800;
+  min-width: 2.2ch;
+  color: var(--team-a);
+  letter-spacing: 0.05em;
+}
+
+.num-pad-buttons {
+  display: flex;
+  gap: 0.22rem;
+  flex-wrap: nowrap;
+}
+
+.npb {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0;
+  min-height: unset;
+  min-width: unset;
+  line-height: 1;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.npb-del {
+  width: 36px;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+}
+
 /* input[type="text"] has specificity 0,0,1,1; use element+class to match and win by order */
 input.player-num-input {
   width: 70px;

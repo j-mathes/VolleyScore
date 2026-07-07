@@ -482,9 +482,25 @@
           <button class="role-btn" data-role="trainer">Trainer</button>
           <button class="role-btn" data-role="medical">Medical</button>
         </div>
-        <label id="playerNumLabel" class="modal-player-label">
-          Player # <input type="text" id="sanctionPlayerNum" inputmode="numeric" placeholder="Optional" maxlength="3" class="player-num-input">
-        </label>
+        <div id="playerNumLabel" class="player-num-pad">
+          <div class="num-pad-header">
+            <span class="num-pad-label">Player #</span>
+            <span class="num-pad-display" id="playerNumDisplay">&#x2014;</span>
+          </div>
+          <div class="num-pad-buttons">
+            <button class="npb" data-digit="1" type="button">1</button>
+            <button class="npb" data-digit="2" type="button">2</button>
+            <button class="npb" data-digit="3" type="button">3</button>
+            <button class="npb" data-digit="4" type="button">4</button>
+            <button class="npb" data-digit="5" type="button">5</button>
+            <button class="npb" data-digit="6" type="button">6</button>
+            <button class="npb" data-digit="7" type="button">7</button>
+            <button class="npb" data-digit="8" type="button">8</button>
+            <button class="npb" data-digit="9" type="button">9</button>
+            <button class="npb" data-digit="0" type="button">0</button>
+            <button class="npb npb-del" id="btnNumDel" type="button" aria-label="Delete digit">&#x232B;</button>
+          </div>
+        </div>
         <div class="sanction-btns">
           <button class="sanction-type-btn btn-sanction-yellow" data-stype="yellow">
             <span class="card-icon card-y"></span> Warning

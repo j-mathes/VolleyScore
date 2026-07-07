@@ -122,7 +122,7 @@ Misconduct sanctions are issued to a specific individual. When issuing a sanctio
 |----------|-------------|--------|-------------|
 | Warning | 🟨 | No point awarded | Entire match |
 | Penalty | 🟥 | Point + serve to opponent | Entire match |
-| Expulsion | 🟨🟥 (overlapping) | Player/staff removed for rest of set | Entire match |
+| Expulsion | 🟨🟥 | Player/staff removed for rest of set | Entire match |
 | Disqualification | 🟨 🟥 | Player/staff removed for rest of match | Entire match |
 
 All misconduct sanctions remain in effect for the remainder of the match regardless of which set they were issued in.
