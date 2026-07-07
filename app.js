@@ -40,6 +40,9 @@ var LS_PREFIX = "vs_g_";          // full game record prefix
 var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
+// App version — bump this (and CACHE_VERSION in sw.js) with every deployment
+var APP_VERSION = "2";
+
 // Default settings
 var DEFAULT_SETTINGS = {
   darkMode: false,
@@ -2366,6 +2369,19 @@ function renderSetupPage() {
   var notchSideRadio = document.querySelector('input[name="cfgNotchSide"][value="' + (settings.notchSide || "left") + '"]');
   if (notchSideRadio) notchSideRadio.checked = true;
   $("cfgNotchPad").textContent = settings.notchPad !== undefined ? settings.notchPad : 50;
+
+  // About: show app version and active SW cache name
+  var verLine = $("appVersionLine");
+  if (verLine) {
+    var cacheLabel = "no cache";
+    if ("caches" in window) {
+      caches.keys().then(function (keys) {
+        verLine.textContent = "Version " + APP_VERSION + "  \u00B7  cache: " + (keys.length ? keys.join(", ") : "none");
+      });
+    } else {
+      verLine.textContent = "Version " + APP_VERSION;
+    }
+  }
 }
 
 function wireSetupPage() {
