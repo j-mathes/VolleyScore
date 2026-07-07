@@ -81,6 +81,25 @@
         </div>
 
         <div class="setup-row-group">
+          <fieldset class="radio-fieldset fair-play-fieldset">
+            <legend>Fair Play Rule</legend>
+            <label><input type="radio" name="fairPlay" value="none" checked> None</label>
+            <label>
+              <input type="radio" name="fairPlay" value="triple-fp"> Triple Ball
+              <span class="fp-hint">Sets 1&ndash;2: 3 TOs, no subs &middot; Deciding: 2 TOs, subs on last toss</span>
+            </label>
+            <label>
+              <input type="radio" name="fairPlay" value="standard-full"> Full
+              <span class="fp-hint">Sets 1&ndash;2: 3 TOs, no subs &middot; Deciding: 2 TOs, subs any time</span>
+            </label>
+            <label>
+              <input type="radio" name="fairPlay" value="standard-partial"> Partial
+              <span class="fp-hint">Sets 1&ndash;2: 2 TOs, subs unlock at 15 pts &middot; Deciding: 2 TOs, subs any time</span>
+            </label>
+          </fieldset>
+        </div>
+
+        <div class="setup-row-group">
           <div class="stepper-group">
             <label class="stepper-label">Timeouts / Set</label>
             <div class="stepper">

@@ -798,6 +798,7 @@ async function startNewGame() {
   var scheduledAt = $("cfgScheduledAt").value || toLocalDatetimeValue(new Date());
   var gameFormat = document.querySelector('input[name="gameFormat"]:checked').value;
   var variation  = document.querySelector('input[name="variation"]:checked').value;
+  var fairPlay   = document.querySelector('input[name="fairPlay"]:checked').value;
   var gameId = crypto.randomUUID();
   var now = new Date().toISOString();
 
@@ -816,6 +817,7 @@ async function startNewGame() {
     scheduledAt: scheduledAt,
     gameFormat: gameFormat,
     variation: variation,
+    fairPlay: fairPlay,
     timeoutsPerSet: setupTimeouts,
     subsPerSet: setupSubs,
     firstServer: setupFirstServer,
