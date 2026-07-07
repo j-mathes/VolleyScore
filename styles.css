@@ -49,6 +49,9 @@
   --nav-bg: #1e293b;
   --nav-ink: #e2e8f0;
   --nav-active-bg: rgba(255, 255, 255, 0.15);
+
+  /* Sidebar action buttons */
+  --sidebar-btn-border: #000000;
 }
 
 /* ---- Dark theme ---- */
@@ -917,6 +920,7 @@ details summary::-webkit-details-marker { display: none; }
   font-weight: 700;
   padding: 0.3rem 0.2rem;
   border-radius: var(--radius-sm);
+  border: 2px solid var(--sidebar-btn-border);
   min-height: 0;
   min-width: unset;
   width: 100%;

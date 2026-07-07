@@ -44,6 +44,7 @@ var DEFAULT_SETTINGS = {
   fontSize: "medium",
   teamAColor: "#1d4ed8",
   teamBColor: "#b91c1c",
+  sidebarBtnBorder: "#000000",
   startSetColor: "#15803d",
   startSetBgColor: "#15803d",
   startSetPulseColor: "#15803d",
@@ -445,6 +446,7 @@ function deriveGameState(timeline) {
   var fairPlay = startEv.fairPlay || "none";
   var effectiveTimeoutsPerSet = startEv.timeoutsPerSet || 2;
   var subsAllowedInActiveSet = true;
+  var subsGrantedForSet = true; // false only when the rule prohibits subs for the entire set
   var fairPlayNote = "";
 
   if (fairPlay !== "none" && activeSetNumber) {
@@ -456,6 +458,7 @@ function deriveGameState(timeline) {
       effectiveTimeoutsPerSet = isEarlySet ? 3 : 2;
       if (isEarlySet) {
         subsAllowedInActiveSet = false;
+        subsGrantedForSet = false;
       } else if (fairPlay === "triple-fp") {
         // Deciding set with Triple Ball FP: subs only after last toss (same phase as timeouts)
         subsAllowedInActiveSet = (tripleBallPhase === 0 || tripleBallPhase === 3);
@@ -510,6 +513,7 @@ function deriveGameState(timeline) {
     fairPlay: fairPlay,
     effectiveTimeoutsPerSet: effectiveTimeoutsPerSet,
     subsAllowedInActiveSet: subsAllowedInActiveSet,
+    subsGrantedForSet: subsGrantedForSet,
     fairPlayNote: fairPlayNote,
     timeoutAllowedInTripleBall: timeoutAllowedInTripleBall,
     cursor: timeline.cursor,
@@ -1002,6 +1006,7 @@ function updateTeamColors() {
   root.style.setProperty("--start-set-pulse-color", ssPulse);
   var ssRgb = hexToRgb(ssPulse);
   if (ssRgb) root.style.setProperty("--start-set-rgb", ssRgb);
+  root.style.setProperty("--sidebar-btn-border", settings.sidebarBtnBorder || "#000000");
 }
 
 function hexToRgb(hex) {
@@ -1071,11 +1076,20 @@ function renderScoreboard() {
   setScoreDisplay("scoreValA", scoreA);
   setScoreDisplay("scoreValB", scoreB);
 
-  // Sub max display
-  $("subMaxA").textContent = state.subsPerSet;
-  $("subMaxB").textContent = state.subsPerSet;
-  $("subValA").textContent = activeSet ? activeSet.subsA : 0;
-  $("subValB").textContent = activeSet ? activeSet.subsB : 0;
+  // Sub indicator — show count normally, or "No Subs" when fair play prohibits all subs this set
+  var subNoGrant = !!(activeSet && !state.subsGrantedForSet);
+  var subIndA = $("subIndicatorA");
+  var subIndB = $("subIndicatorB");
+  if (subIndA) {
+    subIndA.innerHTML = subNoGrant
+      ? "No Subs"
+      : 'Sub <span id="subValA">' + (activeSet ? activeSet.subsA : 0) + '</span>/<span id="subMaxA">' + state.subsPerSet + '</span>';
+  }
+  if (subIndB) {
+    subIndB.innerHTML = subNoGrant
+      ? "No Subs"
+      : 'Sub <span id="subValB">' + (activeSet ? activeSet.subsB : 0) + '</span>/<span id="subMaxB">' + state.subsPerSet + '</span>';
+  }
 
   // Timeout dots — use effective timeout count (fair play may override)
   renderTimeoutDots("toDotsA", "toCountA", activeSet ? activeSet.timeoutsA : 0, state.effectiveTimeoutsPerSet);
@@ -1480,6 +1494,91 @@ function dispatchSub(team) {
   renderScoreboard();
 }
 
+// ---- Sanction escalation helpers -------------------------
+
+var SANCTION_LEVELS = { yellow: 1, red: 2, expulsion: 3, disqualification: 4 };
+
+// Returns which misconduct sanction types are currently available for a recipient.
+// asst_coach is exempt from individual-level escalation tracking because the UI
+// cannot distinguish between different assistant coaches on the same bench.
+function getMisconductAvailability(team, role, playerNum, state) {
+  var allSanctions = state.sets.reduce(function (acc, s) {
+    return acc.concat(team === "A" ? s.sanctionsA : s.sanctionsB);
+  }, []);
+
+  // Only one warning (yellow) may be issued per team per match.
+  var teamHasWarning = allSanctions.some(function (s) { return s.type === "yellow"; });
+
+  // Track individual escalation — skip for asst_coach and un-numbered players.
+  var maxLevel = 0;
+  var trackIndividual = role !== "asst_coach" && !(role === "player" && !playerNum);
+  if (trackIndividual) {
+    allSanctions.filter(function (s) {
+      return role === "player"
+        ? (s.role === "player" && s.player === playerNum)
+        : (s.role === role);
+    }).forEach(function (s) {
+      var lvl = SANCTION_LEVELS[s.type] || 0;
+      if (lvl > maxLevel) maxLevel = lvl;
+    });
+  }
+
+  // minLevel: must be strictly above current max (or 1 if no prior sanctions).
+  var minLevel = maxLevel === 0 ? 1 : maxLevel + 1;
+  // Team-level warning constraint overrides individual if needed.
+  if (teamHasWarning && minLevel < 2) minLevel = 2;
+
+  return {
+    yellow:           minLevel <= 1,
+    red:              minLevel <= 2,
+    expulsion:        minLevel <= 3,
+    disqualification: minLevel <= 4,
+  };
+}
+
+// Returns true if a delay warning can still be issued to this team (only one per match).
+function canIssueDelayWarning(team, state) {
+  return !state.sets.some(function (s) {
+    var ds = team === "A" ? s.delaySanctionsA : s.delaySanctionsB;
+    return ds.some(function (d) { return d.type === "warning"; });
+  });
+}
+
+// Re-evaluate and update which sanction buttons are enabled in the modal.
+function updateSanctionButtons() {
+  var state = controller.getState();
+  if (!state || !sanctionTargetTeam) return;
+
+  var avail = getMisconductAvailability(sanctionTargetTeam, sanctionSelectedRole, _sanctionPlayerNum, state);
+
+  document.querySelectorAll(".sanction-type-btn[data-stype]").forEach(function (btn) {
+    var stype = btn.getAttribute("data-stype");
+    var ok = !!avail[stype];
+    btn.disabled = !ok;
+    if (!ok) {
+      var hint = "";
+      if (stype === "yellow")
+        hint = "Warning already issued for this team \u2014 next sanction must be Penalty or higher";
+      else if (stype === "red")
+        hint = "Penalty already given \u2014 next must be Expulsion or higher";
+      else if (stype === "expulsion")
+        hint = "Expulsion already given \u2014 next must be Disqualification";
+      else if (stype === "disqualification")
+        hint = "Disqualification already applied \u2014 no further sanctions available";
+      btn.title = hint;
+    } else {
+      btn.title = "";
+    }
+  });
+
+  var delayWarnOk = canIssueDelayWarning(sanctionTargetTeam, state);
+  var delayWarnBtn = document.querySelector(".sanction-type-btn[data-dtype='warning']");
+  if (delayWarnBtn) {
+    delayWarnBtn.disabled = !delayWarnOk;
+    delayWarnBtn.title = delayWarnOk ? "" : "Delay warning already issued \u2014 use Delay Penalty";
+  }
+}
+
 // ---- Score Page — Sanction Modal ------------------------
 
 function openSanctionModal(team) {
@@ -1508,6 +1607,7 @@ function openSanctionModal(team) {
   $("cbTbMidRally").checked = false;
 
   $("sanctionModal").removeAttribute("hidden");
+  updateSanctionButtons();
 }
 
 function updatePlayerNumDisplay() {
@@ -1537,6 +1637,9 @@ function dispatchSanction(stype) {
   var state = controller.getState();
   if (!state || !state.activeSetNumber || !sanctionTargetTeam) return;
   var player = sanctionSelectedRole === "player" ? (_sanctionPlayerNum || null) : null;
+  // Enforce escalation rules — belt-and-suspenders guard if UI state is stale
+  var avail = getMisconductAvailability(sanctionTargetTeam, sanctionSelectedRole, _sanctionPlayerNum, state);
+  if (!avail[stype]) return;
   controller.dispatch({
     type: "SANCTION",
     team: sanctionTargetTeam,
@@ -1575,6 +1678,8 @@ function dispatchSanction(stype) {
 function dispatchDelaySanction(dtype) {
   var state = controller.getState();
   if (!state || !state.activeSetNumber || !sanctionTargetTeam) return;
+  // Only one delay warning allowed per team per match
+  if (dtype === "warning" && !canIssueDelayWarning(sanctionTargetTeam, state)) return;
   controller.dispatch({
     type: "DELAY_SANCTION",
     team: sanctionTargetTeam,
@@ -1621,12 +1726,14 @@ function wireSanctionModal() {
       if (_sanctionPlayerNum.length < 2) {
         _sanctionPlayerNum += btn.getAttribute("data-digit");
         updatePlayerNumDisplay();
+        updateSanctionButtons();
       }
     });
   });
   $("btnNumDel").addEventListener("click", function () {
     _sanctionPlayerNum = _sanctionPlayerNum.slice(0, -1);
     updatePlayerNumDisplay();
+    updateSanctionButtons();
   });
 
   // Role selector buttons
@@ -1638,6 +1745,7 @@ function wireSanctionModal() {
       });
       // Show player number input only for player role
       $("playerNumLabel").hidden = sanctionSelectedRole !== "player";
+      updateSanctionButtons();
     });
   });
 
@@ -2076,6 +2184,7 @@ function renderSetupPage() {
   $("cfgFontSize").value = settings.fontSize;
   $("cfgTeamAColor").value = settings.teamAColor;
   $("cfgTeamBColor").value = settings.teamBColor;
+  $("cfgSidebarBtnBorder").value = settings.sidebarBtnBorder || "#000000";
   $("cfgStartSetColor").value = settings.startSetBgColor || settings.startSetColor || "#15803d";
   $("cfgStartSetPulseColor").value = settings.startSetPulseColor || settings.startSetColor || "#15803d";
   $("cfgDefaultFormat").value = settings.defaultFormat;
@@ -2107,6 +2216,12 @@ function wireSetupPage() {
 
   $("cfgTeamBColor").addEventListener("input", function () {
     settings.teamBColor = this.value;
+    updateTeamColors();
+    saveSettings();
+  });
+
+  $("cfgSidebarBtnBorder").addEventListener("input", function () {
+    settings.sidebarBtnBorder = this.value;
     updateTeamColors();
     saveSettings();
   });

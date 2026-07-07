@@ -18,8 +18,8 @@ Works on desktop and iPad/iPhone. No install required.
 - **Serve tracking** — automatic serve indicator updates with each point scored
 - **Timeouts** — visual filled/empty dot display; count enforced by fair play rule; **blocked mid-sequence in triple ball** (only available before a serve)
 - **Substitutions** — per-team counter; blocked by fair play rules and **by triple ball sequence timing** when applicable; toast fires when Partial FP unlocks subs at 15 points
-- **Misconduct sanctions** — Warning, Penalty, Expulsion, Disqualification; issued to Player, Head Coach, Asst. Coach, Trainer, or Medical; Warning on its own row; all remain in effect for the entire match
-- **Delay sanctions** — Delay Warning 🟨⌚ and Delay Penalty 🟥⌚ applied to the entire team; Delay Penalty awards a point to the opponent
+- **Misconduct sanctions** — Warning, Penalty, Expulsion, Disqualification; issued to Player, Head Coach, Asst. Coach, Trainer, or Medical; **one warning per team per match enforced**; individual escalation enforced (Warning → Penalty → Expulsion → Disqualification); all remain in effect for the entire match
+- **Delay sanctions** — Delay Warning 🟨⌚ and Delay Penalty 🟥⌚ applied to the entire team; **one delay warning per team per match enforced**; Delay Penalty awards a point to the opponent
 - **Improper requests** — one free per team per match; tracked and flagged if the free request has already been used
 - **Fair play rules** — None, Triple Ball, Full, or Partial; enforces per-set timeout counts and substitution restrictions automatically; Timeouts/Subs setup fields hidden when a fair play rule is active (the rule sets those values)
 - **Set management** — End Set, choose who serves next (pre-suggested), pulsing Start Next Set button; match ends automatically when all sets are played
@@ -135,6 +135,13 @@ Misconduct sanctions are issued to a specific individual. When issuing a sanctio
 
 All misconduct sanctions remain in effect for the remainder of the match regardless of which set they were issued in.
 
+#### Escalation rules (enforced automatically)
+
+- **One warning per team per match.** Once any team member receives a Warning, the Warning button is disabled for all subsequent sanctions against that team. The next sanction must be a Penalty or higher.
+- **Individual escalation.** After a specific individual receives a sanction, their next sanction must be one step higher (Warning → Penalty → Expulsion → Disqualification). The appropriate lower-level buttons are disabled when the sanction dialog is opened for that recipient.
+- **Assistant Coach exception.** Because the app cannot distinguish between different assistant coaches, individual escalation is not tracked for the Asst. Coach role. Multiple penalties may be applied (e.g. to different ACs); the referee is responsible for applying the correct escalation for each individual. The team-level warning limit still applies.
+- **Un-numbered players.** If a player sanction is issued without entering a jersey number, individual escalation is not tracked for that sanction. Always enter a jersey number when possible.
+
 ### Delay Sanctions (entire team)
 
 Delay sanctions apply to the team, not an individual.
@@ -143,6 +150,8 @@ Delay sanctions apply to the team, not an individual.
 |----------|--------|
 | Delay Warning 🟨⌚ | No point awarded — caution only |
 | Delay Penalty 🟥⌚ | Point + serve to opponent |
+
+Only one Delay Warning may be issued per team per match. Once a team has received a Delay Warning, the Delay Warning button is disabled and only Delay Penalty is available for subsequent delay infractions.
 
 ### Improper Request (1 free per team per match)
 
