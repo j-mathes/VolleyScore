@@ -454,9 +454,14 @@ function deriveGameState(timeline) {
 
     if (fairPlay === "triple-fp" || fairPlay === "standard-full") {
       effectiveTimeoutsPerSet = isEarlySet ? 3 : 2;
-      subsAllowedInActiveSet = !isEarlySet;
-      if (!isEarlySet && fairPlay === "triple-fp") {
-        fairPlayNote = "Subs: after last toss only";
+      if (isEarlySet) {
+        subsAllowedInActiveSet = false;
+      } else if (fairPlay === "triple-fp") {
+        // Deciding set with Triple Ball FP: subs only after last toss (same phase as timeouts)
+        subsAllowedInActiveSet = (tripleBallPhase === 0 || tripleBallPhase === 3);
+        if (!subsAllowedInActiveSet) fairPlayNote = "Subs: after last toss only";
+      } else {
+        subsAllowedInActiveSet = true; // standard-full deciding set: any time
       }
     } else if (fairPlay === "standard-partial") {
       effectiveTimeoutsPerSet = 2;
@@ -467,6 +472,13 @@ function deriveGameState(timeline) {
           : "Fair play: subs unlock at 15 pts (max now " + maxScore + ")";
       }
     }
+  }
+
+  // Triple ball: timeouts only at end of a 3-ball sequence (before a serve)
+  // Phase 0 = before A serves, Phase 3 = before B serves — those are the only valid moments
+  var timeoutAllowedInTripleBall = true;
+  if (startEv.variation === "triplebal" && activeSetNumber) {
+    timeoutAllowedInTripleBall = (tripleBallPhase === 0 || tripleBallPhase === 3);
   }
 
   return {
@@ -499,6 +511,7 @@ function deriveGameState(timeline) {
     effectiveTimeoutsPerSet: effectiveTimeoutsPerSet,
     subsAllowedInActiveSet: subsAllowedInActiveSet,
     fairPlayNote: fairPlayNote,
+    timeoutAllowedInTripleBall: timeoutAllowedInTripleBall,
     cursor: timeline.cursor,
     canUndo: timeline.cursor > 0,
     canRedo: timeline.cursor < timeline.events.length,
@@ -1067,8 +1080,8 @@ function renderScoreboard() {
   // Timeout dots — use effective timeout count (fair play may override)
   renderTimeoutDots("toDotsA", "toCountA", activeSet ? activeSet.timeoutsA : 0, state.effectiveTimeoutsPerSet);
   renderTimeoutDots("toDotsB", "toCountB", activeSet ? activeSet.timeoutsB : 0, state.effectiveTimeoutsPerSet);
-  $("btnToA").classList.toggle("to-exhausted", activeSet && activeSet.timeoutsA >= state.effectiveTimeoutsPerSet);
-  $("btnToB").classList.toggle("to-exhausted", activeSet && activeSet.timeoutsB >= state.effectiveTimeoutsPerSet);
+  $("btnToA").classList.toggle("to-exhausted", activeSet && (activeSet.timeoutsA >= state.effectiveTimeoutsPerSet || !state.timeoutAllowedInTripleBall));
+  $("btnToB").classList.toggle("to-exhausted", activeSet && (activeSet.timeoutsB >= state.effectiveTimeoutsPerSet || !state.timeoutAllowedInTripleBall));
 
   // Sub exhausted / fair-play-blocked highlight
   $("btnSubA").classList.toggle("sub-exhausted", activeSet && (activeSet.subsA >= state.subsPerSet || !state.subsAllowedInActiveSet));
@@ -1135,6 +1148,13 @@ function renderScoreboard() {
     var el = $(id);
     if (el) el.disabled = !scoringActive;
   });
+  // Apply additional restrictions on top of the base disabled state
+  if (scoringActive) {
+    $("btnSubA").disabled = !state.subsAllowedInActiveSet;
+    $("btnSubB").disabled = !state.subsAllowedInActiveSet;
+    $("btnToA").disabled = !state.timeoutAllowedInTripleBall;
+    $("btnToB").disabled = !state.timeoutAllowedInTripleBall;
+  }
 
   // Show/hide the Match Log nav button
   $("navLogBtn").hidden = false;
@@ -1403,6 +1423,11 @@ function dispatchPoint(team, delta) {
 function dispatchTimeout(team) {
   var state = controller.getState();
   if (!state || !state.activeSetNumber) return;
+  // Triple ball timing check — only allowed before a serve (phase 0 or 3)
+  if (!state.timeoutAllowedInTripleBall) {
+    alert("In triple ball, timeouts can only be called at the end of a 3-ball sequence \u2014 after the last toss, before the next serve.");
+    return;
+  }
   var activeSet = state.sets.find(function (s) { return s.setNumber === state.activeSetNumber; });
   if (!activeSet) return;
   var used = team === "A" ? activeSet.timeoutsA : activeSet.timeoutsB;
@@ -1416,10 +1441,6 @@ function dispatchTimeout(team) {
     setNumber: state.activeSetNumber,
     timestamp: new Date().toISOString(),
   });
-  // In triple ball, remind referee of timing restriction
-  if (state.variation === "triplebal") {
-    showToast("\u23F1 Reminder: timeouts must be called at the end of a 3-ball sequence, before the next serve");
-  }
   renderScoreboard();
 }
 
@@ -1428,7 +1449,11 @@ function dispatchSub(team) {
   if (!state || !state.activeSetNumber) return;
   // Fair play check first
   if (!state.subsAllowedInActiveSet) {
-    if (state.fairPlay === "standard-partial") {
+    // Triple ball deciding set: timing restriction
+    var isTbTiming = state.fairPlay === "triple-fp" && state.activeSetNumber > 2 && state.variation === "triplebal";
+    if (isTbTiming) {
+      alert("In triple ball, substitutions can only be made at the end of a 3-ball sequence \u2014 after the last toss, before the next serve.");
+    } else if (state.fairPlay === "standard-partial") {
       var curMax = (function () {
         var s = state.sets.find(function (x) { return x.setNumber === state.activeSetNumber; });
         return s ? Math.max(s.scoreA, s.scoreB) : 0;
