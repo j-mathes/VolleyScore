@@ -1920,6 +1920,7 @@ details[open] .event-log-summary::before {
   justify-content: center;
   padding: 1rem;
   backdrop-filter: blur(3px);
+  overflow-y: auto;
 }
 
 .modal-card {
@@ -1929,6 +1930,8 @@ details[open] .event-log-summary::before {
   max-width: 420px;
   width: 100%;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
 }
 
 .modal-card h3 {
@@ -2471,6 +2474,64 @@ input.player-num-input {
   .card-small {
     width: 12px;
     height: 17px;
+  }
+}
+
+/* ---- Standalone PWA: bring score +/- buttons closer to the number (covers desktop installs) ---- */
+@media (display-mode: standalone) {
+  .score-row {
+    gap: 0.1rem;
+  }
+}
+
+/* ---- Landscape safe-area for notch ---- */
+@media (orientation: landscape) and (max-height: 500px) {
+  .modal-overlay {
+    padding: 0.3rem;
+    align-items: flex-start;
+  }
+
+  .modal-card {
+    padding: 0.5rem 0.8rem;
+    max-height: calc(100dvh - 0.6rem);
+    border-radius: var(--radius);
+  }
+
+  .modal-card h3 {
+    margin-bottom: 0.3rem;
+  }
+
+  .modal-section {
+    margin-bottom: 0.35rem;
+  }
+
+  .modal-section-title {
+    margin-bottom: 0.15rem;
+  }
+
+  .role-btns {
+    margin-bottom: 0.25rem;
+    gap: 0.2rem;
+  }
+
+  .player-num-pad {
+    margin-bottom: 0.25rem;
+  }
+
+  .num-pad-header {
+    margin-bottom: 0.1rem;
+  }
+
+  .modal-player-label {
+    margin-bottom: 0.25rem;
+  }
+
+  .modal-ir-section {
+    padding: 0.25rem 0.5rem;
+  }
+
+  .modal-close-btn {
+    margin-top: 0.25rem;
   }
 }
 

@@ -6,15 +6,47 @@ Browser-based volleyball scorekeeper. Open `index.html` in any modern browser --
 
 > **iOS:** Use the hosted link above. Local file access is not supported due to browser storage restrictions.
 
+## Installing as an App (PWA)
+
+VolleyScore is a Progressive Web App -- it can be installed on your device for a full-screen, offline-capable experience with no browser chrome.
+
+### iOS (iPhone / iPad)
+
+Must use **Safari** -- Chrome and other iOS browsers cannot install PWAs to the home screen.
+
+1. Open **Safari** and navigate to the hosted link above
+2. Tap the **Share** button (⎙) in the toolbar
+3. Scroll down and tap **"Add to Home Screen"**
+4. Edit the name if desired → tap **Add**
+5. **iOS 17.4+:** when prompted, choose **"As Web App"** (not "In Safari")
+
+The app icon will appear on your home screen. Opening from there launches it full-screen (no browser UI) and works offline after the first load.
+
+### Android
+
+1. Open **Chrome** and navigate to the hosted link
+2. Tap the **⋮** menu → **"Add to Home Screen"** (or tap the install banner if it appears)
+3. Tap **Add**
+
+### Desktop (Chrome / Edge)
+
+1. Navigate to the hosted link
+2. Click the **install icon** (⊕) in the address bar, or open the browser menu → **"Install VolleyScore"**
+3. Click **Install**
+
+The app opens in its own window without browser chrome, and can be launched from the taskbar or app launcher.
+
+---
+
 ## Features
 
 - **Scoring** -- tap-friendly +/- buttons; serve indicator advances automatically
-- **Timeouts** -- dot display; count enforced per fair play rule; blocked mid-sequence in triple ball
-- **Substitutions** -- per-team counter; fair play restrictions enforced automatically
+- **Timeouts** -- diamond-dot indicator (filled = used, outlined = remaining); count enforced per fair play rule; blocked mid-sequence in triple ball
+- **Substitutions** -- per-team counter; fair play restrictions enforced automatically; deciding-set limits applied automatically
 - **Misconduct sanctions** -- Warning -> Penalty -> Expulsion -> Disqualification; one warning per team per match; individual escalation enforced
 - **Delay sanctions** -- Delay Warning (one per team per match) + Delay Penalty; penalty awards a point
 - **Improper requests** -- first is free per team per match; subsequent flags a warning
-- **Fair play rules** -- None / Triple Ball / Full / Partial; timeout and sub limits enforced per set
+- **Fair play rules** -- None / Triple Ball / Full / Partial; timeout and sub limits enforced per set, including 12-sub deciding sets
 - **Set management** -- End Set, serve picker inline in the bar, pulsing Start Next Set
 - **End Game** -- final score stays on screen; Undo available immediately; Done returns to setup
 - **Side switching** -- Sides button swaps panels for court-side reference; TB indicator arrows update accordingly
@@ -24,6 +56,7 @@ Browser-based volleyball scorekeeper. Open `index.html` in any modern browser --
 - **Import / Export** -- JSON per game or all at once
 - **Triple Ball** -- animated sequence indicator between team panels; directional arrows; configurable
 - **Dark mode & colors** -- customizable in Setup
+- **Mobile Display** -- notch/safe-area padding configurable in Setup for landscape phone use
 
 ## Game Formats
 
@@ -86,8 +119,8 @@ Red card or Delay Penalty awards a point and advances the sequence. A toast iden
 | Rule | Sets 1-2 | Deciding set |
 |------|----------|--------------|
 | None | Standard | Standard |
-| Triple Ball | 3 TOs, no subs | 2 TOs, subs after last toss only |
-| Full | 3 TOs, no subs | 2 TOs, subs any time |
+| Triple Ball | 3 TOs, no subs | 2 TOs, 12 subs (after last toss only) |
+| Full | 3 TOs, no subs | 2 TOs, 12 subs (any time) |
 | Partial | 2 TOs, subs unlock at 15 pts | 2 TOs, subs any time |
 
 When a fair play rule is active the Timeouts/Set and Subs/Set fields are hidden -- the rule sets those values. For Partial, a toast fires when either team reaches 15 points.
@@ -116,6 +149,16 @@ When a fair play rule is active the Timeouts/Set and Subs/Set fields are hidden 
 
 One free per team per match; app tracks usage and warns if the free request has already been used.
 
+## Setup
+
+| Section | Key settings |
+|---------|-------------|
+| Appearance | Dark mode, font size, team colors, sidebar border color, Start Set button colors |
+| Mobile Display | Notch padding -- enable and choose left/right side to push team panels away from the phone notch in landscape mode; padding size configurable |
+| Game Defaults | Default format, variation, fair play, timeouts/set, subs/set |
+| Triple Ball | Phase box size, highlight color, scroll speed |
+| Data | Export all games, import, clear all |
+
 ## Side Switching
 
 **Sides** button swaps which panel each team appears on -- useful when teams change ends. Visual only; all data stays attached to the correct team. In triple ball the directional arrows update to match. Resets on new game.
@@ -126,7 +169,7 @@ Saves automatically to `localStorage` (IndexedDB fallback when quota exceeded). 
 
 ## Tech
 
-Vanilla JavaScript, no frameworks, no build step. Single `app.js` + `styles.css` + `index.html`.
+Vanilla JavaScript, no frameworks, no build step. Single `app.js` + `styles.css` + `index.html` + `manifest.json` + `sw.js` (service worker for offline/PWA support) + `icons/`.
 
 ## License
 
