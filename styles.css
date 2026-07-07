@@ -982,8 +982,17 @@ details summary::-webkit-details-marker { display: none; }
 
 .card-y { background: var(--card-yellow); }
 .card-r { background: var(--card-red); }
-.card-r-offset { margin-left: 2px; }
+.card-r-offset  { margin-left: 2px; }
+.card-r-overlap { margin-left: -5px; position: relative; z-index: 1; box-shadow: -1px 1px 3px rgba(0,0,0,0.3); }
 .card-small { width: 10px; height: 14px; }
+
+/* ⌚ icon beside delay sanction cards */
+.delay-icon {
+  font-size: 0.82em;
+  line-height: 1;
+  vertical-align: middle;
+  margin-left: 1px;
+}
 
 /* Sanctions display bar */
 .sanctions-bar {

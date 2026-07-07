@@ -692,16 +692,17 @@ function cardHtml(stype) {
   switch (stype) {
     case "yellow":           return '<span class="card-icon card-y" aria-label="Yellow card"></span>';
     case "red":              return '<span class="card-icon card-r" aria-label="Red card"></span>';
-    case "expulsion":        return '<span class="card-icon card-y"></span><span class="card-icon card-r" aria-label="Expulsion"></span>';
+    case "expulsion":        return '<span class="card-icon card-y"></span><span class="card-icon card-r card-r-overlap" aria-label="Expulsion"></span>';
     case "disqualification": return '<span class="card-icon card-y"></span><span class="card-icon card-r card-r-offset" aria-label="Disqualification"></span>';
     default:                 return '<span class="card-icon card-y"></span>';
   }
 }
 
 function delaySanctionHtml(dtype) {
+  var watch = '<span class="delay-icon" aria-hidden="true">\u231A</span>';
   switch (dtype) {
-    case "warning": return '<span class="card-icon card-y card-small" title="Delay warning"></span>';
-    case "penalty":  return '<span class="card-icon card-r card-small" title="Delay penalty"></span>';
+    case "warning": return '<span class="card-icon card-y card-small" title="Delay warning"></span>' + watch;
+    case "penalty":  return '<span class="card-icon card-r card-small" title="Delay penalty"></span>' + watch;
     default:        return "";
   }
 }
