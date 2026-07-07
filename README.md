@@ -16,18 +16,21 @@ Works on desktop and iPad/iPhone. No install required.
 
 - **Scoring** — large tap-friendly +/− buttons optimized for mobile landscape use
 - **Serve tracking** — automatic serve indicator updates with each point scored
-- **Timeouts** — visual filled/empty dot display; alerts when all timeouts are used
-- **Substitutions** — per-team counter with exhaustion warning
+- **Timeouts** — visual filled/empty dot display; alerts when all timeouts are used; count enforced by fair play rule when applicable
+- **Substitutions** — per-team counter with exhaustion warning; blocked by fair play rules when not permitted
 - **Misconduct sanctions** — Warning, Penalty, Expulsion, Disqualification; issued to Player, Head Coach, Asst. Coach, Trainer, or Medical; all remain in effect for the entire match
 - **Delay sanctions** — Delay Warning and Delay Penalty applied to the entire team; Delay Penalty awards a point to the opponent
 - **Improper requests** — one free per team per match; tracked and flagged if the free request has already been used
-- **Set management** — End Set, choose who serves next, Start Next Set; set summary table
+- **Fair play rules** — None, Triple Ball, Full, or Partial; enforces per-set timeout counts and substitution restrictions automatically
+- **Set management** — End Set, choose who serves next (pre-suggested), pulsing Start Next Set button; match ends automatically when all sets are played
+- **Side switching** — ⇄ Sides button swaps which panel each team appears on for court-side tracking; resets on new game
 - **Undo / Redo** — correct mistakes without disrupting the event timeline
-- **Event log** — time-stamped, color-coded log of every game event (same format as Triangle Stats)
+- **Match Log page** — dedicated nav button (visible during active games) with full event log and set-by-set summary; tap a set number to filter the log to that set
 - **Game history** — browse, resume, review, export, delete saved games
 - **Import / Export** — JSON export per game or all games at once; import from file
 - **Dark mode** — toggle in Setup
-- **Customizable team colors** — applies across the scoreboard and event log
+- **Customizable colors** — Team A/B colors, Start Set button fill and pulse/outline color (with live preview)
+- **Triple Ball** — 6-phase sequence indicator; penalty toast notifications with mid-rally override
 - **localStorage + IndexedDB** — data persists across sessions; automatic fallback to IndexedDB when localStorage quota is exceeded
 
 ## Game Formats
@@ -42,21 +45,22 @@ Works on desktop and iPad/iPhone. No install required.
 ## Scorekeeper Workflow
 
 1. Open the app (local file or hosted URL).
-2. On the **Score** page, fill in team names, format, variation, and who serves first.
+2. On the **Score** page, fill in team names, format, variation, fair play rule, and who serves first.
 3. Press **Start Game** — Set 1 begins immediately.
 4. Tap **+** to award points. The serve indicator moves automatically.
 5. Use **TO**, **Sub**, and the card icon for timeouts, substitutions, and sanctions.
-6. Press **End Set** when the set is over, choose who serves next, and press **Start Set 2**.
-7. Press **End Game** when the match is complete.
-8. Review the set summary and event log inline, or go to **Games** for full history.
+6. Press **End Set** when the set is over. Choose who serves the next set and press the pulsing **Start Set** button.
+7. Press **End Game** when the match is complete. The button enables automatically when all sets are played.
+8. Tap **Match Log** in the nav bar to review the event log. Tap a set number to filter.
 
 ## Pages
 
 | Page | Purpose |
 |------|---------|
 | **Score** | Live scorekeeping — new game setup and active scoreboard |
+| **Match Log** | Set summary and full event log; visible in the nav during an active game |
 | **Games** | Browse saved games; view set summary and event log; resume, export, or delete |
-| **Setup** | Appearance (dark mode, font size, team colors) and game defaults |
+| **Setup** | Appearance, color customization, and game defaults |
 
 ## Triple Ball
 
@@ -80,6 +84,25 @@ Two scenarios are supported via a toggle in the sanction dialog (only visible du
 | **Mid-rally** *(check the box)* | Referee cancels an in-progress rally and awards penalty instead | "…replaces current ball (current ball cancelled)" |
 
 The toggle resets to the default (after rally) each time the sanction dialog opens.
+
+## Fair Play Rules
+
+Selected when setting up a new game. The rule overrides per-set timeout counts and substitution availability automatically — the referee doesn't need to remember the limits.
+
+| Rule | Sets 1 & 2 | Deciding set |
+|------|------------|--------------|
+| **None** | Standard rules (configured timeouts, subs any time) | Standard rules |
+| **Triple Ball** | 3 timeouts, no substitutions | 2 timeouts, subs after last toss only |
+| **Full** | 3 timeouts, no substitutions | 2 timeouts, subs any time |
+| **Partial** | 2 timeouts, subs blocked until a team reaches 15 points | 2 timeouts, subs any time |
+
+For **Partial** fair play, a toast notification fires automatically the moment either team's score reaches 15, alerting the referee that substitutions are now permitted for both teams.
+
+The **deciding set** is any set beyond set 2 (set 3 in Best of 3, sets 3–5 in Best of 5).
+
+## Side Switching
+
+The **⇄ Sides** button in the game control bar swaps which side of the scoreboard each team appears on — useful when teams change ends at the start of the deciding set (or mid-set at 8 points in the deciding set). The swap is purely visual: scoring, serve indicators, and all data remain attached to the correct team. Sides reset to default when a new game is started.
 
 ## Sanctions
 
@@ -155,7 +178,7 @@ If a game with the same ID already exists it is overwritten. Importing does not 
 
 - Vanilla JavaScript (ES6+, `"use strict"`) — no frameworks, no build step
 - Single `app.js` file for all logic
-- CSS custom properties for theming (dark mode, team colors)
+- CSS custom properties for theming (dark mode, team colors, Start Set button colors)
 - Mobile-landscape-first layout; also works on desktop and portrait mobile
 
 ## License
