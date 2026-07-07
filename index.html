@@ -96,8 +96,11 @@
           <strong>Partial</strong> &mdash; sets 1&ndash;2: 2 TOs, subs unlock at 15 pts &middot; deciding: 2 TOs, subs any time
         </div>
 
-        <div class="setup-row-group setup-row-centered">
-          <div class="stepper-group">
+        <!-- Timeouts/Subs steppers — hidden when a fair play rule is active -->
+        <div id="setupStepperRow">
+          <hr class="setup-divider">
+          <div class="setup-row-group setup-row-centered">
+            <div class="stepper-group">
             <label class="stepper-label">Timeouts / Set</label>
             <div class="stepper">
               <button id="btnToDown" type="button" class="stepper-btn" aria-label="Decrease timeouts">&minus;</button>
@@ -114,6 +117,7 @@
             </div>
           </div>
         </div>
+        </div><!-- end setupStepperRow -->
 
         <div class="setup-serve-row">
           <span class="setup-field-label">First Serve</span>
@@ -373,6 +377,24 @@
           <option value="straight2">2 Straight Sets</option>
           <option value="best3" selected>Best of 3</option>
           <option value="best5">Best of 5</option>
+        </select>
+      </div>
+
+      <div class="setting-row">
+        <label class="setting-label">Default Variation</label>
+        <div class="setting-radio-row">
+          <label><input type="radio" name="cfgDefVariation" value="standard" checked> Standard</label>
+          <label><input type="radio" name="cfgDefVariation" value="triplebal"> Triple Ball</label>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <label class="setting-label">Default Fair Play</label>
+        <select id="cfgDefFairPlay">
+          <option value="none">None</option>
+          <option value="triple-fp">Triple Ball FP</option>
+          <option value="standard-full">Full</option>
+          <option value="standard-partial">Partial</option>
         </select>
       </div>
 

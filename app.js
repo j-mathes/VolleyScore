@@ -44,10 +44,12 @@ var DEFAULT_SETTINGS = {
   fontSize: "medium",
   teamAColor: "#1d4ed8",
   teamBColor: "#b91c1c",
-  startSetColor: "#15803d",      // button fill (legacy key, kept for migration)
-  startSetBgColor: "#15803d",    // button fill
-  startSetPulseColor: "#15803d", // outline + pulse ring
+  startSetColor: "#15803d",
+  startSetBgColor: "#15803d",
+  startSetPulseColor: "#15803d",
   defaultFormat: "best3",
+  defaultVariation: "standard",
+  defaultFairPlay: "none",
   defaultTimeouts: 2,
   defaultSubs: 6,
 };
@@ -439,6 +441,34 @@ function deriveGameState(timeline) {
     completedSets >= formatInfo.total
   );
 
+  // ---- Fair play enforcement -----------------------------------------------
+  var fairPlay = startEv.fairPlay || "none";
+  var effectiveTimeoutsPerSet = startEv.timeoutsPerSet || 2;
+  var subsAllowedInActiveSet = true;
+  var fairPlayNote = "";
+
+  if (fairPlay !== "none" && activeSetNumber) {
+    var isEarlySet = activeSetNumber <= 2;
+    var activeSetFP = setsMap[activeSetNumber];
+    var maxScore = activeSetFP ? Math.max(activeSetFP.scoreA, activeSetFP.scoreB) : 0;
+
+    if (fairPlay === "triple-fp" || fairPlay === "standard-full") {
+      effectiveTimeoutsPerSet = isEarlySet ? 3 : 2;
+      subsAllowedInActiveSet = !isEarlySet;
+      if (!isEarlySet && fairPlay === "triple-fp") {
+        fairPlayNote = "Subs: after last toss only";
+      }
+    } else if (fairPlay === "standard-partial") {
+      effectiveTimeoutsPerSet = 2;
+      if (isEarlySet) {
+        subsAllowedInActiveSet = maxScore >= 15;
+        fairPlayNote = subsAllowedInActiveSet
+          ? "Fair play: subs now available"
+          : "Fair play: subs unlock at 15 pts (max now " + maxScore + ")";
+      }
+    }
+  }
+
   return {
     gameId: startEv.gameId,
     gameName: startEv.gameName || "Untitled Game",
@@ -465,6 +495,10 @@ function deriveGameState(timeline) {
     gameCanEnd: gameCanEnd,
     improperRequestA: improperRequestA,
     improperRequestB: improperRequestB,
+    fairPlay: fairPlay,
+    effectiveTimeoutsPerSet: effectiveTimeoutsPerSet,
+    subsAllowedInActiveSet: subsAllowedInActiveSet,
+    fairPlayNote: fairPlayNote,
     cursor: timeline.cursor,
     canUndo: timeline.cursor > 0,
     canRedo: timeline.cursor < timeline.events.length,
@@ -744,6 +778,8 @@ var setupSubs = 6;
 function initGameSetupForm() {
   // Prefill defaults from settings
   document.querySelector('input[name="gameFormat"][value="' + settings.defaultFormat + '"]').checked = true;
+  document.querySelector('input[name="variation"][value="' + (settings.defaultVariation || "standard") + '"]').checked = true;
+  document.querySelector('input[name="fairPlay"][value="' + (settings.defaultFairPlay || "none") + '"]').checked = true;
   setupTimeouts = settings.defaultTimeouts;
   setupSubs = settings.defaultSubs;
   $("cfgTimeouts").textContent = setupTimeouts;
@@ -761,6 +797,7 @@ function initGameSetupForm() {
 }
 
 // Show/hide fair play options and reset selection based on variation
+// Also show/hide the timeout/sub steppers (hidden when a fair play rule is active)
 function updateFairPlayOptions() {
   var variation = document.querySelector('input[name="variation"]:checked').value;
   document.querySelectorAll('[data-fp-variation]').forEach(function (label) {
@@ -774,7 +811,21 @@ function updateFairPlayOptions() {
       }
     }
   });
+  // Hide timeout/sub steppers when any fair play rule is active
+  var fpSelected = document.querySelector('input[name="fairPlay"]:checked').value;
+  var stepperRow = $("setupStepperRow");
+  if (stepperRow) stepperRow.hidden = fpSelected !== "none";
 }
+
+// Also wire fair play radio change to update stepper visibility
+(function () {
+  document.querySelectorAll('input[name="fairPlay"]').forEach(function (radio) {
+    radio.addEventListener("change", function () {
+      var stepperRow = $("setupStepperRow");
+      if (stepperRow) stepperRow.hidden = radio.value !== "none";
+    });
+  });
+})();
 
 function updateFirstServeBtnLabels() {
   var btnA = $("btnFirstServeA");
@@ -1005,15 +1056,15 @@ function renderScoreboard() {
   $("subValA").textContent = activeSet ? activeSet.subsA : 0;
   $("subValB").textContent = activeSet ? activeSet.subsB : 0;
 
-  // Timeout dots
-  renderTimeoutDots("toDotsA", "toCountA", activeSet ? activeSet.timeoutsA : 0, state.timeoutsPerSet);
-  renderTimeoutDots("toDotsB", "toCountB", activeSet ? activeSet.timeoutsB : 0, state.timeoutsPerSet);
-  $("btnToA").classList.toggle("to-exhausted", activeSet && activeSet.timeoutsA >= state.timeoutsPerSet);
-  $("btnToB").classList.toggle("to-exhausted", activeSet && activeSet.timeoutsB >= state.timeoutsPerSet);
+  // Timeout dots — use effective timeout count (fair play may override)
+  renderTimeoutDots("toDotsA", "toCountA", activeSet ? activeSet.timeoutsA : 0, state.effectiveTimeoutsPerSet);
+  renderTimeoutDots("toDotsB", "toCountB", activeSet ? activeSet.timeoutsB : 0, state.effectiveTimeoutsPerSet);
+  $("btnToA").classList.toggle("to-exhausted", activeSet && activeSet.timeoutsA >= state.effectiveTimeoutsPerSet);
+  $("btnToB").classList.toggle("to-exhausted", activeSet && activeSet.timeoutsB >= state.effectiveTimeoutsPerSet);
 
-  // Sub exhausted highlight
-  $("btnSubA").classList.toggle("sub-exhausted", activeSet && activeSet.subsA >= state.subsPerSet);
-  $("btnSubB").classList.toggle("sub-exhausted", activeSet && activeSet.subsB >= state.subsPerSet);
+  // Sub exhausted / fair-play-blocked highlight
+  $("btnSubA").classList.toggle("sub-exhausted", activeSet && (activeSet.subsA >= state.subsPerSet || !state.subsAllowedInActiveSet));
+  $("btnSubB").classList.toggle("sub-exhausted", activeSet && (activeSet.subsB >= state.subsPerSet || !state.subsAllowedInActiveSet));
 
   // Serve dot
   var servingA = !!state.activeSetNumber && state.servingTeam === "A";
@@ -1324,6 +1375,8 @@ function dispatchPoint(team, delta) {
     if (team === "A" && activeSet.scoreA <= 0) return;
     if (team === "B" && activeSet.scoreB <= 0) return;
   }
+  // Capture partial fair play sub status before scoring
+  var subsBefore = state.subsAllowedInActiveSet;
   controller.dispatch({
     type: "POINT_SCORED",
     team: team,
@@ -1331,6 +1384,11 @@ function dispatchPoint(team, delta) {
     delta: delta,
     timestamp: new Date().toISOString(),
   });
+  // Notify referee when partial fair play unlocks substitutions
+  var stateAfter = controller.getState();
+  if (!subsBefore && stateAfter && stateAfter.subsAllowedInActiveSet && stateAfter.fairPlay === "standard-partial") {
+    showToast("\u26A1 15 points reached \u2014 substitutions are now available for both teams");
+  }
   renderScoreboard();
 }
 
@@ -1340,7 +1398,7 @@ function dispatchTimeout(team) {
   var activeSet = state.sets.find(function (s) { return s.setNumber === state.activeSetNumber; });
   if (!activeSet) return;
   var used = team === "A" ? activeSet.timeoutsA : activeSet.timeoutsB;
-  if (used >= state.timeoutsPerSet) {
+  if (used >= state.effectiveTimeoutsPerSet) {
     alert((team === "A" ? state.teamA : state.teamB) + " has no timeouts remaining.");
     return;
   }
@@ -1350,12 +1408,29 @@ function dispatchTimeout(team) {
     setNumber: state.activeSetNumber,
     timestamp: new Date().toISOString(),
   });
+  // In triple ball, remind referee of timing restriction
+  if (state.variation === "triplebal") {
+    showToast("\u23F1 Reminder: timeouts must be called at the end of a 3-ball sequence, before the next serve");
+  }
   renderScoreboard();
 }
 
 function dispatchSub(team) {
   var state = controller.getState();
   if (!state || !state.activeSetNumber) return;
+  // Fair play check first
+  if (!state.subsAllowedInActiveSet) {
+    if (state.fairPlay === "standard-partial") {
+      alert("Substitutions are not permitted until a team reaches 15 points (current max: " +
+        (function () {
+          var s = state.sets.find(function (x) { return x.setNumber === state.activeSetNumber; });
+          return s ? Math.max(s.scoreA, s.scoreB) : 0;
+        })() + ").");
+    } else {
+      alert("Substitutions are not permitted in this set under the current fair play rule.");
+    }
+    return;
+  }
   var activeSet = state.sets.find(function (s) { return s.setNumber === state.activeSetNumber; });
   if (!activeSet) return;
   var used = team === "A" ? activeSet.subsA : activeSet.subsB;
@@ -1962,6 +2037,9 @@ function renderSetupPage() {
   $("cfgStartSetColor").value = settings.startSetBgColor || settings.startSetColor || "#15803d";
   $("cfgStartSetPulseColor").value = settings.startSetPulseColor || settings.startSetColor || "#15803d";
   $("cfgDefaultFormat").value = settings.defaultFormat;
+  var defVarRadio = document.querySelector('input[name="cfgDefVariation"][value="' + (settings.defaultVariation || "standard") + '"]');
+  if (defVarRadio) defVarRadio.checked = true;
+  $("cfgDefFairPlay").value = settings.defaultFairPlay || "none";
   $("cfgDefTimeouts").textContent = settings.defaultTimeouts;
   $("cfgDefSubs").textContent = settings.defaultSubs;
 }
@@ -2005,6 +2083,18 @@ function wireSetupPage() {
 
   $("cfgDefaultFormat").addEventListener("change", function () {
     settings.defaultFormat = this.value;
+    saveSettings();
+  });
+
+  document.querySelectorAll('input[name="cfgDefVariation"]').forEach(function (radio) {
+    radio.addEventListener("change", function () {
+      settings.defaultVariation = this.value;
+      saveSettings();
+    });
+  });
+
+  $("cfgDefFairPlay").addEventListener("change", function () {
+    settings.defaultFairPlay = this.value;
     saveSettings();
   });
 

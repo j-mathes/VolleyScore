@@ -389,6 +389,33 @@ details summary::-webkit-details-marker { display: none; }
   justify-content: center;
 }
 
+/* Subtle horizontal rule separating setup sections */
+.setup-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.5rem 0;
+}
+
+/* Inline radio group for setting rows */
+.setting-radio-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.setting-radio-row label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.setting-radio-row input[type="radio"] {
+  accent-color: var(--team-a);
+  cursor: pointer;
+}
+
 .setup-serve-row {
   display: flex;
   align-items: center;
@@ -461,6 +488,7 @@ details summary::-webkit-details-marker { display: none; }
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  align-items: center;
 }
 
 .stepper-label {
@@ -749,7 +777,8 @@ details summary::-webkit-details-marker { display: none; }
   font-weight: 700;
 }
 
-#btnStartNextSet:not([hidden]) {
+#btnStartNextSet:not([hidden]),
+#btnNewGame:not([hidden]) {
   outline: 2px solid var(--start-set-pulse-color);
   outline-offset: 3px;
   animation: btn-pulse 2s ease-out infinite;
