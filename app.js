@@ -767,6 +767,14 @@ function showPage(page) {
   if (page === "games") { void renderGamesList(); }
   if (page === "setup") { renderSetupPage(); }
   if (page === "log")   { renderLogPage(); }
+  // When returning to score page, reset to setup if no game is loaded
+  if (page === "score") {
+    if (!controller.getState()) {
+      showSetupPanel();
+    } else if (!$("scoreboard").hidden) {
+      renderScoreboard(); // re-render to ensure controls reflect current state
+    }
+  }
 }
 
 // ---- Score Page — Game Setup Form ----------------------
@@ -1421,11 +1429,11 @@ function dispatchSub(team) {
   // Fair play check first
   if (!state.subsAllowedInActiveSet) {
     if (state.fairPlay === "standard-partial") {
-      alert("Substitutions are not permitted until a team reaches 15 points (current max: " +
-        (function () {
-          var s = state.sets.find(function (x) { return x.setNumber === state.activeSetNumber; });
-          return s ? Math.max(s.scoreA, s.scoreB) : 0;
-        })() + ").");
+      var curMax = (function () {
+        var s = state.sets.find(function (x) { return x.setNumber === state.activeSetNumber; });
+        return s ? Math.max(s.scoreA, s.scoreB) : 0;
+      })();
+      alert("Substitutions are not permitted until a team reaches 15 points.\n\nCurrent max: " + curMax + ".");
     } else {
       alert("Substitutions are not permitted in this set under the current fair play rule.");
     }
