@@ -141,6 +141,7 @@
           <button id="btnStartNextSet" class="ctrl-btn" hidden>Start Set <span id="nextSetNum">2</span></button>
           <button id="btnUndo" class="ctrl-btn" disabled title="Undo last action">↩ Undo</button>
           <button id="btnRedo" class="ctrl-btn" disabled title="Redo">↪</button>
+          <button id="btnSwitchSides" class="ctrl-btn ctrl-btn-sides" title="Swap which side each team appears on">&#x21C4; Sides</button>
           <button id="btnEndGame" class="ctrl-btn ctrl-btn-end">End Game</button>
           <button id="btnNewGame" class="ctrl-btn ctrl-btn-new">New Game</button>
         </div>
@@ -151,6 +152,7 @@
         <span class="serve-picker-label">Who serves Set <span id="servePickerSetNum">2</span>?</span>
         <button id="btnPickServeA" class="serve-pick-btn" data-team="A">Team A</button>
         <button id="btnPickServeB" class="serve-pick-btn" data-team="B">Team B</button>
+        <span id="sideIndicator" class="side-indicator" aria-live="polite"></span>
       </div>
 
       <!-- Team panels -->

@@ -801,6 +801,7 @@ async function startNewGame() {
   controller.clear();
   controller.currentGameId = gameId;
   selectedLogSetFilter = null; // reset filter for new game
+  sidesSwapped = false;        // reset side layout for new game
 
   var startEvent = {
     type: "GAME_STARTED",
@@ -838,6 +839,7 @@ var sanctionTargetTeam = null;     // "A" or "B"
 var sanctionSelectedRole = "player"; // current role in misconduct sanction
 var pendingServePickTeam = null;   // for between-sets serve selection
 var selectedLogSetFilter = null;   // null = all sets; number = filter log to that set
+var sidesSwapped = false;          // true when Team B panel is visually on the left
 
 function showScoreboard() {
   $("gameSetupPanel").hidden = true;
@@ -869,6 +871,22 @@ function hexToRgb(hex) {
   var m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
   if (!m) return null;
   return parseInt(m[1], 16) + "," + parseInt(m[2], 16) + "," + parseInt(m[3], 16);
+}
+
+// Update the team-panels flex order and side indicator to reflect sidesSwapped
+function updateSidesDisplay(state) {
+  var panels = $("teamPanels");
+  if (panels) panels.classList.toggle("sides-swapped", sidesSwapped);
+
+  var btn = $("btnSwitchSides");
+  if (btn) btn.title = sidesSwapped ? "Restore original sides" : "Swap which side each team appears on";
+
+  var indicator = $("sideIndicator");
+  if (indicator && state) {
+    indicator.textContent = sidesSwapped
+      ? "\u21C4 " + state.teamB + " left \u00B7 " + state.teamA + " right"
+      : "";
+  }
 }
 
 // ---- Main scoreboard render ----
@@ -995,6 +1013,9 @@ function renderScoreboard() {
 
   // Show/hide the Match Log nav button
   $("navLogBtn").hidden = false;
+
+  // Apply side swap display
+  updateSidesDisplay(state);
 }
 
 function setScoreDisplay(id, value) {
@@ -1214,6 +1235,12 @@ function wireScoreboardControls() {
   // New Game (shown after game ends)
   $("btnNewGame").addEventListener("click", function () {
     showSetupPanel();
+  });
+
+  // Switch sides display
+  $("btnSwitchSides").addEventListener("click", function () {
+    sidesSwapped = !sidesSwapped;
+    updateSidesDisplay(controller.getState());
   });
 }
 

@@ -440,8 +440,31 @@ details summary::-webkit-details-marker { display: none; }
   min-height: 34px;
 }
 
-.serve-pick-btn.active {
-  background: var(--serve-color);
+/* Team A serve pick — muted hover, solid active */
+.serve-pick-btn[data-team="A"]:hover:not(:disabled):not(.active) {
+  background: var(--team-a-light);
+  color: var(--team-a);
+}
+.serve-pick-btn[data-team="A"].active {
+  background: var(--team-a);
+  color: #fff;
+}
+.serve-pick-btn[data-team="A"].active:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--team-a) 82%, #000 18%);
+  color: #fff;
+}
+
+/* Team B serve pick — muted hover, solid active */
+.serve-pick-btn[data-team="B"]:hover:not(:disabled):not(.active) {
+  background: var(--team-b-light);
+  color: var(--team-b);
+}
+.serve-pick-btn[data-team="B"].active {
+  background: var(--team-b);
+  color: #fff;
+}
+.serve-pick-btn[data-team="B"].active:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--team-b) 82%, #000 18%);
   color: #fff;
 }
 
@@ -604,7 +627,49 @@ details summary::-webkit-details-marker { display: none; }
 
 .ctrl-btn-new:hover:not(:disabled) {
   background: color-mix(in srgb, var(--team-a) 85%, #000 15%);
+}
+
+.ctrl-btn-sides {
+  background: rgba(0, 0, 0, 0.07);
+  font-size: 0.82rem;
+}
+
+.ctrl-btn-sides:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.14);
   transform: none;
+}
+
+/* Side-swap indicator in the between-sets bar */
+.side-indicator {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  font-style: italic;
+}
+
+/* Pulse animation on the Start Next Set button */
+@keyframes btn-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(21, 128, 61, 0.55); }
+  55%       { box-shadow: 0 0 0 7px rgba(21, 128, 61, 0); }
+}
+
+#btnStartNextSet {
+  background: var(--serve-color);
+  color: #fff;
+  font-weight: 700;
+}
+
+#btnStartNextSet:not([hidden]) {
+  animation: btn-pulse 1.8s ease-out infinite;
+}
+
+/* Side-swapped layout: flip team panels with flex order */
+.team-panels.sides-swapped .team-panel-a { order: 3; }
+.team-panels.sides-swapped .court-divider { order: 2; }
+.team-panels.sides-swapped .team-panel-b { order: 1; }
+
+[data-theme="dark"] .ctrl-btn-sides:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* ---- Serve picker (between sets) ---- */
@@ -626,6 +691,7 @@ details summary::-webkit-details-marker { display: none; }
 }
 
 /* ---- Team panels ---- */
+/* team-panels.sides-swapped ordering is defined near ctrl-btn-sides above */
 .team-panels {
   display: flex;
   flex-direction: row;
