@@ -25,6 +25,7 @@
 
   /* Action colors */
   --serve-color: #15803d;
+  --pulse-rgb: 21, 128, 61;   /* matches --serve-color for box-shadow animation */
   --neutral: #6b21a8;
   --success: #15803d;
   --warning: #d97706;
@@ -63,6 +64,7 @@
   --team-b: #f87171;
   --team-b-light: rgba(248, 113, 113, 0.15);
   --serve-color: #4ade80;
+  --pulse-rgb: 74, 222, 128;  /* matches --serve-color in dark mode */
   --nav-bg: #020617;
 }
 
@@ -649,8 +651,8 @@ details summary::-webkit-details-marker { display: none; }
 
 /* Pulse animation on the Start Next Set button */
 @keyframes btn-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(21, 128, 61, 0.55); }
-  55%       { box-shadow: 0 0 0 7px rgba(21, 128, 61, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--pulse-rgb), 0.6); }
+  55%       { box-shadow: 0 0 0 8px rgba(var(--pulse-rgb), 0); }
 }
 
 #btnStartNextSet {
