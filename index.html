@@ -207,8 +207,13 @@
           </div>
         </div>
 
-        <!-- Center line -->
-        <div class="court-divider" aria-hidden="true"></div>
+        <!-- Center column: divider in standard mode, TB sequence indicator in triple ball mode -->
+        <div class="court-center" id="courtCenter" aria-hidden="true">
+          <div class="court-divider-line"></div>
+          <div id="tripleBallBar" class="tb-column" hidden aria-label="Triple ball sequence">
+            <div class="tb-col-track" id="tbColTrack"></div>
+          </div>
+        </div>
 
         <!-- Team B -->
         <div class="team-panel team-panel-b" id="teamBPanel" data-team="B">
@@ -248,43 +253,6 @@
         </div>
 
       </div><!-- end team-panels -->
-
-      <!-- Triple Ball sequence indicator -->
-      <div id="tripleBallBar" class="triple-ball-bar" hidden aria-label="Triple ball sequence">
-        <span class="tb-label">Triple Ball</span>
-        <div class="tb-seq" id="tbSeq" aria-hidden="true">
-          <div class="tb-phase" data-phase="0">
-            <span class="tb-team-letter tb-a">A</span>
-            <span class="tb-type">Serves</span>
-          </div>
-          <span class="tb-arrow">&#x2192;</span>
-          <div class="tb-phase" data-phase="1">
-            <span class="tb-team-letter tb-b">B</span>
-            <span class="tb-type">Toss</span>
-          </div>
-          <span class="tb-arrow">&#x2192;</span>
-          <div class="tb-phase" data-phase="2">
-            <span class="tb-team-letter tb-a">A</span>
-            <span class="tb-type">Toss</span>
-          </div>
-          <span class="tb-divider" aria-hidden="true">&#x2502;</span>
-          <div class="tb-phase" data-phase="3">
-            <span class="tb-team-letter tb-b">B</span>
-            <span class="tb-type">Serves</span>
-          </div>
-          <span class="tb-arrow">&#x2192;</span>
-          <div class="tb-phase" data-phase="4">
-            <span class="tb-team-letter tb-a">A</span>
-            <span class="tb-type">Toss</span>
-          </div>
-          <span class="tb-arrow">&#x2192;</span>
-          <div class="tb-phase" data-phase="5">
-            <span class="tb-team-letter tb-b">B</span>
-            <span class="tb-type">Toss</span>
-          </div>
-        </div>
-        <span class="tb-phase-label" id="tbPhaseLabel"></span>
-      </div>
 
     </div><!-- end scoreboard -->
 

@@ -30,6 +30,7 @@ var _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
 // Triple ball phase definitions: who has the ball at each phase (0-5)
 // Cycle: A Serves → Toss to B → Toss to A → B Serves → Toss to A → Toss to B
 var TB_PHASE_TEAMS = ["A", "B", "A", "B", "A", "B"];
+var TB_PHASE_TYPES = ["Serves", "Toss", "Toss", "Serves", "Toss", "Toss"];
 var TB_PHASE_LABELS = ["A Serves", "→ B (Toss)", "→ A (Toss)", "B Serves", "→ A (Toss)", "→ B (Toss)"];
 
 // Storage keys
@@ -933,6 +934,7 @@ async function startNewGame() {
   controller.currentGameId = gameId;
   selectedLogSetFilter = null; // reset filter for new game
   sidesSwapped = false;        // reset side layout for new game
+  _tbPrevPhase = -1;           // reset triple ball animation state
 
   var startEvent = {
     type: "GAME_STARTED",
@@ -974,6 +976,7 @@ var pendingServePickTeam = null;   // for between-sets serve selection
 var selectedLogSetFilter = null;   // null = all sets; number = filter log to that set
 var sidesSwapped = false;          // true when Team B panel is visually on the left
 var _justEndedGame = false;        // true only until user navigates away after End Game
+var _tbPrevPhase = -1;             // previous TB phase, used to choose animation direction
 
 function showScoreboard() {
   $("gameSetupPanel").hidden = true;
@@ -986,6 +989,7 @@ function showSetupPanel() {
   $("gameSetupPanel").hidden = false;
   $("navLogBtn").hidden = true;
   _justEndedGame = false; // navigating away clears the undo window
+  _tbPrevPhase = -1;
   initGameSetupForm();
 }
 
@@ -1117,6 +1121,8 @@ function renderScoreboard() {
 
   // Triple ball
   var isTriple = state.variation === "triplebal";
+  var courtCenter = $("courtCenter");
+  if (courtCenter) courtCenter.classList.toggle("tb-mode", isTriple);
   $("tripleBallBar").hidden = !isTriple;
   if (isTriple && state.activeSetNumber) {
     renderTripleBall(state.tripleBallPhase);
@@ -1229,12 +1235,49 @@ function renderSanctionsBar(barId, sanctions, delaySanctions, irUsed) {
 }
 
 function renderTripleBall(phase) {
-  var phases = document.querySelectorAll("#tbSeq .tb-phase");
-  phases.forEach(function (el) {
-    var p = parseInt(el.getAttribute("data-phase"), 10);
-    el.classList.toggle("tb-active", p === phase);
-  });
-  $("tbPhaseLabel").textContent = TB_PHASE_LABELS[phase] || "";
+  var track = $("tbColTrack");
+  if (!track) return;
+
+  var prevPhase = ((phase - 1) + 6) % 6;
+  var nextPhase = (phase + 1) % 6;
+
+  function phaseBox(idx, cls) {
+    var team = TB_PHASE_TEAMS[idx];
+    var type = TB_PHASE_TYPES[idx];
+    var ltrCls = team === "A" ? "tb-a" : "tb-b";
+    return '<div class="tb-phase-box ' + cls + '">' +
+      '<span class="tb-team-letter ' + ltrCls + '">' + team + '</span>' +
+      '<span class="tb-type">' + type + '</span>' +
+      '</div>';
+  }
+
+  // Clear any running animation before rebuilding content
+  track.classList.remove("tb-anim-fwd-v", "tb-anim-bwd-v", "tb-anim-fwd-h", "tb-anim-bwd-h");
+
+  track.innerHTML =
+    phaseBox(prevPhase, "tb-box-prev") +
+    '<span class="tb-col-arrow">\u25BC</span>' +
+    phaseBox(phase, "tb-box-current") +
+    '<span class="tb-col-arrow">\u25BC</span>' +
+    phaseBox(nextPhase, "tb-box-next");
+
+  // Animate only when phase advances or retreats by exactly 1 step
+  if (_tbPrevPhase >= 0 && _tbPrevPhase !== phase) {
+    var dist = (phase - _tbPrevPhase + 6) % 6;
+    var portrait = window.innerHeight > window.innerWidth;
+    var animCls = null;
+    if (dist === 1)      animCls = portrait ? "tb-anim-fwd-h" : "tb-anim-fwd-v";
+    else if (dist === 5) animCls = portrait ? "tb-anim-bwd-h" : "tb-anim-bwd-v";
+    if (animCls) {
+      void track.offsetWidth; // force reflow so animation starts fresh
+      track.classList.add(animCls);
+      track.addEventListener("animationend", function () {
+        track.classList.remove(animCls);
+      }, { once: true });
+    }
+  }
+
+  _tbPrevPhase = phase;
 }
 
 function renderSetSummaryTable(state) {
