@@ -1256,8 +1256,9 @@ function dispatchSanction(stype) {
     setNumber: state.activeSetNumber,
     timestamp: new Date().toISOString(),
   });
-  // Red card / penalty / expulsion adds a point to opponent
-  if (stype === "red" || stype === "expulsion" || stype === "disqualification") {
+  // Only Red card (Penalty) awards a point + serve to the opponent.
+  // Expulsion and Disqualification remove the player but do not directly award a point.
+  if (stype === "red") {
     var opponent = sanctionTargetTeam === "A" ? "B" : "A";
     controller.dispatch({
       type: "POINT_SCORED",

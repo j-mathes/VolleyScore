@@ -1312,6 +1312,7 @@ details[open] .event-log-summary::before {
   flex-wrap: wrap;
   gap: 1rem;
   padding: 1rem;
+  padding-top: calc(var(--nav-h) + 1rem); /* override shorthand so nav doesn't cut off content */
   max-width: 900px;
   margin: 0 auto;
   align-content: flex-start;
