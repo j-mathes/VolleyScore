@@ -785,11 +785,23 @@ details summary::-webkit-details-marker { display: none; }
 }
 
 /* Setup preview row */
-.start-set-preview {
+.start-set-color-group {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.45rem 0 0.1rem;
+  gap: 1rem;
+}
+
+.start-set-color-pickers {
+  flex: 1;
+  min-width: 0;
+}
+
+.start-set-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
 }
 
 /* Override the disabled-opacity so the preview looks identical to the live button */
