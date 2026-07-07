@@ -2335,6 +2335,107 @@ input.player-num-input {
 }
 
 /* ============================================================
+   DARK MODE — contrast fixes
+   Many base surfaces use rgba(0,0,0,…) which vanishes on dark backgrounds.
+   ============================================================ */
+
+/* Game-bar control buttons (End Set, Undo, Redo, Sides) */
+[data-theme="dark"] .ctrl-btn {
+  background: rgba(255, 255, 255, 0.09);
+}
+[data-theme="dark"] .ctrl-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+/* Preserve specific colored ctrl-btn variants */
+[data-theme="dark"] .ctrl-btn-end  { background: var(--danger-light); }
+[data-theme="dark"] .ctrl-btn-done { background: var(--start-set-color); }
+
+/* Score minus button */
+[data-theme="dark"] .btn-score-minus {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+/* Stepper +/− buttons in setup forms */
+[data-theme="dark"] .stepper-btn {
+  background: rgba(255, 255, 255, 0.12);
+}
+[data-theme="dark"] .stepper-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.20);
+}
+
+/* Serve-pick buttons */
+[data-theme="dark"] .serve-pick-btn {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Sidebar action buttons — background + border */
+[data-theme="dark"] .to-side-btn,
+[data-theme="dark"] .sub-side-btn,
+[data-theme="dark"] .sanction-side-btn {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+[data-theme="dark"] .to-side-btn:hover:not(:disabled),
+[data-theme="dark"] .sub-side-btn:hover:not(:disabled),
+[data-theme="dark"] .sanction-side-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* Triple ball prev/next phase boxes (override the too-dark 4% rule above) */
+[data-theme="dark"] .tb-box-prev,
+[data-theme="dark"] .tb-box-next {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+/* Timeout / sub indicator pills */
+[data-theme="dark"] .indicator-to,
+[data-theme="dark"] .indicator-sub {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* Sanction chips in team panel */
+[data-theme="dark"] .sanction-chip {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* Games page — list items */
+[data-theme="dark"] .game-list-item {
+  background: rgba(255, 255, 255, 0.07);
+}
+[data-theme="dark"] .game-list-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Score page — recent game items */
+[data-theme="dark"] .recent-game-item {
+  background: rgba(255, 255, 255, 0.05);
+}
+[data-theme="dark"] .recent-game-item:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* Sanction modal — role buttons, numpad, sanction type buttons, close */
+[data-theme="dark"] .role-btn {
+  background: rgba(255, 255, 255, 0.09);
+}
+[data-theme="dark"] .role-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  transform: none;
+}
+[data-theme="dark"] .npb {
+  background: rgba(255, 255, 255, 0.09);
+}
+[data-theme="dark"] .npb-del {
+  background: rgba(255, 255, 255, 0.06);
+}
+[data-theme="dark"] .sanction-type-btn {
+  background: rgba(255, 255, 255, 0.09);
+}
+[data-theme="dark"] .modal-close-btn {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* ============================================================
    RESPONSIVE BREAKPOINTS
    ============================================================ */
 
