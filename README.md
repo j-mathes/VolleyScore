@@ -4,7 +4,7 @@ VolleyScore is a browser-based volleyball scorekeeper. No install, no build step
 
 ## Live App
 
-**[https://j-mathes.github.io/volleyscore/](https://j-mathes.github.io/volleyscore/)**
+**[https://j-mathes.github.io/VolleyScore/](https://j-mathes.github.io/VolleyScore/)**
 
 Works on desktop and iPad/iPhone. No install required.
 
