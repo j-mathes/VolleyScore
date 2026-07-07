@@ -453,6 +453,7 @@ function deriveGameState(timeline) {
   // ---- Fair play enforcement -----------------------------------------------
   var fairPlay = startEv.fairPlay || "none";
   var effectiveTimeoutsPerSet = startEv.timeoutsPerSet || 2;
+  var effectiveSubsPerSet = startEv.subsPerSet || 6;
   var subsAllowedInActiveSet = true;
   var subsGrantedForSet = true; // false only when the rule prohibits subs for the entire set
   var fairPlayNote = "";
@@ -467,12 +468,15 @@ function deriveGameState(timeline) {
       if (isEarlySet) {
         subsAllowedInActiveSet = false;
         subsGrantedForSet = false;
-      } else if (fairPlay === "triple-fp") {
-        // Deciding set with Triple Ball FP: subs only after last toss (same phase as timeouts)
-        subsAllowedInActiveSet = (tripleBallPhase === 0 || tripleBallPhase === 3);
-        if (!subsAllowedInActiveSet) fairPlayNote = "Subs: after last toss only";
       } else {
-        subsAllowedInActiveSet = true; // standard-full deciding set: any time
+        effectiveSubsPerSet = 12; // deciding set: 12 subs allowed
+        if (fairPlay === "triple-fp") {
+          // Deciding set with Triple Ball FP: subs only after last toss (same phase as timeouts)
+          subsAllowedInActiveSet = (tripleBallPhase === 0 || tripleBallPhase === 3);
+          if (!subsAllowedInActiveSet) fairPlayNote = "Subs: after last toss only";
+        } else {
+          subsAllowedInActiveSet = true; // standard-full deciding set: any time
+        }
       }
     } else if (fairPlay === "standard-partial") {
       effectiveTimeoutsPerSet = 2;
@@ -502,7 +506,7 @@ function deriveGameState(timeline) {
     gameFormat: startEv.gameFormat || "best3",
     variation: startEv.variation || "standard",
     timeoutsPerSet: startEv.timeoutsPerSet || 2,
-    subsPerSet: startEv.subsPerSet || 6,
+    subsPerSet: effectiveSubsPerSet,
     firstServer: startEv.firstServer || "A",
     startedAt: startEv.timestamp,
     endedAt: endedAt,

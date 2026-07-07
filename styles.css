@@ -686,7 +686,7 @@ details summary::-webkit-details-marker { display: none; }
   align-items: center;
   gap: 0.35rem;
   flex-wrap: wrap;
-  font-size: 0.85rem;
+  font-size: 1.275rem;
   font-weight: 600;
   min-width: 0;
 }
@@ -1189,6 +1189,7 @@ details summary::-webkit-details-marker { display: none; }
 .to-count {
   font-size: 1.56rem;
   color: var(--ink-muted);
+  display: none; /* dots-only display */
 }
 
 .sub-btn {
@@ -2410,6 +2411,56 @@ input.player-num-input {
 @media (pointer: coarse) {
   .score-row {
     gap: 0.1rem;
+  }
+
+  /* 40% smaller: team name, TO/sub indicators, sanctions */
+  .team-name {
+    font-size: clamp(1.02rem, 3vw, 1.44rem);
+  }
+
+  .serve-dot {
+    width: 12px;
+    height: 12px;
+  }
+
+  .indicator-to,
+  .indicator-sub {
+    font-size: 0.9rem;
+    padding: 0.14rem 0.54rem;
+    gap: 0.24rem;
+  }
+
+  .to-label {
+    font-size: 0.94rem;
+  }
+
+  .to-dots {
+    gap: 4px;
+  }
+
+  .to-dot {
+    width: 11px;
+    height: 11px;
+    border-width: 2px;
+  }
+
+  .sanctions-bar {
+    font-size: 0.94rem;
+  }
+
+  .sanction-chip {
+    font-size: 0.9rem;
+    padding: 0.12rem 0.36rem;
+  }
+
+  .card-icon {
+    width: 14px;
+    height: 20px;
+  }
+
+  .card-small {
+    width: 12px;
+    height: 17px;
   }
 }
 
