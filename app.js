@@ -742,8 +742,30 @@ function initGameSetupForm() {
   $("cfgSubs").textContent = setupSubs;
   $("cfgScheduledAt").value = toLocalDatetimeValue(new Date());
 
+  // Reset fair play tooltip
+  $("fpTooltip").hidden = true;
+  $("btnFpInfo").setAttribute("aria-expanded", "false");
+
   // Team name placeholders reflect first-serve selection
   updateFirstServeBtnLabels();
+  // Show only fair play options relevant to the current variation
+  updateFairPlayOptions();
+}
+
+// Show/hide fair play options and reset selection based on variation
+function updateFairPlayOptions() {
+  var variation = document.querySelector('input[name="variation"]:checked').value;
+  document.querySelectorAll('[data-fp-variation]').forEach(function (label) {
+    var visible = label.getAttribute('data-fp-variation') === variation;
+    label.hidden = !visible;
+    // If the hidden option was selected, reset to none
+    if (!visible) {
+      var radio = label.querySelector('input[name="fairPlay"]');
+      if (radio && radio.checked) {
+        document.querySelector('input[name="fairPlay"][value="none"]').checked = true;
+      }
+    }
+  });
 }
 
 function updateFirstServeBtnLabels() {
@@ -784,6 +806,26 @@ function wireGameSetupForm() {
   });
   $("btnSubsUp").addEventListener("click", function () {
     if (setupSubs < 18) { setupSubs++; $("cfgSubs").textContent = setupSubs; }
+  });
+
+  // Variation change → update fair play options
+  document.querySelectorAll('input[name="variation"]').forEach(function (radio) {
+    radio.addEventListener("change", updateFairPlayOptions);
+  });
+
+  // Info icon → toggle fair play tooltip
+  $("btnFpInfo").addEventListener("click", function (e) {
+    e.stopPropagation();
+    var tooltip = $("fpTooltip");
+    var open = tooltip.hidden;
+    tooltip.hidden = !open;
+    $("btnFpInfo").setAttribute("aria-expanded", String(open));
+  });
+  document.addEventListener("click", function (e) {
+    if (!$("fpTooltip").hidden && !e.target.closest("#fairPlayFieldset")) {
+      $("fpTooltip").hidden = true;
+      $("btnFpInfo").setAttribute("aria-expanded", "false");
+    }
   });
 
   // Start game

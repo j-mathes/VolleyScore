@@ -384,18 +384,48 @@ details summary::-webkit-details-marker { display: none; }
   cursor: pointer;
 }
 
-/* Fair play rule hints shown inline after each option */
-.fp-hint {
-  font-size: 0.75rem;
-  color: var(--ink-muted);
-  line-height: 1.3;
-  display: block;
-  padding-left: 1.4rem; /* align under the label text, past the radio */
+/* Info icon button in fieldset legend */
+.info-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  min-height: unset;
+  min-width: unset;
+  padding: 0;
+  margin-left: 0.25rem;
+  vertical-align: middle;
+  line-height: 1;
+  cursor: pointer;
 }
 
-/* Full-width fieldset for fair play (all 4 options on their own lines) */
+.info-icon-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.2);
+  transform: none;
+}
+
+/* Tooltip shown when info icon is clicked */
+.fp-tooltip {
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  line-height: 1.55;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.6rem;
+  margin-bottom: 0.4rem;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Fair play fieldset: natural flex width (sits beside Variation) */
 .fair-play-fieldset {
-  flex: 1 1 100%;
+  /* inherits natural flex sizing */
 }
 
 .stepper-group {

@@ -78,24 +78,19 @@
             <label><input type="radio" name="variation" value="standard" checked> Standard</label>
             <label><input type="radio" name="variation" value="triplebal"> Triple Ball</label>
           </fieldset>
-        </div>
 
-        <div class="setup-row-group">
-          <fieldset class="radio-fieldset fair-play-fieldset">
-            <legend>Fair Play Rule</legend>
+          <fieldset class="radio-fieldset" id="fairPlayFieldset">
+            <legend>Fair Play <button type="button" class="info-icon-btn" id="btnFpInfo" aria-label="Show fair play rule descriptions" aria-expanded="false">&#x24D8;</button></legend>
+            <div id="fpTooltip" class="fp-tooltip" hidden>
+              <strong>None</strong> &mdash; standard rules<br>
+              <strong>Triple Ball</strong> &mdash; sets 1&ndash;2: 3 TOs, no subs &middot; deciding: 2 TOs, subs after last toss<br>
+              <strong>Full</strong> &mdash; sets 1&ndash;2: 3 TOs, no subs &middot; deciding: 2 TOs, subs any time<br>
+              <strong>Partial</strong> &mdash; sets 1&ndash;2: 2 TOs, subs unlock at 15 pts &middot; deciding: 2 TOs, subs any time
+            </div>
             <label><input type="radio" name="fairPlay" value="none" checked> None</label>
-            <label>
-              <input type="radio" name="fairPlay" value="triple-fp"> Triple Ball
-              <span class="fp-hint">Sets 1&ndash;2: 3 TOs, no subs &middot; Deciding: 2 TOs, subs after last toss</span>
-            </label>
-            <label>
-              <input type="radio" name="fairPlay" value="standard-full"> Full
-              <span class="fp-hint">Sets 1&ndash;2: 3 TOs, no subs &middot; Deciding: 2 TOs, subs any time</span>
-            </label>
-            <label>
-              <input type="radio" name="fairPlay" value="standard-partial"> Partial
-              <span class="fp-hint">Sets 1&ndash;2: 2 TOs, subs unlock at 15 pts &middot; Deciding: 2 TOs, subs any time</span>
-            </label>
+            <label data-fp-variation="triplebal"><input type="radio" name="fairPlay" value="triple-fp"> Triple Ball</label>
+            <label data-fp-variation="standard"><input type="radio" name="fairPlay" value="standard-full"> Full</label>
+            <label data-fp-variation="standard"><input type="radio" name="fairPlay" value="standard-partial"> Partial</label>
           </fieldset>
         </div>
 
