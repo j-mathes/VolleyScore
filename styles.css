@@ -800,7 +800,7 @@ details summary::-webkit-details-marker { display: none; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.65rem;
   flex-shrink: 0;
 }
 
