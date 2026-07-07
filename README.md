@@ -51,7 +51,8 @@ Works on desktop and iPad/iPhone. No install required.
 5. Use **TO**, **Sub**, and the card icon for timeouts, substitutions, and sanctions.
 6. Press **End Set** when the set is over. Choose who serves the next set and press the pulsing **Start Set** button.
 7. Press **End Game** when the match is complete. The button enables automatically when all sets are played.
-8. Tap **Match Log** in the nav bar to review the event log. Tap a set number to filter.
+8. The scoreboard shows the final score — press **Undo** immediately if you ended the game by mistake, or press **Done** to return to the new game screen.
+9. Tap **Match Log** in the nav bar at any point during the game to review the event log. Tap a set number to filter it.
 
 ## Pages
 

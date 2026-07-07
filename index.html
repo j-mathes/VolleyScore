@@ -64,7 +64,7 @@
           </label>
         </div>
 
-        <div class="setup-row-group">
+        <div class="setup-row-group setup-options-row">
           <fieldset class="radio-fieldset">
             <legend>Game Format</legend>
             <label><input type="radio" name="gameFormat" value="single"> Single Set</label>
@@ -73,22 +73,19 @@
             <label><input type="radio" name="gameFormat" value="best5"> Best of 5</label>
           </fieldset>
 
-          <!-- Variation and Fair Play stacked in a right sub-column -->
-          <div class="setup-sub-col">
-            <fieldset class="radio-fieldset">
-              <legend>Variation</legend>
-              <label><input type="radio" name="variation" value="standard" checked> Standard</label>
-              <label><input type="radio" name="variation" value="triplebal"> Triple Ball</label>
-            </fieldset>
+          <fieldset class="radio-fieldset">
+            <legend>Variation</legend>
+            <label><input type="radio" name="variation" value="standard" checked> Standard</label>
+            <label><input type="radio" name="variation" value="triplebal"> Triple Ball</label>
+          </fieldset>
 
-            <fieldset class="radio-fieldset" id="fairPlayFieldset">
-              <legend>Fair Play <button type="button" class="info-icon-btn" id="btnFpInfo" aria-label="Show fair play rule descriptions" aria-expanded="false"><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg></button></legend>
-              <label><input type="radio" name="fairPlay" value="none" checked> None</label>
-              <label data-fp-variation="triplebal"><input type="radio" name="fairPlay" value="triple-fp"> Triple Ball</label>
-              <label data-fp-variation="standard"><input type="radio" name="fairPlay" value="standard-full"> Full</label>
-              <label data-fp-variation="standard"><input type="radio" name="fairPlay" value="standard-partial"> Partial</label>
-            </fieldset>
-          </div>
+          <fieldset class="radio-fieldset" id="fairPlayFieldset">
+            <legend>Fair Play <button type="button" class="info-icon-btn" id="btnFpInfo" aria-label="Show fair play rule descriptions" aria-expanded="false"><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg></button></legend>
+            <label><input type="radio" name="fairPlay" value="none" checked> None</label>
+            <label data-fp-variation="triplebal"><input type="radio" name="fairPlay" value="triple-fp"> Triple Ball</label>
+            <label data-fp-variation="standard"><input type="radio" name="fairPlay" value="standard-full"> Full</label>
+            <label data-fp-variation="standard"><input type="radio" name="fairPlay" value="standard-partial"> Partial</label>
+          </fieldset>
         </div>
 
         <!-- Fair play tooltip — shown below all three columns when info icon is tapped -->
@@ -99,7 +96,7 @@
           <strong>Partial</strong> &mdash; sets 1&ndash;2: 2 TOs, subs unlock at 15 pts &middot; deciding: 2 TOs, subs any time
         </div>
 
-        <div class="setup-row-group">
+        <div class="setup-row-group setup-row-centered">
           <div class="stepper-group">
             <label class="stepper-label">Timeouts / Set</label>
             <div class="stepper">
@@ -278,7 +275,7 @@
         <div class="games-list-actions">
           <button id="btnImportGame" class="icon-btn" title="Import game from JSON">Import</button>
           <input id="importFileInput" type="file" accept=".json" hidden aria-hidden="true">
-          <button id="btnClearAllGames" class="icon-btn danger-btn" title="Delete all saved games">Clear All</button>
+          <button id="btnClearAllGames" class="icon-btn danger-btn" title="Delete all saved games">Delete All</button>
         </div>
       </div>
       <div id="gamesList" class="games-list">

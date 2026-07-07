@@ -378,6 +378,26 @@ details summary::-webkit-details-marker { display: none; }
   flex: 1 1 auto;
 }
 
+/* Options row: spread all fieldsets equally across the full card width */
+.setup-options-row > .radio-fieldset {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Centered rows (timeouts/subs and first serve) */
+.setup-row-centered {
+  justify-content: center;
+}
+
+.setup-serve-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+  flex-wrap: wrap;
+}
+
 .radio-fieldset label {
   display: flex;
   align-items: center;
@@ -435,10 +455,7 @@ details summary::-webkit-details-marker { display: none; }
   width: 100%;
 }
 
-/* Fair play fieldset: natural flex width (sits beside Variation) */
-.fair-play-fieldset {
-  /* inherits natural flex sizing */
-}
+/* fair-play-fieldset: flex expansion handled by .setup-options-row rule */
 
 .stepper-group {
   display: flex;
@@ -480,14 +497,6 @@ details summary::-webkit-details-marker { display: none; }
   font-weight: 700;
   min-width: 2ch;
   text-align: center;
-}
-
-.setup-serve-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.9rem;
-  flex-wrap: wrap;
 }
 
 .serve-pick-group {
@@ -685,12 +694,13 @@ details summary::-webkit-details-marker { display: none; }
 }
 
 .ctrl-btn-done {
-  background: rgba(0, 0, 0, 0.07);
-  color: var(--ink-soft);
+  background: var(--start-set-color);
+  color: #fff;
+  font-weight: 700;
 }
 
 .ctrl-btn-done:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.13);
+  background: color-mix(in srgb, var(--start-set-color) 85%, #000 15%);
   transform: none;
 }
 
