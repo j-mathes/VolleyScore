@@ -211,6 +211,7 @@
         <div class="court-center" id="courtCenter" aria-hidden="true">
           <div class="court-divider-line"></div>
           <div id="tripleBallBar" class="tb-column" hidden aria-label="Triple ball sequence">
+            <div class="tb-current-window" aria-hidden="true"></div>
             <div class="tb-col-track" id="tbColTrack"></div>
           </div>
         </div>
@@ -422,6 +423,31 @@
         <input id="importSetupFileInput" type="file" accept=".json" hidden aria-hidden="true">
       </div>
       <button id="btnClearAllSetup" class="ctrl-btn danger-btn" style="margin-top:0.8rem">Clear All Data</button>
+    </div>
+
+    <div class="setup-card">
+      <h2>Triple Ball</h2>
+      <div class="setting-row">
+        <label class="setting-label">Phase box size</label>
+        <div class="stepper">
+          <button id="btnTbSzDown" type="button" class="stepper-btn">&minus;</button>
+          <span id="cfgTbBoxSize" class="stepper-val">64</span>
+          <button id="btnTbSzUp" type="button" class="stepper-btn">+</button>
+        </div>
+      </div>
+      <div class="color-setting-row">
+        <label class="setting-label" for="cfgTbHighlight">Active phase color</label>
+        <input type="color" id="cfgTbHighlight" value="#15803d" class="color-picker">
+      </div>
+      <div class="setting-row">
+        <label class="setting-label" for="cfgTbSpeed">Scroll speed</label>
+        <select id="cfgTbSpeed">
+          <option value="0">Instant</option>
+          <option value="150">Fast</option>
+          <option value="280" selected>Normal</option>
+          <option value="450">Slow</option>
+        </select>
+      </div>
     </div>
 
     <div class="setup-card">

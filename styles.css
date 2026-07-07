@@ -52,6 +52,11 @@
 
   /* Sidebar action buttons */
   --sidebar-btn-border: #000000;
+
+  /* Triple ball indicator */
+  --tb-box-sz: 64px;
+  --tb-unit: calc(var(--tb-box-sz) + 16px);
+  --tb-highlight: #15803d;
 }
 
 /* ---- Dark theme ---- */
@@ -999,7 +1004,7 @@ details summary::-webkit-details-marker { display: none; }
 
 /* Expand center column when triple ball is active */
 .court-center.tb-mode {
-  width: clamp(56px, 9.5vw, 88px);
+  width: calc(var(--tb-box-sz) + 12px);
 }
 
 .court-center.tb-mode .court-divider-line {
@@ -1244,18 +1249,35 @@ details summary::-webkit-details-marker { display: none; }
 }
 
 /* ---- Triple ball column (between teams) ---- */
+/* Fixed-height window approach: green ring stays stationary, phases scroll through it */
 .tb-column {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
+  position: relative;
   overflow: hidden;
-  padding: 4px 0;
+  width: 100%;
+  height: calc(var(--tb-box-sz) * 3 + 48px); /* 3 boxes + 2×(arrow+gaps) */
+  align-self: center;
 }
 
+/* Stationary highlight ring — always centered in the column */
+.tb-current-window {
+  position: absolute;
+  top: var(--tb-unit);
+  left: 50%;
+  transform: translateX(-50%);
+  width: var(--tb-box-sz);
+  height: var(--tb-box-sz);
+  border: 2px solid var(--tb-highlight);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Scrolling track of phase boxes */
 .tb-col-track {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1264,8 +1286,8 @@ details summary::-webkit-details-marker { display: none; }
 }
 
 .tb-phase-box {
-  width: clamp(52px, 9.5vw, 84px);
-  height: clamp(52px, 9.5vw, 84px);
+  width: var(--tb-box-sz);
+  height: var(--tb-box-sz);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1273,7 +1295,6 @@ details summary::-webkit-details-marker { display: none; }
   gap: 1px;
   border-radius: var(--radius-sm);
   flex-shrink: 0;
-  transition: box-shadow var(--transition);
 }
 
 .tb-box-prev,
@@ -1289,43 +1310,46 @@ details summary::-webkit-details-marker { display: none; }
 }
 
 .tb-box-current {
-  background: rgba(21, 128, 61, 0.15);
-  box-shadow: 0 0 0 2px var(--serve-color);
+  background: transparent;
 }
 
+/* Down-arrow connector between phase boxes */
 .tb-col-arrow {
   color: var(--ink-muted);
-  font-size: 0.6rem;
+  font-size: 10px;
   line-height: 1;
   flex-shrink: 0;
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
 .tb-team-letter {
-  font-size: 0.9rem;
+  font-size: 1.4rem;
   font-weight: 800;
+  line-height: 1;
 }
 
 .tb-a { color: var(--team-a); }
 .tb-b { color: var(--team-b); }
 
 .tb-type {
-  font-size: 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 600;
   color: var(--ink-muted);
   white-space: nowrap;
 }
 
-/* Slide animations — landscape: vertical (scroll up/down) */
-@keyframes tb-slide-up   { from { transform: translateY(72px); }  to { transform: translateY(0); } }
-@keyframes tb-slide-down { from { transform: translateY(-72px); } to { transform: translateY(0); } }
-/* Portrait: horizontal (scroll right/left) */
-@keyframes tb-slide-right { from { transform: translateX(72px); }  to { transform: translateX(0); } }
-@keyframes tb-slide-left  { from { transform: translateX(-72px); } to { transform: translateX(0); } }
+/* Directional arrow showing where the ball flows */
+.tb-dir-arrow {
+  font-size: 1.3rem;
+  line-height: 1;
+  font-weight: 700;
+}
 
-.tb-col-track.tb-anim-fwd-v { animation: tb-slide-up    280ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
-.tb-col-track.tb-anim-bwd-v { animation: tb-slide-down  280ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
-.tb-col-track.tb-anim-fwd-h { animation: tb-slide-right 280ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
-.tb-col-track.tb-anim-bwd-h { animation: tb-slide-left  280ms cubic-bezier(0.25, 0.46, 0.45, 0.94) both; }
+/* Portrait: nudge team content slightly toward outer edges */
+@media (orientation: portrait) {
+  .team-panel-a .team-content { padding-left: 6px; padding-right: 2px; }
+  .team-panel-b .team-content { padding-right: 6px; padding-left: 2px; }
+}
 
 /* ---- Summary details ---- */
 .summary-details {

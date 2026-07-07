@@ -29,9 +29,10 @@ var _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
 
 // Triple ball phase definitions: who has the ball at each phase (0-5)
 // Cycle: A Serves → Toss to B → Toss to A → B Serves → Toss to A → Toss to B
-var TB_PHASE_TEAMS = ["A", "B", "A", "B", "A", "B"];
-var TB_PHASE_TYPES = ["Serves", "Toss", "Toss", "Serves", "Toss", "Toss"];
-var TB_PHASE_LABELS = ["A Serves", "→ B (Toss)", "→ A (Toss)", "B Serves", "→ A (Toss)", "→ B (Toss)"];
+var TB_PHASE_TEAMS  = ["A", "B", "A", "B", "A", "B"];
+var TB_PHASE_TYPES  = ["Serves", "Toss", "Toss", "Serves", "Toss", "Toss"];
+var TB_PHASE_TOWARD = ["B", "B", "A", "A", "A", "B"]; // which team receives the ball
+var TB_PHASE_LABELS = ["A Serves", "\u2192 B (Toss)", "\u2190 A (Toss)", "B Serves", "\u2190 A (Toss)", "\u2192 B (Toss)"];
 
 // Storage keys
 var LS_INDEX = "vs_index";        // game index (lightweight metadata)
@@ -46,6 +47,9 @@ var DEFAULT_SETTINGS = {
   teamAColor: "#1d4ed8",
   teamBColor: "#b91c1c",
   sidebarBtnBorder: "#000000",
+  tbBoxSize: 64,
+  tbHighlightColor: "#15803d",
+  tbScrollSpeed: 280,
   startSetColor: "#15803d",
   startSetBgColor: "#15803d",
   startSetPulseColor: "#15803d",
@@ -977,6 +981,7 @@ var selectedLogSetFilter = null;   // null = all sets; number = filter log to th
 var sidesSwapped = false;          // true when Team B panel is visually on the left
 var _justEndedGame = false;        // true only until user navigates away after End Game
 var _tbPrevPhase = -1;             // previous TB phase, used to choose animation direction
+var _tbAnimating = false;          // prevents overlapping TB phase animations
 
 function showScoreboard() {
   $("gameSetupPanel").hidden = true;
@@ -1011,6 +1016,9 @@ function updateTeamColors() {
   var ssRgb = hexToRgb(ssPulse);
   if (ssRgb) root.style.setProperty("--start-set-rgb", ssRgb);
   root.style.setProperty("--sidebar-btn-border", settings.sidebarBtnBorder || "#000000");
+  root.style.setProperty("--tb-box-sz", (settings.tbBoxSize || 64) + "px");
+  root.style.setProperty("--tb-unit", ((settings.tbBoxSize || 64) + 16) + "px");
+  root.style.setProperty("--tb-highlight", settings.tbHighlightColor || "#15803d");
 }
 
 function hexToRgb(hex) {
@@ -1234,50 +1242,88 @@ function renderSanctionsBar(barId, sanctions, delaySanctions, irUsed) {
   bar.innerHTML = html;
 }
 
+// Build the HTML for a single phase box, including directional ball-flow arrow.
+function tbPhaseBoxHtml(idx, cls) {
+  var team   = TB_PHASE_TEAMS[idx];
+  var type   = TB_PHASE_TYPES[idx];
+  var toward = TB_PHASE_TOWARD[idx];
+  var teamCls   = team   === "A" ? "tb-a" : "tb-b";
+  var towardCls = toward === "A" ? "tb-a" : "tb-b";
+  // Arrow points toward the receiving team; reverses when sides are swapped
+  var isRight = sidesSwapped ? (toward === "A") : (toward === "B");
+  var dirArrow = isRight ? "\u2192" : "\u2190"; // → or ←
+  return '<div class="tb-phase-box ' + cls + '">' +
+    '<span class="tb-team-letter ' + teamCls + '">' + team + '</span>' +
+    '<span class="tb-type">' + type + '</span>' +
+    '<span class="tb-dir-arrow ' + towardCls + '">' + dirArrow + '</span>' +
+    '</div>';
+}
+
+// Rebuild the track as a static 3-box snapshot (prev · current · next).
+function tbBuildStatic(track, phase) {
+  var prevPhase = ((phase - 1) + 6) % 6;
+  var nextPhase = (phase + 1) % 6;
+  var arrow = '<span class="tb-col-arrow">\u25BC</span>';
+  track.innerHTML =
+    tbPhaseBoxHtml(prevPhase, "tb-box-prev") + arrow +
+    tbPhaseBoxHtml(phase,     "tb-box-current") + arrow +
+    tbPhaseBoxHtml(nextPhase, "tb-box-next");
+}
+
 function renderTripleBall(phase) {
   var track = $("tbColTrack");
   if (!track) return;
 
-  var prevPhase = ((phase - 1) + 6) % 6;
-  var nextPhase = (phase + 1) % 6;
+  var phaseChanged = _tbPrevPhase >= 0 && _tbPrevPhase !== phase;
+  var dist     = phaseChanged ? (phase - _tbPrevPhase + 6) % 6 : 0;
+  var forward  = dist === 1;
+  var backward = dist === 5;
 
-  function phaseBox(idx, cls) {
-    var team = TB_PHASE_TEAMS[idx];
-    var type = TB_PHASE_TYPES[idx];
-    var ltrCls = team === "A" ? "tb-a" : "tb-b";
-    return '<div class="tb-phase-box ' + cls + '">' +
-      '<span class="tb-team-letter ' + ltrCls + '">' + team + '</span>' +
-      '<span class="tb-type">' + type + '</span>' +
-      '</div>';
+  // Non-animated cases: initial render, multi-step jump, or mid-animation
+  if (!phaseChanged || (!forward && !backward) || _tbAnimating) {
+    track.style.transition = "none";
+    track.style.transform  = "translateX(-50%)";
+    tbBuildStatic(track, phase);
+    _tbPrevPhase = phase;
+    return;
   }
 
-  // Clear any running animation before rebuilding content
-  track.classList.remove("tb-anim-fwd-v", "tb-anim-bwd-v", "tb-anim-fwd-h", "tb-anim-bwd-h");
+  _tbAnimating = true;
+  var speed = settings.tbScrollSpeed !== undefined ? settings.tbScrollSpeed : 280;
+  var unit  = (settings.tbBoxSize || 64) + 16; // one "slot" height
+  var arrowHtml = '<span class="tb-col-arrow">\u25BC</span>';
+  var addPhase;
 
-  track.innerHTML =
-    phaseBox(prevPhase, "tb-box-prev") +
-    '<span class="tb-col-arrow">\u25BC</span>' +
-    phaseBox(phase, "tb-box-current") +
-    '<span class="tb-col-arrow">\u25BC</span>' +
-    phaseBox(nextPhase, "tb-box-next");
-
-  // Animate only when phase advances or retreats by exactly 1 step
-  if (_tbPrevPhase >= 0 && _tbPrevPhase !== phase) {
-    var dist = (phase - _tbPrevPhase + 6) % 6;
-    var portrait = window.innerHeight > window.innerWidth;
-    var animCls = null;
-    if (dist === 1)      animCls = portrait ? "tb-anim-fwd-h" : "tb-anim-fwd-v";
-    else if (dist === 5) animCls = portrait ? "tb-anim-bwd-h" : "tb-anim-bwd-v";
-    if (animCls) {
-      void track.offsetWidth; // force reflow so animation starts fresh
-      track.classList.add(animCls);
-      track.addEventListener("animationend", function () {
-        track.classList.remove(animCls);
-      }, { once: true });
-    }
+  if (forward) {
+    // Append new-next box, animate track up by one unit
+    addPhase = (phase + 1) % 6;
+    track.insertAdjacentHTML("beforeend", arrowHtml + tbPhaseBoxHtml(addPhase, "tb-box-next"));
+    void track.offsetWidth; // force reflow
+    track.style.transition = "transform " + speed + "ms cubic-bezier(0.25,0.46,0.45,0.94)";
+    track.style.transform  = "translateX(-50%) translateY(" + (-unit) + "px)";
+  } else {
+    // Prepend new-prev box; pre-offset so current display is unchanged, then animate to 0
+    addPhase = ((phase - 1) + 6) % 6;
+    track.insertAdjacentHTML("afterbegin", tbPhaseBoxHtml(addPhase, "tb-box-prev") + arrowHtml);
+    track.style.transition = "none";
+    track.style.transform  = "translateX(-50%) translateY(" + (-unit) + "px)";
+    void track.offsetWidth;
+    track.style.transition = "transform " + speed + "ms cubic-bezier(0.25,0.46,0.45,0.94)";
+    track.style.transform  = "translateX(-50%)";
   }
 
-  _tbPrevPhase = phase;
+  var fallback;
+  function onEnd() {
+    track.removeEventListener("transitionend", onEnd);
+    clearTimeout(fallback);
+    track.style.transition = "none";
+    track.style.transform  = "translateX(-50%)";
+    _tbPrevPhase = phase;
+    tbBuildStatic(track, phase);
+    _tbAnimating = false;
+  }
+  fallback = setTimeout(onEnd, speed + 150);
+  track.addEventListener("transitionend", onEnd, { once: true });
 }
 
 function renderSetSummaryTable(state) {
@@ -1448,6 +1494,12 @@ function wireScoreboardControls() {
   $("btnSwitchSides").addEventListener("click", function () {
     sidesSwapped = !sidesSwapped;
     updateSidesDisplay(controller.getState());
+    // Re-render TB phases so directional arrows reflect the new sides
+    var sw = controller.getState();
+    if (sw && sw.variation === "triplebal" && sw.activeSetNumber) {
+      _tbPrevPhase = -1; // suppress animation on side-swap
+      renderTripleBall(sw.tripleBallPhase);
+    }
   });
 }
 
@@ -2228,6 +2280,9 @@ function renderSetupPage() {
   $("cfgTeamAColor").value = settings.teamAColor;
   $("cfgTeamBColor").value = settings.teamBColor;
   $("cfgSidebarBtnBorder").value = settings.sidebarBtnBorder || "#000000";
+  $("cfgTbBoxSize").textContent = settings.tbBoxSize || 64;
+  $("cfgTbHighlight").value = settings.tbHighlightColor || "#15803d";
+  $("cfgTbSpeed").value = String(settings.tbScrollSpeed !== undefined ? settings.tbScrollSpeed : 280);
   $("cfgStartSetColor").value = settings.startSetBgColor || settings.startSetColor || "#15803d";
   $("cfgStartSetPulseColor").value = settings.startSetPulseColor || settings.startSetColor || "#15803d";
   $("cfgDefaultFormat").value = settings.defaultFormat;
@@ -2266,6 +2321,26 @@ function wireSetupPage() {
   $("cfgSidebarBtnBorder").addEventListener("input", function () {
     settings.sidebarBtnBorder = this.value;
     updateTeamColors();
+    saveSettings();
+  });
+
+  $("btnTbSzDown").addEventListener("click", function () {
+    var sz = settings.tbBoxSize || 64;
+    if (sz > 36) { settings.tbBoxSize = sz - 4; $("cfgTbBoxSize").textContent = settings.tbBoxSize; updateTeamColors(); saveSettings(); }
+  });
+  $("btnTbSzUp").addEventListener("click", function () {
+    var sz = settings.tbBoxSize || 64;
+    if (sz < 92) { settings.tbBoxSize = sz + 4; $("cfgTbBoxSize").textContent = settings.tbBoxSize; updateTeamColors(); saveSettings(); }
+  });
+
+  $("cfgTbHighlight").addEventListener("input", function () {
+    settings.tbHighlightColor = this.value;
+    updateTeamColors();
+    saveSettings();
+  });
+
+  $("cfgTbSpeed").addEventListener("change", function () {
+    settings.tbScrollSpeed = parseInt(this.value, 10);
     saveSettings();
   });
 
