@@ -47,7 +47,7 @@ var DEFAULT_SETTINGS = {
   teamAColor: "#1d4ed8",
   teamBColor: "#b91c1c",
   sidebarBtnBorder: "#000000",
-  tbBoxSize: 64,
+  tbBoxSize: 84,
   tbHighlightColor: "#15803d",
   tbScrollSpeed: 280,
   startSetColor: "#15803d",
@@ -1016,8 +1016,8 @@ function updateTeamColors() {
   var ssRgb = hexToRgb(ssPulse);
   if (ssRgb) root.style.setProperty("--start-set-rgb", ssRgb);
   root.style.setProperty("--sidebar-btn-border", settings.sidebarBtnBorder || "#000000");
-  root.style.setProperty("--tb-box-sz", (settings.tbBoxSize || 64) + "px");
-  root.style.setProperty("--tb-unit", ((settings.tbBoxSize || 64) + 16) + "px");
+  root.style.setProperty("--tb-box-sz", (settings.tbBoxSize || 84) + "px");
+  root.style.setProperty("--tb-unit", ((settings.tbBoxSize || 84) + 16) + "px");
   root.style.setProperty("--tb-highlight", settings.tbHighlightColor || "#15803d");
 }
 
@@ -1113,11 +1113,18 @@ function renderScoreboard() {
   $("btnSubA").classList.toggle("sub-exhausted", activeSet && (activeSet.subsA >= state.subsPerSet || !state.subsAllowedInActiveSet));
   $("btnSubB").classList.toggle("sub-exhausted", activeSet && (activeSet.subsB >= state.subsPerSet || !state.subsAllowedInActiveSet));
 
-  // Serve dot
-  var servingA = !!state.activeSetNumber && state.servingTeam === "A";
-  var servingB = !!state.activeSetNumber && state.servingTeam === "B";
-  $("serveDotA").classList.toggle("active", servingA);
-  $("serveDotB").classList.toggle("active", servingB);
+  // Serve dot — in triple ball shows which team owns the current 3-ball half (phases 0-2 or 3-5);
+  // in standard play shows last scorer
+  var dotTeam;
+  if (state.variation === "triplebal" && state.activeSetNumber && activeSet) {
+    dotTeam = state.tripleBallPhase < 3
+      ? activeSet.firstServer
+      : (activeSet.firstServer === "A" ? "B" : "A");
+  } else {
+    dotTeam = state.servingTeam;
+  }
+  $("serveDotA").classList.toggle("active", !!state.activeSetNumber && dotTeam === "A");
+  $("serveDotB").classList.toggle("active", !!state.activeSetNumber && dotTeam === "B");
 
   // Sanctions display — aggregate across all sets (sanctions are match-wide)
   var allSanctionsA = state.sets.reduce(function (acc, s) { return acc.concat(s.sanctionsA); }, []);
@@ -1251,7 +1258,7 @@ function tbPhaseBoxHtml(idx, cls) {
   var towardCls = toward === "A" ? "tb-a" : "tb-b";
   // Arrow points toward the receiving team; reverses when sides are swapped
   var isRight = sidesSwapped ? (toward === "A") : (toward === "B");
-  var dirArrow = isRight ? "\u2192" : "\u2190"; // → or ←
+  var dirArrow = isRight ? "\u27A1" : "\u2B05"; // ➡ or ⬅  (solid filled arrows)
   return '<div class="tb-phase-box ' + cls + '">' +
     '<span class="tb-team-letter ' + teamCls + '">' + team + '</span>' +
     '<span class="tb-type">' + type + '</span>' +
@@ -1290,7 +1297,7 @@ function renderTripleBall(phase) {
 
   _tbAnimating = true;
   var speed = settings.tbScrollSpeed !== undefined ? settings.tbScrollSpeed : 280;
-  var unit  = (settings.tbBoxSize || 64) + 16; // one "slot" height
+  var unit  = (settings.tbBoxSize || 84) + 16; // one "slot" height
   var arrowHtml = '<span class="tb-col-arrow">\u25BC</span>';
   var addPhase;
 
@@ -1506,6 +1513,11 @@ function wireScoreboardControls() {
 function dispatchPoint(team, delta) {
   var state = controller.getState();
   if (!state || !state.activeSetNumber) return;
+  // In triple ball, − reverses the sequence via undo rather than directly subtracting a point
+  if (delta < 0 && state.variation === "triplebal") {
+    if (state.canUndo) { controller.undo(); renderScoreboard(); }
+    return;
+  }
   // Don't allow score below 0
   var activeSet = state.sets.find(function (s) { return s.setNumber === state.activeSetNumber; });
   if (delta < 0 && activeSet) {
@@ -2280,7 +2292,7 @@ function renderSetupPage() {
   $("cfgTeamAColor").value = settings.teamAColor;
   $("cfgTeamBColor").value = settings.teamBColor;
   $("cfgSidebarBtnBorder").value = settings.sidebarBtnBorder || "#000000";
-  $("cfgTbBoxSize").textContent = settings.tbBoxSize || 64;
+  $("cfgTbBoxSize").textContent = settings.tbBoxSize || 84;
   $("cfgTbHighlight").value = settings.tbHighlightColor || "#15803d";
   $("cfgTbSpeed").value = String(settings.tbScrollSpeed !== undefined ? settings.tbScrollSpeed : 280);
   $("cfgStartSetColor").value = settings.startSetBgColor || settings.startSetColor || "#15803d";
@@ -2325,12 +2337,12 @@ function wireSetupPage() {
   });
 
   $("btnTbSzDown").addEventListener("click", function () {
-    var sz = settings.tbBoxSize || 64;
+    var sz = settings.tbBoxSize || 84;
     if (sz > 36) { settings.tbBoxSize = sz - 4; $("cfgTbBoxSize").textContent = settings.tbBoxSize; updateTeamColors(); saveSettings(); }
   });
   $("btnTbSzUp").addEventListener("click", function () {
-    var sz = settings.tbBoxSize || 64;
-    if (sz < 92) { settings.tbBoxSize = sz + 4; $("cfgTbBoxSize").textContent = settings.tbBoxSize; updateTeamColors(); saveSettings(); }
+    var sz = settings.tbBoxSize || 84;
+    if (sz < 112) { settings.tbBoxSize = sz + 4; $("cfgTbBoxSize").textContent = settings.tbBoxSize; updateTeamColors(); saveSettings(); }
   });
 
   $("cfgTbHighlight").addEventListener("input", function () {

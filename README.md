@@ -31,7 +31,7 @@ Works on desktop and iPad/iPhone. No install required.
 - **Import / Export** — JSON export per game or all games at once; import from file
 - **Dark mode** — toggle in Setup
 - **Customizable colors** — Team A/B colors, Start Set / Done button fill and pulse/outline color (with live preview in Setup)
-- **Triple Ball** — 6-phase sequence indicator; penalty toast notifications with mid-rally override; timeouts and subs enforced at sequence boundaries only
+- **Triple Ball** — vertical sequence indicator between team panels showing prev/current/next phase; stationary green ring with animated scroll; directional arrows (➡/⬅) show ball flow; serve dot tracks the serving half (stable across all 3 balls); − button reverses the sequence via undo; penalty toast with mid-rally override; timeouts/subs enforced at sequence boundaries; configurable box size, highlight color, and scroll speed in Setup
 - **localStorage + IndexedDB** — data persists across sessions; automatic fallback to IndexedDB when localStorage quota is exceeded
 
 ## Game Formats
@@ -69,14 +69,35 @@ Works on desktop and iPad/iPhone. No install required.
 Triple Ball is a volleyball variation where three balls are fed in sequence before rotating. VolleyScore tracks the six-phase cycle:
 
 ```
-A Serves  →  Toss to B  →  Toss to A  │  B Serves  →  Toss to A  →  Toss to B
+A Serves  ➡  → B (Toss)  ← A (Toss)  │  B Serves  ⬅  ← A (Toss)  → B (Toss)
+  [0]           [1]           [2]      |    [3]            [4]           [5]
 ```
 
-The active phase is highlighted in green and advances automatically with each point scored.
+The first toss travels in the same direction as the serve; the second toss returns in the opposite direction.
+
+### Sequence Indicator
+
+The indicator sits as a vertical column between the two team panels. It always shows three phase boxes — the preceding phase (faded above), the current phase (inside a stationary green ring), and the next phase (faded below). As each point is scored the phases scroll smoothly up through the ring. Pressing Undo (or the **−** button) scrolls back down one phase.
+
+Each box shows:
+- **Team letter** — the team currently holding the ball (A or B), in that team's color
+- **Action** — Serves or Toss
+- **Directional arrow** — ➡ or ⬅ indicating which direction the ball travels, relative to the referee's view; automatically flips when **⇄ Sides** is used
+
+**Serve dot** — in triple ball the serve dot beside the team name indicates which team is serving for the current 3-ball half. It stays on the serving team through all three phases of that half (phases 0–2 for the first server, phases 3–5 for the other team), since winning a rally during a triple ball sequence does not transfer the serve.
+
+**− button** — in triple ball the minus buttons act as Undo, reversing the sequence one step, rather than subtracting a point from a specific team.
+
+**Appearance settings** (Setup → Triple Ball):
+| Setting | Default | Range |
+|---------|---------|-------|
+| Phase box size | 84 px | 36–112 px, step 4 |
+| Active phase color | Green | Any color |
+| Scroll speed | Normal (280 ms) | Instant / Fast / Normal / Slow |
 
 ### Timeouts and Substitutions in Triple Ball
 
-In triple ball, timeouts and substitutions (where permitted) can only be called **at the end of a 3-ball sequence — after the last toss and before the next serve**. This corresponds to phases 0 (before A serves) and 3 (before B serves) in the indicator. The TO and Sub buttons are automatically disabled at all other phases.
+In triple ball, timeouts and substitutions (where permitted) can only be called **at the end of a 3-ball sequence — after the last toss and before the next serve**. This corresponds to phases 0 (before the first server's serve) and 3 (before the second server's serve) in the indicator. The TO and Sub buttons are automatically disabled at all other phases.
 
 ### Penalties in Triple Ball
 

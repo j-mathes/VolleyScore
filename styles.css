@@ -54,7 +54,7 @@
   --sidebar-btn-border: #000000;
 
   /* Triple ball indicator */
-  --tb-box-sz: 64px;
+  --tb-box-sz: 84px;
   --tb-unit: calc(var(--tb-box-sz) + 16px);
   --tb-highlight: #15803d;
 }
@@ -1323,7 +1323,7 @@ details summary::-webkit-details-marker { display: none; }
 }
 
 .tb-team-letter {
-  font-size: 1.4rem;
+  font-size: 1.6rem;
   font-weight: 800;
   line-height: 1;
 }
@@ -1332,7 +1332,7 @@ details summary::-webkit-details-marker { display: none; }
 .tb-b { color: var(--team-b); }
 
 .tb-type {
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--ink-muted);
   white-space: nowrap;
@@ -1340,9 +1340,8 @@ details summary::-webkit-details-marker { display: none; }
 
 /* Directional arrow showing where the ball flows */
 .tb-dir-arrow {
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   line-height: 1;
-  font-weight: 700;
 }
 
 /* Portrait: nudge team content slightly toward outer edges */
