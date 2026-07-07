@@ -44,6 +44,7 @@ var DEFAULT_SETTINGS = {
   fontSize: "medium",
   teamAColor: "#1d4ed8",
   teamBColor: "#b91c1c",
+  startSetColor: "#15803d",
   defaultFormat: "best3",
   defaultTimeouts: 2,
   defaultSubs: 6,
@@ -859,12 +860,16 @@ function showSetupPanel() {
 function updateTeamColors() {
   var root = document.documentElement;
   root.style.setProperty("--team-a", settings.teamAColor);
-  // Generate light variant (15% opacity approximation via rgba)
   var aRgb = hexToRgb(settings.teamAColor);
   var bRgb = hexToRgb(settings.teamBColor);
   if (aRgb) root.style.setProperty("--team-a-light", "rgba(" + aRgb + ",0.12)");
   root.style.setProperty("--team-b", settings.teamBColor);
   if (bRgb) root.style.setProperty("--team-b-light", "rgba(" + bRgb + ",0.12)");
+  // Start Set button pulse/outline color
+  var ssColor = settings.startSetColor || "#15803d";
+  root.style.setProperty("--start-set-color", ssColor);
+  var ssRgb = hexToRgb(ssColor);
+  if (ssRgb) root.style.setProperty("--start-set-rgb", ssRgb);
 }
 
 function hexToRgb(hex) {
@@ -1871,6 +1876,7 @@ function renderSetupPage() {
   $("cfgFontSize").value = settings.fontSize;
   $("cfgTeamAColor").value = settings.teamAColor;
   $("cfgTeamBColor").value = settings.teamBColor;
+  $("cfgStartSetColor").value = settings.startSetColor || "#15803d";
   $("cfgDefaultFormat").value = settings.defaultFormat;
   $("cfgDefTimeouts").textContent = settings.defaultTimeouts;
   $("cfgDefSubs").textContent = settings.defaultSubs;
@@ -1897,6 +1903,12 @@ function wireSetupPage() {
 
   $("cfgTeamBColor").addEventListener("input", function () {
     settings.teamBColor = this.value;
+    updateTeamColors();
+    saveSettings();
+  });
+
+  $("cfgStartSetColor").addEventListener("input", function () {
+    settings.startSetColor = this.value;
     updateTeamColors();
     saveSettings();
   });
