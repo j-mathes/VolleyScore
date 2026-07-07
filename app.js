@@ -1140,7 +1140,8 @@ function renderScoreboard() {
   if (courtCenter) courtCenter.classList.toggle("tb-mode", isTriple);
   $("tripleBallBar").hidden = !isTriple;
   if (isTriple && state.activeSetNumber) {
-    renderTripleBall(state.tripleBallPhase);
+    var tbHidePrev = !!(activeSet && (activeSet.scoreA + activeSet.scoreB === 0));
+    renderTripleBall(state.tripleBallPhase, tbHidePrev);
   }
 
   // Control buttons
@@ -1267,19 +1268,37 @@ function tbPhaseBoxHtml(idx, cls) {
 }
 
 // Rebuild the track as a static 3-box snapshot (prev · current · next).
-function tbBuildStatic(track, phase) {
+// hidePrev: make the prev slot invisible (set start — no ball has been in play yet).
+function tbBuildStatic(track, phase, hidePrev) {
   var prevPhase = ((phase - 1) + 6) % 6;
   var nextPhase = (phase + 1) % 6;
   var arrow = '<span class="tb-col-arrow">\u25BC</span>';
+  var prevCls = "tb-box-prev" + (hidePrev ? " tb-box-hidden" : "");
   track.innerHTML =
-    tbPhaseBoxHtml(prevPhase, "tb-box-prev") + arrow +
+    tbPhaseBoxHtml(prevPhase, prevCls) + arrow +
     tbPhaseBoxHtml(phase,     "tb-box-current") + arrow +
     tbPhaseBoxHtml(nextPhase, "tb-box-next");
 }
 
-function renderTripleBall(phase) {
+function renderTripleBall(phase, hidePrev) {
   var track = $("tbColTrack");
   if (!track) return;
+
+  var portrait = window.innerHeight > window.innerWidth;
+  var boxSz = settings.tbBoxSize || 84;
+  // Slot size: landscape includes arrow+gaps (~16 px); portrait hides arrows (gap only ~3 px)
+  var unit = portrait ? (boxSz + 3) : (boxSz + 16);
+  // Base transform: centers box-1 (current) over the stationary window
+  // Landscape: track top=0, left=50%, shift left by half track width = translateX(-50%)
+  // Portrait:  track top=50%, left=50%, shift left so box-1 center lands at strip center
+  //            box-1 center offset from track origin = 1.5*boxSz + 3 (box + gap)
+  var baseTransform = portrait
+    ? "translate(" + (-(1.5 * boxSz + 3)) + "px, -50%)"
+    : "translateX(-50%)";
+  // Animation target: same formula shifted by -unit (forward) / pre-offset for backward
+  var animTarget = portrait
+    ? "translate(" + (-(1.5 * boxSz + 3) - unit) + "px, -50%)"
+    : "translateX(-50%) translateY(" + (-unit) + "px)";
 
   var phaseChanged = _tbPrevPhase >= 0 && _tbPrevPhase !== phase;
   var dist     = phaseChanged ? (phase - _tbPrevPhase + 6) % 6 : 0;
@@ -1289,34 +1308,33 @@ function renderTripleBall(phase) {
   // Non-animated cases: initial render, multi-step jump, or mid-animation
   if (!phaseChanged || (!forward && !backward) || _tbAnimating) {
     track.style.transition = "none";
-    track.style.transform  = "translateX(-50%)";
-    tbBuildStatic(track, phase);
+    track.style.transform  = baseTransform;
+    tbBuildStatic(track, phase, !!hidePrev);
     _tbPrevPhase = phase;
     return;
   }
 
   _tbAnimating = true;
   var speed = settings.tbScrollSpeed !== undefined ? settings.tbScrollSpeed : 280;
-  var unit  = (settings.tbBoxSize || 84) + 16; // one "slot" height
   var arrowHtml = '<span class="tb-col-arrow">\u25BC</span>';
   var addPhase;
 
   if (forward) {
-    // Append new-next box, animate track up by one unit
+    // Append new-next box; animate from base to animTarget
     addPhase = (phase + 1) % 6;
     track.insertAdjacentHTML("beforeend", arrowHtml + tbPhaseBoxHtml(addPhase, "tb-box-next"));
-    void track.offsetWidth; // force reflow
+    void track.offsetWidth;
     track.style.transition = "transform " + speed + "ms cubic-bezier(0.25,0.46,0.45,0.94)";
-    track.style.transform  = "translateX(-50%) translateY(" + (-unit) + "px)";
+    track.style.transform  = animTarget;
   } else {
-    // Prepend new-prev box; pre-offset so current display is unchanged, then animate to 0
+    // Prepend new-prev box; pre-offset to animTarget (looks like base), then animate to base
     addPhase = ((phase - 1) + 6) % 6;
     track.insertAdjacentHTML("afterbegin", tbPhaseBoxHtml(addPhase, "tb-box-prev") + arrowHtml);
     track.style.transition = "none";
-    track.style.transform  = "translateX(-50%) translateY(" + (-unit) + "px)";
+    track.style.transform  = animTarget;
     void track.offsetWidth;
     track.style.transition = "transform " + speed + "ms cubic-bezier(0.25,0.46,0.45,0.94)";
-    track.style.transform  = "translateX(-50%)";
+    track.style.transform  = baseTransform;
   }
 
   var fallback;
@@ -1324,9 +1342,9 @@ function renderTripleBall(phase) {
     track.removeEventListener("transitionend", onEnd);
     clearTimeout(fallback);
     track.style.transition = "none";
-    track.style.transform  = "translateX(-50%)";
+    track.style.transform  = baseTransform;
     _tbPrevPhase = phase;
-    tbBuildStatic(track, phase);
+    tbBuildStatic(track, phase, false);
     _tbAnimating = false;
   }
   fallback = setTimeout(onEnd, speed + 150);
@@ -1360,6 +1378,32 @@ function renderSetSummaryTable(state) {
     "<td class='set-win-a'>" + state.setsWonA + "</td>" +
     "<td class='set-win-b'>" + state.setsWonB + "</td>";
   tfoot.appendChild(footTr);
+}
+
+// Render the detail-page set summary table with filterable pills.
+function renderDetailSetTable(state) {
+  var tbody = $("detailSetBody");
+  var tfoot = $("detailSetFoot");
+  if (!tbody || !tfoot) return;
+  tbody.innerHTML = "";
+  tfoot.innerHTML = "";
+  state.sets.forEach(function (s) {
+    var tr = document.createElement("tr");
+    var winA = s.endedAt && s.scoreA > s.scoreB;
+    var winB = s.endedAt && s.scoreB > s.scoreA;
+    var isFiltered = selectedDetailSetFilter === s.setNumber;
+    tr.innerHTML =
+      "<td><span class='set-filter-pill" + (isFiltered ? " active" : "") + "' data-setnum='" + s.setNumber + "' title='" + (isFiltered ? "Clear filter" : "Filter log to Set " + s.setNumber) + "'>" + s.setNumber + "</span></td>" +
+      "<td class='" + (winA ? "set-win-a" : "") + "'>" + s.scoreA + "</td>" +
+      "<td class='" + (winB ? "set-win-b" : "") + "'>" + s.scoreB + "</td>";
+    tbody.appendChild(tr);
+  });
+  var footTr = document.createElement("tr");
+  footTr.innerHTML =
+    "<td>Sets Won</td><td class='set-win-a'>" + state.setsWonA + "</td><td class='set-win-b'>" + state.setsWonB + "</td>";
+  tfoot.appendChild(footTr);
+  var hint = $("detailFilterHint");
+  if (hint) hint.hidden = !selectedDetailSetFilter;
 }
 
 function formatLabel(fmt) {
@@ -1504,8 +1548,9 @@ function wireScoreboardControls() {
     // Re-render TB phases so directional arrows reflect the new sides
     var sw = controller.getState();
     if (sw && sw.variation === "triplebal" && sw.activeSetNumber) {
+      var swSet = sw.sets.find(function(s) { return s.setNumber === sw.activeSetNumber; });
       _tbPrevPhase = -1; // suppress animation on side-swap
-      renderTripleBall(sw.tripleBallPhase);
+      renderTripleBall(sw.tripleBallPhase, !!(swSet && swSet.scoreA + swSet.scoreB === 0));
     }
   });
 }
@@ -2115,6 +2160,9 @@ async function loadAndShowGame(gameId) {
 // ---- Games Page -----------------------------------------
 
 var selectedDetailGameId = null;
+var selectedDetailSetFilter = null; // null = all sets; number = filter to that set
+var _detailState = null;            // cached for filter re-renders
+var _detailTimeline = null;
 
 async function renderGamesList() {
   var container = $("gamesList");
@@ -2177,6 +2225,7 @@ async function renderGamesList() {
 
 async function selectDetailGame(gameId) {
   selectedDetailGameId = gameId;
+  selectedDetailSetFilter = null; // reset filter for new selection
   await renderGamesList(); // refresh selection highlight
   var record = await dbLoadGame(gameId);
   if (!record) { clearGameDetail(); return; }
@@ -2184,6 +2233,9 @@ async function selectDetailGame(gameId) {
   var tl = { events: record.events, cursor: record.cursor };
   var state = deriveGameState(tl);
   if (!state) { clearGameDetail(); return; }
+
+  _detailState = state;
+  _detailTimeline = tl;
 
   var isActive = !state.endedAt;
 
@@ -2202,25 +2254,8 @@ async function selectDetailGame(gameId) {
   metaParts.push(isActive ? "In Progress" : "Complete");
   $("detailGameMeta").textContent = metaParts.join(" · ");
 
-  // Set summary
-  var detailTbody = $("detailSetBody");
-  var detailTfoot = $("detailSetFoot");
-  detailTbody.innerHTML = "";
-  detailTfoot.innerHTML = "";
-  state.sets.forEach(function (s) {
-    var tr = document.createElement("tr");
-    var winA = s.endedAt && s.scoreA > s.scoreB;
-    var winB = s.endedAt && s.scoreB > s.scoreA;
-    tr.innerHTML =
-      "<td>" + s.setNumber + "</td>" +
-      "<td class='" + (winA ? "set-win-a" : "") + "'>" + s.scoreA + "</td>" +
-      "<td class='" + (winB ? "set-win-b" : "") + "'>" + s.scoreB + "</td>";
-    detailTbody.appendChild(tr);
-  });
-  var footTr = document.createElement("tr");
-  footTr.innerHTML =
-    "<td>Sets Won</td><td class='set-win-a'>" + state.setsWonA + "</td><td class='set-win-b'>" + state.setsWonB + "</td>";
-  detailTfoot.appendChild(footTr);
+  // Set summary with filterable pills
+  renderDetailSetTable(state);
 
   // Actions
   $("btnResumeGame").disabled = !isActive;
@@ -2247,16 +2282,30 @@ async function selectDetailGame(gameId) {
 
   // Event log
   var logBody = $("detailEventLogBody");
-  if (logBody) logBody.innerHTML = buildEventLogHtml(state, tl);
+  if (logBody) logBody.innerHTML = buildEventLogHtml(state, tl, selectedDetailSetFilter);
 }
 
 function clearGameDetail() {
   selectedDetailGameId = null;
+  selectedDetailSetFilter = null;
+  _detailState = null;
+  _detailTimeline = null;
   $("gameDetailPlaceholder").hidden = false;
   $("gameDetailContent").hidden = true;
 }
 
 function wireGamesPage() {
+  // Set filter pills — delegated click on the detail set table
+  $("detailSetTable").addEventListener("click", function (e) {
+    var pill = e.target.closest(".set-filter-pill");
+    if (!pill || !_detailState) return;
+    var setNum = parseInt(pill.getAttribute("data-setnum"), 10);
+    selectedDetailSetFilter = (selectedDetailSetFilter === setNum) ? null : setNum;
+    renderDetailSetTable(_detailState);
+    var logBody = $("detailEventLogBody");
+    if (logBody) logBody.innerHTML = buildEventLogHtml(_detailState, _detailTimeline, selectedDetailSetFilter);
+  });
+
   // Import button
   $("btnImportGame").addEventListener("click", function () {
     $("importFileInput").click();

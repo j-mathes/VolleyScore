@@ -148,6 +148,13 @@
           <span class="sets-dash" aria-hidden="true">–</span>
           <span id="sbSetsB" class="sb-sets-b" title="Sets won by Team B">0</span>
         </div>
+        <!-- Serve picker — shown inline in the bar between sets -->
+        <div id="servePicker" class="serve-picker" hidden>
+          <span class="serve-picker-label">Who serves Set <span id="servePickerSetNum">2</span>?</span>
+          <button id="btnPickServeA" class="serve-pick-btn" data-team="A">Team A</button>
+          <button id="btnPickServeB" class="serve-pick-btn" data-team="B">Team B</button>
+          <span id="sideIndicator" class="side-indicator" aria-live="polite"></span>
+        </div>
         <div class="game-controls">
           <button id="btnEndSet" class="ctrl-btn">End Set</button>
           <button id="btnStartNextSet" class="ctrl-btn" hidden>Start Set <span id="nextSetNum">2</span></button>
@@ -157,14 +164,6 @@
           <button id="btnEndGame" class="ctrl-btn ctrl-btn-end">End Game</button>
           <button id="btnNewGame" class="ctrl-btn ctrl-btn-done">Done</button>
         </div>
-      </div>
-
-      <!-- Between-sets serve picker (shown after End Set, before Start Next Set is clicked) -->
-      <div id="servePicker" class="serve-picker" hidden>
-        <span class="serve-picker-label">Who serves Set <span id="servePickerSetNum">2</span>?</span>
-        <button id="btnPickServeA" class="serve-pick-btn" data-team="A">Team A</button>
-        <button id="btnPickServeB" class="serve-pick-btn" data-team="B">Team B</button>
-        <span id="sideIndicator" class="side-indicator" aria-live="polite"></span>
       </div>
 
       <!-- Team panels -->
@@ -296,6 +295,7 @@
           <tbody id="detailSetBody"></tbody>
           <tfoot id="detailSetFoot"></tfoot>
         </table>
+        <p id="detailFilterHint" class="log-filter-hint" hidden>Showing filtered set &mdash; tap the set number again to clear.</p>
         <div class="detail-actions" id="detailActions">
           <button id="btnResumeGame" class="ctrl-btn">Resume Game</button>
           <button id="btnExportGame" class="ctrl-btn">Export JSON</button>
