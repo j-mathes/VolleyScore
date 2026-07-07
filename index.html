@@ -437,9 +437,17 @@
     <div class="modal-card">
       <h3 id="sanctionModalTitle">Sanction &mdash; <span id="sanctionTeamName">Team A</span></h3>
 
+      <!-- Misconduct sanction — applies to an individual -->
       <div class="modal-section">
-        <h4 class="modal-section-title">Player Sanction</h4>
-        <label class="modal-player-label">
+        <h4 class="modal-section-title">Misconduct Sanction <span class="modal-section-note">(individual)</span></h4>
+        <div class="role-btns" id="roleBtns" role="group" aria-label="Sanction recipient">
+          <button class="role-btn active" data-role="player">Player</button>
+          <button class="role-btn" data-role="head_coach">Head Coach</button>
+          <button class="role-btn" data-role="asst_coach">Asst. Coach</button>
+          <button class="role-btn" data-role="trainer">Trainer</button>
+          <button class="role-btn" data-role="medical">Medical</button>
+        </div>
+        <label id="playerNumLabel" class="modal-player-label">
           Player # <input type="text" id="sanctionPlayerNum" inputmode="numeric" placeholder="Optional" maxlength="3" class="player-num-input">
         </label>
         <div class="sanction-btns">
@@ -458,8 +466,9 @@
         </div>
       </div>
 
+      <!-- Delay sanction — applies to the entire team -->
       <div class="modal-section">
-        <h4 class="modal-section-title">Delay Sanction</h4>
+        <h4 class="modal-section-title">Delay Sanction <span class="modal-section-note">(entire team)</span></h4>
         <div class="sanction-btns">
           <button class="sanction-type-btn btn-delay-warning" data-dtype="warning">
             <span class="card-icon card-y card-small"></span> Delay Warning
@@ -467,6 +476,19 @@
           <button class="sanction-type-btn btn-delay-penalty" data-dtype="penalty">
             <span class="card-icon card-r card-small"></span> Delay Penalty
           </button>
+        </div>
+      </div>
+
+      <!-- Improper request — one free per team per match -->
+      <div class="modal-section modal-ir-section">
+        <h4 class="modal-section-title">Improper Request <span class="modal-section-note">(1 free per team per match)</span></h4>
+        <div class="sanction-btns">
+          <button class="sanction-type-btn btn-improper-request" id="btnImproperRequest">
+            &#x2139; Record Improper Request
+          </button>
+        </div>
+        <div id="irAlreadyUsed" class="ir-used-warning" hidden>
+          &#x26A0; Free request already used &mdash; any further requests may incur a Delay Penalty.
         </div>
       </div>
 

@@ -302,6 +302,8 @@ function deriveGameState(timeline) {
   var setsMap = {};
   var activeSetNumber = null;
   var endedAt = null;
+  var improperRequestA = false; // match-wide: one free per team
+  var improperRequestB = false;
 
   function getOrCreateSet(n) {
     if (!setsMap[n]) {
@@ -362,13 +364,18 @@ function deriveGameState(timeline) {
       case "SANCTION": {
         var san = getOrCreateSet(ev.setNumber);
         var sanList = ev.team === "A" ? san.sanctionsA : san.sanctionsB;
-        sanList.push({ type: ev.sanctionType, player: ev.playerNumber || null, timestamp: ev.timestamp });
+        sanList.push({ type: ev.sanctionType, player: ev.playerNumber || null, role: ev.role || "player", timestamp: ev.timestamp });
         break;
       }
       case "DELAY_SANCTION": {
         var ds = getOrCreateSet(ev.setNumber);
         var dsList = ev.team === "A" ? ds.delaySanctionsA : ds.delaySanctionsB;
         dsList.push({ type: ev.sanctionType, timestamp: ev.timestamp });
+        break;
+      }
+      case "IMPROPER_REQUEST": {
+        if (ev.team === "A") improperRequestA = true;
+        else improperRequestB = true;
         break;
       }
       /* SERVE_CHANGED is handled by serving team derivation below */
@@ -453,6 +460,8 @@ function deriveGameState(timeline) {
     tripleBallPhase: tripleBallPhase,
     nextSetNum: nextSetNum,
     gameCanEnd: gameCanEnd,
+    improperRequestA: improperRequestA,
+    improperRequestB: improperRequestB,
     cursor: timeline.cursor,
     canUndo: timeline.cursor > 0,
     canRedo: timeline.cursor < timeline.events.length,
@@ -824,8 +833,9 @@ async function startNewGame() {
 
 // ---- Score Page — Scoreboard ----------------------------
 
-var sanctionTargetTeam = null; // "A" or "B"
-var pendingServePickTeam = null; // for between-sets serve selection
+var sanctionTargetTeam = null;     // "A" or "B"
+var sanctionSelectedRole = "player"; // current role in misconduct sanction
+var pendingServePickTeam = null;   // for between-sets serve selection
 
 function showScoreboard() {
   $("gameSetupPanel").hidden = true;
@@ -926,9 +936,13 @@ function renderScoreboard() {
   $("serveDotA").classList.toggle("active", servingA);
   $("serveDotB").classList.toggle("active", servingB);
 
-  // Sanctions display
-  renderSanctionsBar("sanctionsBarA", activeSet ? activeSet.sanctionsA : [], activeSet ? activeSet.delaySanctionsA : []);
-  renderSanctionsBar("sanctionsBarB", activeSet ? activeSet.sanctionsB : [], activeSet ? activeSet.delaySanctionsB : []);
+  // Sanctions display — aggregate across all sets (sanctions are match-wide)
+  var allSanctionsA = state.sets.reduce(function (acc, s) { return acc.concat(s.sanctionsA); }, []);
+  var allSanctionsB = state.sets.reduce(function (acc, s) { return acc.concat(s.sanctionsB); }, []);
+  var allDelayA = state.sets.reduce(function (acc, s) { return acc.concat(s.delaySanctionsA); }, []);
+  var allDelayB = state.sets.reduce(function (acc, s) { return acc.concat(s.delaySanctionsB); }, []);
+  renderSanctionsBar("sanctionsBarA", allSanctionsA, allDelayA, state.improperRequestA);
+  renderSanctionsBar("sanctionsBarB", allSanctionsB, allDelayB, state.improperRequestB);
 
   // Triple ball
   var isTriple = state.variation === "triplebal";
@@ -1005,19 +1019,30 @@ function renderTimeoutDots(dotsId, countId, used, total) {
   if (countEl) countEl.textContent = used + "/" + total;
 }
 
-function renderSanctionsBar(barId, sanctions, delaySanctions) {
+var ROLE_ABBR = { head_coach: "HC", asst_coach: "AC", trainer: "Tr", medical: "Md" };
+var ROLE_LABEL = { player: "Player", head_coach: "Head Coach", asst_coach: "Asst. Coach", trainer: "Trainer", medical: "Medical" };
+
+function renderSanctionsBar(barId, sanctions, delaySanctions, irUsed) {
   var bar = $(barId);
   if (!bar) return;
-  if (!sanctions.length && !delaySanctions.length) { bar.innerHTML = ""; return; }
+  if (!sanctions.length && !delaySanctions.length && !irUsed) { bar.innerHTML = ""; return; }
   var html = "";
   sanctions.forEach(function (s) {
+    var abbr = ROLE_ABBR[s.role] || null;
     html += '<span class="sanction-chip">' + cardHtml(s.type);
-    if (s.player) html += '<span class="sanction-chip-player">#' + esc(s.player) + '</span>';
+    if (abbr) {
+      html += '<span class="sanction-chip-player">' + abbr + '</span>';
+    } else if (s.player) {
+      html += '<span class="sanction-chip-player">#' + esc(s.player) + '</span>';
+    }
     html += '</span>';
   });
   delaySanctions.forEach(function (d) {
     html += '<span class="sanction-chip"><span style="font-size:0.7rem;color:var(--ink-muted)">D</span>' + delaySanctionHtml(d.type) + '</span>';
   });
+  if (irUsed) {
+    html += '<span class="sanction-chip sanction-chip-ir" title="Improper Request used">IR</span>';
+  }
   bar.innerHTML = html;
 }
 
@@ -1249,15 +1274,27 @@ function dispatchSub(team) {
 
 function openSanctionModal(team) {
   sanctionTargetTeam = team;
+  sanctionSelectedRole = "player";
   var state = controller.getState();
   var teamName = state ? (team === "A" ? state.teamA : state.teamB) : ("Team " + team);
   $("sanctionTeamName").textContent = teamName;
   $("sanctionPlayerNum").value = "";
 
+  // Reset role selector to Player
+  document.querySelectorAll(".role-btn").forEach(function (btn) {
+    btn.classList.toggle("active", btn.getAttribute("data-role") === "player");
+  });
+  $("playerNumLabel").hidden = false;
+
+  // Improper request — disable if already used
+  var irUsed = !!(state && (team === "A" ? state.improperRequestA : state.improperRequestB));
+  $("btnImproperRequest").disabled = irUsed;
+  $("irAlreadyUsed").hidden = !irUsed;
+
   // Show Triple Ball section only when a Triple Ball game is active
   var isTb = !!(state && state.variation === "triplebal" && state.activeSetNumber);
   $("tbPenaltySection").hidden = !isTb;
-  $("cbTbMidRally").checked = false; // always default to "after rally"
+  $("cbTbMidRally").checked = false;
 
   $("sanctionModal").removeAttribute("hidden");
   $("sanctionPlayerNum").focus();
@@ -1268,14 +1305,28 @@ function closeSanctionModal() {
   $("sanctionModal").hidden = true;
 }
 
+function dispatchImproperRequest() {
+  var state = controller.getState();
+  if (!state || !state.activeSetNumber || !sanctionTargetTeam) return;
+  controller.dispatch({
+    type: "IMPROPER_REQUEST",
+    team: sanctionTargetTeam,
+    setNumber: state.activeSetNumber,
+    timestamp: new Date().toISOString(),
+  });
+  closeSanctionModal();
+  renderScoreboard();
+}
+
 function dispatchSanction(stype) {
   var state = controller.getState();
   if (!state || !state.activeSetNumber || !sanctionTargetTeam) return;
-  var player = $("sanctionPlayerNum").value.trim() || null;
+  var player = sanctionSelectedRole === "player" ? ($("sanctionPlayerNum").value.trim() || null) : null;
   controller.dispatch({
     type: "SANCTION",
     team: sanctionTargetTeam,
     sanctionType: stype,
+    role: sanctionSelectedRole,
     playerNumber: player,
     setNumber: state.activeSetNumber,
     timestamp: new Date().toISOString(),
@@ -1347,6 +1398,23 @@ function wireSanctionModal() {
   // Close on overlay click
   $("sanctionModal").addEventListener("click", function (e) {
     if (e.target === $("sanctionModal")) closeSanctionModal();
+  });
+
+  // Role selector buttons
+  document.querySelectorAll(".role-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      sanctionSelectedRole = btn.getAttribute("data-role");
+      document.querySelectorAll(".role-btn").forEach(function (b) {
+        b.classList.toggle("active", b === btn);
+      });
+      // Show player number input only for player role
+      $("playerNumLabel").hidden = sanctionSelectedRole !== "player";
+    });
+  });
+
+  // Improper request button
+  $("btnImproperRequest").addEventListener("click", function () {
+    dispatchImproperRequest();
   });
 
   // Player sanction buttons
@@ -1471,12 +1539,14 @@ function buildEventLogHtml(state, timeline) {
         yellow: "Warning", red: "Penalty",
         expulsion: "Expulsion", disqualification: "Disqualification"
       }[ev.sanctionType] || ev.sanctionType;
+      var sanRoleLabel = ROLE_LABEL[ev.role] || "Player";
+      var sanRecipient = sanRoleLabel !== "Player" ? sanRoleLabel : (ev.playerNumber ? "#" + ev.playerNumber : "Player");
       var sanRowClass = "event-log-team-" + ev.team.toLowerCase();
       rows.push('<div class="event-log-row ' + sanRowClass + '">' +
         '<span class="elr-time">' + esc(time) + '</span>' +
-        '<span class="elr-score">' + sansc.A + ' – ' + sansc.B + '</span>' +
+        '<span class="elr-score">' + sansc.A + ' \u2013 ' + sansc.B + '</span>' +
         '<span class="elr-desc">' + esc(sanLabel) + '</span>' +
-        '<span class="elr-detail">' + esc(sanTeam) + (ev.playerNumber ? ' #' + esc(ev.playerNumber) : '') + '</span>' +
+        '<span class="elr-detail">' + esc(sanTeam) + ' \u2014 ' + esc(sanRecipient) + '</span>' +
         '</div>');
     } else if (ev.type === "DELAY_SANCTION") {
       var dssc = getScore(ev.setNumber);
@@ -1485,9 +1555,19 @@ function buildEventLogHtml(state, timeline) {
       var dsRowClass = "event-log-team-" + ev.team.toLowerCase();
       rows.push('<div class="event-log-row ' + dsRowClass + '">' +
         '<span class="elr-time">' + esc(time) + '</span>' +
-        '<span class="elr-score">' + dssc.A + ' – ' + dssc.B + '</span>' +
+        '<span class="elr-score">' + dssc.A + ' \u2013 ' + dssc.B + '</span>' +
         '<span class="elr-desc">' + esc(dsLabel) + '</span>' +
-        '<span class="elr-detail">' + esc(dsTeam) + '</span>' +
+        '<span class="elr-detail">' + esc(dsTeam) + ' (team)</span>' +
+        '</div>');
+    } else if (ev.type === "IMPROPER_REQUEST") {
+      var irsc = getScore(ev.setNumber);
+      var irTeam = ev.team === "A" ? (state.teamA || "Team A") : (state.teamB || "Team B");
+      var irRowClass = "event-log-team-" + ev.team.toLowerCase();
+      rows.push('<div class="event-log-row ' + irRowClass + '">' +
+        '<span class="elr-time">' + esc(time) + '</span>' +
+        '<span class="elr-score">' + irsc.A + ' \u2013 ' + irsc.B + '</span>' +
+        '<span class="elr-desc">Improper Request</span>' +
+        '<span class="elr-detail">' + esc(irTeam) + '</span>' +
         '</div>');
     } else if (ev.type === "SERVE_CHANGED") {
       var seTeam = ev.team === "A" ? (state.teamA || "Team A") : (state.teamB || "Team B");

@@ -18,9 +18,9 @@ Works on desktop and iPad/iPhone. No install required.
 - **Serve tracking** — automatic serve indicator updates with each point scored
 - **Timeouts** — visual filled/empty dot display; alerts when all timeouts are used
 - **Substitutions** — per-team counter with exhaustion warning
-- **Sanctions** — Yellow card (warning), Red card (penalty + point to opponent), Expulsion, Disqualification; optional player number entry
-- **Delay sanctions** — Delay Warning and Delay Penalty (penalty awards a point to opponent) per team
-- **Triple Ball** — sequence indicator for all 6 phases (A Serves → Toss B → Toss A → B Serves → Toss A → Toss B), active phase highlighted, advances with each point; penalty toast notification with mid-rally override
+- **Misconduct sanctions** — Warning, Penalty, Expulsion, Disqualification; issued to Player, Head Coach, Asst. Coach, Trainer, or Medical; all remain in effect for the entire match
+- **Delay sanctions** — Delay Warning and Delay Penalty applied to the entire team; Delay Penalty awards a point to the opponent
+- **Improper requests** — one free per team per match; tracked and flagged if the free request has already been used
 - **Set management** — End Set, choose who serves next, Start Next Set; set summary table
 - **Undo / Redo** — correct mistakes without disrupting the event timeline
 - **Event log** — time-stamped, color-coded log of every game event (same format as Triangle Stats)
@@ -83,16 +83,41 @@ The toggle resets to the default (after rally) each time the sanction dialog ope
 
 ## Sanctions
 
-| Type | Description | Point Awarded? |
-|------|-------------|----------------|
-| Yellow card | Official warning | No |
-| Red card | Penalty | Yes (to opponent) |
-| Red + Yellow (together) | Expulsion | No |
-| Red + Yellow (separate) | Disqualification | No |
-| Delay Warning | Team delay caution | No |
-| Delay Penalty | Team delay infraction | Yes (to opponent) |
+### Misconduct Sanctions (individual)
 
-All sanctions are logged in the event log with player number (if entered) and timestamp.
+Misconduct sanctions are issued to a specific individual. When issuing a sanction, select the recipient from the role picker:
+
+| Recipient | Role code shown |
+|-----------|-----------------|
+| Player | #jersey or "Player" |
+| Head Coach | HC |
+| Assistant Coach | AC |
+| Trainer | Tr |
+| Medical | Md |
+
+| Sanction | Cards shown | Effect | Match scope |
+|----------|-------------|--------|-------------|
+| Warning | 🟨 | No point awarded | Entire match |
+| Penalty | 🟥 | Point + serve to opponent | Entire match |
+| Expulsion | 🟨🟥 (together) | Player/staff removed for rest of set | Entire match |
+| Disqualification | 🟨 🟥 (separate) | Player/staff removed for rest of match | Entire match |
+
+All misconduct sanctions remain in effect for the remainder of the match regardless of which set they were issued in.
+
+### Delay Sanctions (entire team)
+
+Delay sanctions apply to the team, not an individual.
+
+| Sanction | Effect |
+|----------|--------|
+| Delay Warning | No point awarded — caution only |
+| Delay Penalty | Point + serve to opponent |
+
+### Improper Request (1 free per team per match)
+
+Each team is entitled to one free improper request per match. The first carries no penalty and no point is awarded. Subsequent improper requests may result in a Delay Penalty at the referee's discretion. VolleyScore tracks whether each team has used their free request and shows a warning if the button is pressed a second time.
+
+All sanctions and improper requests are recorded in the event log with timestamp, set number, score at time of issue, and recipient.
 
 ## Data & Storage
 
@@ -100,8 +125,31 @@ Game data is saved automatically as you score. All data stays in your browser �
 
 - **Primary:** `localStorage` (fast, synchronous)
 - **Fallback:** IndexedDB (used automatically when localStorage quota is exceeded)
-- **Export:** Download any game or all games as a JSON file
-- **Import:** Load a previously exported JSON file to restore games on another device
+
+### Export
+
+| Location | Action | Result |
+|----------|--------|--------|
+| Games page → select game → Export JSON | Exports one game | `volleyscore_TeamA_vs_TeamB_YYYY-MM-DD.json` |
+| Setup page → Export All Games | Exports every saved game | `volleyscore_export_YYYY-MM-DD.json` |
+
+Exported files contain the full event timeline, including all scores, sanctions, timeouts, substitutions, and improper requests — enough to fully reconstruct the game.
+
+### Import
+
+Import works from both the **Games page** (Import button) and the **Setup page**. The app accepts:
+
+- A single-game file previously exported from VolleyScore
+- A multi-game export file
+- A raw game JSON record (advanced use)
+
+If a game with the same ID already exists it is overwritten. Importing does not delete existing games.
+
+### Transfer to Another Device
+
+1. On the source device: **Games → select game → Export JSON** (or **Setup → Export All**)
+2. Transfer the file (email, AirDrop, cloud storage, etc.)
+3. On the destination device: **Games → Import** or **Setup → Import Games**, then select the file.
 
 ## Tech
 
