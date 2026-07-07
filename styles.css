@@ -370,6 +370,14 @@ details summary::-webkit-details-marker { display: none; }
   flex-wrap: wrap;
 }
 
+/* Sub-column: stacks two fieldsets vertically (e.g. Variation + Fair Play) */
+.setup-sub-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 1 1 auto;
+}
+
 .radio-fieldset label {
   display: flex;
   align-items: center;
@@ -676,13 +684,14 @@ details summary::-webkit-details-marker { display: none; }
   background: rgba(220, 38, 38, 0.18);
 }
 
-.ctrl-btn-new {
-  background: var(--team-a);
-  color: #fff;
+.ctrl-btn-done {
+  background: rgba(0, 0, 0, 0.07);
+  color: var(--ink-soft);
 }
 
-.ctrl-btn-new:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--team-a) 85%, #000 15%);
+.ctrl-btn-done:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.13);
+  transform: none;
 }
 
 .ctrl-btn-sides {

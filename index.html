@@ -73,19 +73,22 @@
             <label><input type="radio" name="gameFormat" value="best5"> Best of 5</label>
           </fieldset>
 
-          <fieldset class="radio-fieldset">
-            <legend>Variation</legend>
-            <label><input type="radio" name="variation" value="standard" checked> Standard</label>
-            <label><input type="radio" name="variation" value="triplebal"> Triple Ball</label>
-          </fieldset>
+          <!-- Variation and Fair Play stacked in a right sub-column -->
+          <div class="setup-sub-col">
+            <fieldset class="radio-fieldset">
+              <legend>Variation</legend>
+              <label><input type="radio" name="variation" value="standard" checked> Standard</label>
+              <label><input type="radio" name="variation" value="triplebal"> Triple Ball</label>
+            </fieldset>
 
-          <fieldset class="radio-fieldset" id="fairPlayFieldset">
-            <legend>Fair Play <button type="button" class="info-icon-btn" id="btnFpInfo" aria-label="Show fair play rule descriptions" aria-expanded="false"><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg></button></legend>
-            <label><input type="radio" name="fairPlay" value="none" checked> None</label>
-            <label data-fp-variation="triplebal"><input type="radio" name="fairPlay" value="triple-fp"> Triple Ball</label>
-            <label data-fp-variation="standard"><input type="radio" name="fairPlay" value="standard-full"> Full</label>
-            <label data-fp-variation="standard"><input type="radio" name="fairPlay" value="standard-partial"> Partial</label>
-          </fieldset>
+            <fieldset class="radio-fieldset" id="fairPlayFieldset">
+              <legend>Fair Play <button type="button" class="info-icon-btn" id="btnFpInfo" aria-label="Show fair play rule descriptions" aria-expanded="false"><svg width="13" height="13" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg></button></legend>
+              <label><input type="radio" name="fairPlay" value="none" checked> None</label>
+              <label data-fp-variation="triplebal"><input type="radio" name="fairPlay" value="triple-fp"> Triple Ball</label>
+              <label data-fp-variation="standard"><input type="radio" name="fairPlay" value="standard-full"> Full</label>
+              <label data-fp-variation="standard"><input type="radio" name="fairPlay" value="standard-partial"> Partial</label>
+            </fieldset>
+          </div>
         </div>
 
         <!-- Fair play tooltip — shown below all three columns when info icon is tapped -->
@@ -151,7 +154,7 @@
           <button id="btnRedo" class="ctrl-btn" disabled title="Redo">↪</button>
           <button id="btnSwitchSides" class="ctrl-btn ctrl-btn-sides" title="Swap which side each team appears on">&#x21C4; Sides</button>
           <button id="btnEndGame" class="ctrl-btn ctrl-btn-end">End Game</button>
-          <button id="btnNewGame" class="ctrl-btn ctrl-btn-new">New Game</button>
+          <button id="btnNewGame" class="ctrl-btn ctrl-btn-done">Done</button>
         </div>
       </div>
 
