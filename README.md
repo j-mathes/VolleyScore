@@ -10,13 +10,19 @@ VolleyScore is a Progressive Web App -- it can be installed on your device for a
 
 ### iOS (iPhone / iPad)
 
-Must use **Safari** -- Chrome and other iOS browsers cannot install PWAs to the home screen.
+**Safari** is the primary method. **Chrome and Edge on iOS 17+** also support installation via their Share button.
 
+**Safari:**
 1. Open **Safari** and navigate to the hosted link above
 2. Tap the **Share** button (⎙) in the toolbar
 3. Scroll down and tap **"Add to Home Screen"**
 4. Edit the name if desired → tap **Add**
 5. **iOS 17.4+:** when prompted, choose **"As Web App"** (not "In Safari")
+
+**Chrome or Edge (iOS 17+):**
+1. Open **Chrome** or **Edge** and navigate to the hosted link
+2. Tap the **Share** button (⎙) in the URL bar
+3. Tap **"Add to Home Screen"** → **Add**
 
 The app icon will appear on your home screen. Opening from there launches it full-screen (no browser UI) and works offline after the first load.
 
