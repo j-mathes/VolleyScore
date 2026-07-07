@@ -1169,16 +1169,19 @@ details summary::-webkit-details-marker { display: none; }
 
 .to-dots {
   display: flex;
-  gap: 6px;
+  gap: 10px;
   align-items: center;
+  margin-left: 0.5rem;
 }
 
 .to-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 3px solid currentColor;
+  width: 12px;
+  height: 12px;
+  border-radius: 0;
+  border: 2px solid currentColor;
   background: transparent;
+  transform: rotate(45deg);
+  flex-shrink: 0;
   transition: background var(--transition);
 }
 
@@ -2435,12 +2438,14 @@ input.player-num-input {
   }
 
   .to-dots {
-    gap: 4px;
+    gap: 7px;
+    margin-left: 0.3rem;
   }
 
   .to-dot {
-    width: 11px;
-    height: 11px;
+    width: 8px;
+    height: 8px;
+    border-radius: 0;
     border-width: 2px;
   }
 

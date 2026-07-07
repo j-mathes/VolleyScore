@@ -989,6 +989,7 @@ var sidesSwapped = false;          // true when Team B panel is visually on the 
 var _justEndedGame = false;        // true only until user navigates away after End Game
 var _tbPrevPhase = -1;             // previous TB phase, used to choose animation direction
 var _tbAnimating = false;          // prevents overlapping TB phase animations
+var _prevPortrait = window.innerHeight > window.innerWidth; // orientation tracking for TB re-render
 
 function showScoreboard() {
   $("gameSetupPanel").hidden = true;
@@ -2583,6 +2584,18 @@ async function init() {
   wireSanctionModal();
   wireGamesPage();
   wireSetupPage();
+
+  // Re-render triple ball track when orientation flips (portrait ↔ landscape).
+  // renderTripleBall() bakes the orientation into CSS transforms, so a static
+  // re-render is needed whenever the aspect ratio changes.
+  window.addEventListener("resize", function () {
+    var nowPortrait = window.innerHeight > window.innerWidth;
+    if (nowPortrait !== _prevPortrait) {
+      _prevPortrait = nowPortrait;
+      _tbPrevPhase = -1; // suppress animation, force full static re-render
+      if ($('scoreboard') && !$('scoreboard').hidden) renderScoreboard();
+    }
+  });
 
   // Try to restore previous game session
   var currentId = localStorage.getItem(LS_CURRENT);
