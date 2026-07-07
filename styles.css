@@ -171,6 +171,7 @@ select {
   padding: 0.4rem 0.6rem;
   width: 100%;
   min-height: 38px;
+  min-width: 0;
 }
 
 input:focus, select:focus {
@@ -1829,6 +1830,18 @@ details[open] .event-log-summary::before {
 .setting-row select {
   width: auto;
   min-width: 140px;
+}
+
+/* Short text inputs inside setting rows (team names, location) */
+.setting-text-input {
+  width: auto;
+  max-width: 160px;
+  min-width: 0;
+}
+
+/* Dark mode: browser dark variant for date/time picker (fixes black calendar icon) */
+[data-theme="dark"] input[type="datetime-local"] {
+  color-scheme: dark;
 }
 
 .color-setting-row {

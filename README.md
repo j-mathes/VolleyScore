@@ -4,8 +4,6 @@ Browser-based volleyball scorekeeper. Open `index.html` in any modern browser --
 
 **[https://j-mathes.github.io/VolleyScore/](https://j-mathes.github.io/VolleyScore/)**
 
-> **iOS:** Use the hosted link above. Local file access is not supported due to browser storage restrictions.
-
 ## Installing as an App (PWA)
 
 VolleyScore is a Progressive Web App -- it can be installed on your device for a full-screen, offline-capable experience with no browser chrome.
@@ -43,20 +41,21 @@ The app opens in its own window without browser chrome, and can be launched from
 - **Scoring** -- tap-friendly +/- buttons; serve indicator advances automatically
 - **Timeouts** -- diamond-dot indicator (filled = used, outlined = remaining); count enforced per fair play rule; blocked mid-sequence in triple ball
 - **Substitutions** -- per-team counter; fair play restrictions enforced automatically; deciding-set limits applied automatically
-- **Misconduct sanctions** -- Warning -> Penalty -> Expulsion -> Disqualification; one warning per team per match; individual escalation enforced
+- **Misconduct sanctions** -- Warning → Penalty → Expulsion → Disqualification; one warning per team per match; individual escalation enforced
 - **Delay sanctions** -- Delay Warning (one per team per match) + Delay Penalty; penalty awards a point
 - **Improper requests** -- first is free per team per match; subsequent flags a warning
 - **Fair play rules** -- None / Triple Ball / Full / Partial; timeout and sub limits enforced per set, including 12-sub deciding sets
 - **Set management** -- End Set, serve picker inline in the bar, pulsing Start Next Set
-- **End Game** -- final score stays on screen; Undo available immediately; Done returns to setup
+- **End Game** -- final score stays on screen; Undo available immediately (with optional confirm); Done returns to setup
 - **Side switching** -- Sides button swaps panels for court-side reference; TB indicator arrows update accordingly
 - **Undo / Redo** -- active during games and immediately after End Game
 - **Match Log** -- event log + set summary; tap a set number pill to filter; available during active games
 - **Games history** -- browse, resume, export, delete; event log filterable by set
 - **Import / Export** -- JSON per game or all at once
 - **Triple Ball** -- animated sequence indicator between team panels; directional arrows; configurable
-- **Dark mode & colors** -- customizable in Setup
-- **Mobile Display** -- notch/safe-area padding configurable in Setup for landscape phone use
+- **Dark mode & colors** -- full dark mode with proper contrast; team colors, sidebar, and button colors all customizable
+- **Keep Screen Awake** -- optional Wake Lock prevents display sleep during a game (iOS 16.4+ PWA, Android, desktop Chrome)
+- **Mobile Display** -- auto safe-area handling for notch/rounded-corner phones; manual notch padding configurable in Setup
 
 ## Game Formats
 
@@ -153,11 +152,12 @@ One free per team per match; app tracks usage and warns if the free request has 
 
 | Section | Key settings |
 |---------|-------------|
-| Appearance | Dark mode, font size, team colors, sidebar border color, Start Set button colors |
+| Appearance | Dark mode, font size, team colors, sidebar border color, Start Set button colors, Keep Screen Awake, Confirm before Undo |
 | Mobile Display | Notch padding -- enable and choose left/right side to push team panels away from the phone notch in landscape mode; padding size configurable |
-| Game Defaults | Default format, variation, fair play, timeouts/set, subs/set |
+| Game Defaults | Default team names, default location, default format, variation, fair play, timeouts/set, subs/set |
 | Triple Ball | Phase box size, highlight color, scroll speed |
 | Data | Export all games, import, clear all |
+| About | App version and active cache name (useful for confirming PWA updates) |
 
 ## Side Switching
 

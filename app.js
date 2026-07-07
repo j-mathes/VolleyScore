@@ -41,7 +41,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "4";
+var APP_VERSION = "5";
 
 // Default settings
 var DEFAULT_SETTINGS = {
@@ -64,6 +64,11 @@ var DEFAULT_SETTINGS = {
   notchEnabled: false,
   notchSide: "left",
   notchPad: 50,
+  keepScreenAwake: false,
+  confirmUndo: false,
+  defaultTeamA: "",
+  defaultTeamB: "",
+  defaultLocation: "",
 };
 
 // ---- Settings -------------------------------------------
@@ -622,6 +627,22 @@ async function persistGame() {
   await dbSaveGame(record);
 }
 
+// ---- Wake Lock ------------------------------------------
+
+var _wakeLock = null;
+
+function requestWakeLock() {
+  if (!settings.keepScreenAwake || !("wakeLock" in navigator)) return;
+  navigator.wakeLock.request("screen").then(function (lock) {
+    _wakeLock = lock;
+    lock.addEventListener("release", function () { _wakeLock = null; });
+  }).catch(function () {});
+}
+
+function releaseWakeLock() {
+  if (_wakeLock) { _wakeLock.release().catch(function () {}); _wakeLock = null; }
+}
+
 window.addEventListener("beforeunload", function () {
   // Flush pending auto-save synchronously where possible
   if (_autoSaveTimer) {
@@ -816,6 +837,10 @@ var setupTimeouts = 2;
 var setupSubs = 6;
 
 function initGameSetupForm() {
+  // Pre-fill team names and location from saved defaults
+  $("cfgTeamA").value    = settings.defaultTeamA || "Team A";
+  $("cfgTeamB").value    = settings.defaultTeamB || "Team B";
+  $("cfgLocation").value = settings.defaultLocation || "";
   // Prefill defaults from settings
   document.querySelector('input[name="gameFormat"][value="' + settings.defaultFormat + '"]').checked = true;
   document.querySelector('input[name="variation"][value="' + (settings.defaultVariation || "standard") + '"]').checked = true;
@@ -998,6 +1023,7 @@ function showScoreboard() {
   $("gameSetupPanel").hidden = true;
   $("scoreboard").hidden = false;
   updateTeamColors();
+  requestWakeLock();
 }
 
 function showSetupPanel() {
@@ -1466,6 +1492,7 @@ function wireScoreboardControls() {
 
   // Undo / Redo
   $("btnUndo").addEventListener("click", function () {
+    if (settings.confirmUndo && !confirm("Undo last action?")) return;
     controller.undo();
     renderScoreboard();
   });
@@ -1540,6 +1567,7 @@ function wireScoreboardControls() {
       type: "GAME_ENDED",
       timestamp: new Date().toISOString(),
     });
+    releaseWakeLock();
     // Force-save immediately so Games page shows the correct status
     _justEndedGame = true;
     await persistGame();
@@ -2369,6 +2397,11 @@ function renderSetupPage() {
   var notchSideRadio = document.querySelector('input[name="cfgNotchSide"][value="' + (settings.notchSide || "left") + '"]');
   if (notchSideRadio) notchSideRadio.checked = true;
   $("cfgNotchPad").textContent = settings.notchPad !== undefined ? settings.notchPad : 50;
+  $("cfgKeepAwake").checked   = !!settings.keepScreenAwake;
+  $("cfgConfirmUndo").checked = !!settings.confirmUndo;
+  $("cfgDefTeamA").value    = settings.defaultTeamA    || "";
+  $("cfgDefTeamB").value    = settings.defaultTeamB    || "";
+  $("cfgDefLocation").value = settings.defaultLocation || "";
 
   // About: show app version and active SW cache name
   var verLine = $("appVersionLine");
@@ -2478,6 +2511,31 @@ function wireSetupPage() {
   });
   $("btnDefSubsUp").addEventListener("click", function () {
     if (settings.defaultSubs < 18) { settings.defaultSubs++; $("cfgDefSubs").textContent = settings.defaultSubs; saveSettings(); }
+  });
+
+  // Keep screen awake
+  $("cfgKeepAwake").addEventListener("change", function () {
+    settings.keepScreenAwake = this.checked;
+    if (this.checked) { var st = controller.getState(); if (st && !st.endedAt) requestWakeLock(); }
+    else releaseWakeLock();
+    saveSettings();
+  });
+
+  // Confirm before Undo
+  $("cfgConfirmUndo").addEventListener("change", function () {
+    settings.confirmUndo = this.checked;
+    saveSettings();
+  });
+
+  // Default team names and location
+  $("cfgDefTeamA").addEventListener("input", function () {
+    settings.defaultTeamA = this.value; saveSettings();
+  });
+  $("cfgDefTeamB").addEventListener("input", function () {
+    settings.defaultTeamB = this.value; saveSettings();
+  });
+  $("cfgDefLocation").addEventListener("input", function () {
+    settings.defaultLocation = this.value; saveSettings();
   });
 
   // Notch padding
@@ -2600,6 +2658,14 @@ async function init() {
   wireSanctionModal();
   wireGamesPage();
   wireSetupPage();
+
+  // Re-request wake lock when page becomes visible again (browser releases it on hide)
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && settings.keepScreenAwake && !_wakeLock) {
+      var st = controller.getState();
+      if (st && !st.endedAt) requestWakeLock();
+    }
+  });
 
   // Re-render triple ball track when orientation flips (portrait ↔ landscape).
   // renderTripleBall() bakes the orientation into CSS transforms, so a static
