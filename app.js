@@ -41,7 +41,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "5";
+var APP_VERSION = "6";
 
 // Default settings
 var DEFAULT_SETTINGS = {
@@ -2707,6 +2707,31 @@ document.addEventListener("DOMContentLoaded", function () {
   // Register service worker for PWA offline support
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js")
+      .then(function (reg) {
+        reg.addEventListener("updatefound", function () {
+          var newWorker = reg.installing;
+          newWorker.addEventListener("statechange", function () {
+            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+              // A new version is ready — show a tappable toast
+              var existing = document.querySelector(".toast");
+              if (existing) existing.parentNode.removeChild(existing);
+              if (_toastTimer) { clearTimeout(_toastTimer); _toastTimer = null; }
+
+              var toast = document.createElement("div");
+              toast.className = "toast toast-update";
+              toast.textContent = "Update available \u2014 tap to refresh";
+              toast.setAttribute("role", "button");
+              toast.setAttribute("tabindex", "0");
+              toast.style.cursor = "pointer";
+              toast.addEventListener("click", function () { window.location.reload(); });
+              toast.addEventListener("keydown", function (e) {
+                if (e.key === "Enter" || e.key === " ") { window.location.reload(); }
+              });
+              document.body.appendChild(toast);
+            }
+          });
+        });
+      })
       .catch(function () { /* SW unavailable — app still works fine */ });
   }
 });

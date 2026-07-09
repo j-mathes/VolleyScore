@@ -61,6 +61,7 @@ The app opens in its own window without browser chrome, and can be launched from
 - **Triple Ball** -- animated sequence indicator between team panels; directional arrows; configurable
 - **Dark mode & colors** -- full dark mode with proper contrast; team colors, sidebar, and button colors all customizable
 - **Keep Screen Awake** -- optional Wake Lock prevents display sleep during a game (iOS 16.4+ PWA, Android, desktop Chrome)
+- **Auto-update toast** -- when a new version of the app is cached in the background, a "Update available — tap to refresh" toast appears; tapping it reloads to the new version
 - **Mobile Display** -- auto safe-area handling for notch/rounded-corner phones; manual notch padding configurable in Setup
 
 ## Game Formats
@@ -163,7 +164,7 @@ One free per team per match; app tracks usage and warns if the free request has 
 | Game Defaults | Default team names, default location, default format, variation, fair play, timeouts/set, subs/set |
 | Triple Ball | Phase box size, highlight color, scroll speed |
 | Data | Export all games, import, clear all |
-| About | App version and active cache name (useful for confirming PWA updates) |
+| About | App version and active cache name; a toast appears automatically when a new version is ready |
 
 ## Side Switching
 
