@@ -41,7 +41,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "6";
+var APP_VERSION = "7";
 
 // Default settings
 var DEFAULT_SETTINGS = {
@@ -556,6 +556,8 @@ function deriveGameState(timeline) {
       }
     }
   }
+
+  return {
     gameId: startEv.gameId,
     gameName: startEv.gameName || "Untitled Game",
     teamA: startEv.teamA || "Team A",

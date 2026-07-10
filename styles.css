@@ -2015,7 +2015,8 @@ details[open] .event-log-summary::before {
   transform: none;
 }
 
-.role-btn.active {
+.role-btn.active,
+.role-btn.active:hover:not(:disabled) {
   background: var(--team-a);
   color: #fff;
   border-color: transparent;
@@ -2546,6 +2547,11 @@ input.player-num-input {
 /* Sanction modal — role buttons, numpad, sanction type buttons, close */
 [data-theme="dark"] .role-btn {
   background: rgba(255, 255, 255, 0.09);
+}
+[data-theme="dark"] .role-btn.active,
+[data-theme="dark"] .role-btn.active:hover:not(:disabled) {
+  background: var(--team-a);
+  color: #fff;
 }
 [data-theme="dark"] .role-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.15);

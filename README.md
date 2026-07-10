@@ -1,166 +1,36 @@
 ﻿# VolleyScore
 
-Browser-based volleyball scorekeeper. Open `index.html` in any modern browser -- no install, no build step.
+Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
 **[https://j-mathes.github.io/VolleyScore/](https://j-mathes.github.io/VolleyScore/)**
 
-## Installing as an App (PWA)
+---
 
-VolleyScore is a Progressive Web App -- it can be installed on your device for a full-screen, offline-capable experience with no browser chrome.
+## Installing as a PWA
 
-### iOS (iPhone / iPad)
+VolleyScore is a Progressive Web App. Install it for a full-screen, offline-capable experience.
 
-**Safari** is the primary method. **Chrome and Edge on iOS 17+** also support installation via their Share button.
+| Platform | Steps |
+|----------|-------|
+| **iOS — Safari** | Share ⎙ → Add to Home Screen → Add. On iOS 17.4+, choose "As Web App" when prompted. |
+| **iOS — Chrome / Edge (17+)** | Share ⎙ in the URL bar → Add to Home Screen → Add. |
+| **Android — Chrome** | ⋮ menu → Add to Home Screen (or tap the install banner) → Add. |
+| **Desktop — Chrome / Edge** | Click the install icon ⊕ in the address bar → Install. |
 
-**Safari:**
-1. Open **Safari** and navigate to the hosted link above
-2. Tap the **Share** button (⎙) in the toolbar
-3. Scroll down and tap **"Add to Home Screen"**
-4. Edit the name if desired → tap **Add**
-5. **iOS 17.4+:** when prompted, choose **"As Web App"** (not "In Safari")
-
-**Chrome or Edge (iOS 17+):**
-1. Open **Chrome** or **Edge** and navigate to the hosted link
-2. Tap the **Share** button (⎙) in the URL bar
-3. Tap **"Add to Home Screen"** → **Add**
-
-The app icon will appear on your home screen. Opening from there launches it full-screen (no browser UI) and works offline after the first load.
-
-### Android
-
-1. Open **Chrome** and navigate to the hosted link
-2. Tap the **⋮** menu → **"Add to Home Screen"** (or tap the install banner if it appears)
-3. Tap **Add**
-
-### Desktop (Chrome / Edge)
-
-1. Navigate to the hosted link
-2. Click the **install icon** (⊕) in the address bar, or open the browser menu → **"Install VolleyScore"**
-3. Click **Install**
-
-The app opens in its own window without browser chrome, and can be launched from the taskbar or app launcher.
+After installing, the app opens full-screen without browser chrome and works offline.
 
 ---
 
-## Features
+## Quickstart
 
-- **Scoring** -- tap-friendly +/- buttons; serve indicator advances automatically
-- **Win condition alerts** -- glow, highlight, and toast when a team reaches the set-win score; also alerts when a set win would clinch the match; does not auto-end anything (see [Win Alerts](#win-alerts))
-- **Action alerts** -- one-shot glow on the relevant indicator when a timeout is taken, a substitution is recorded, or a sanction is issued; color and duration configurable independently from win alerts (see [Action Alerts](#action-alerts))
-- **Configurable scoring rules** -- per-game win target, win-by margin, and score cap for both regular sets and the deciding set (see [Scoring Rules](#scoring-rules))
-- **Timeouts** -- diamond-dot indicator (filled = used, outlined = remaining); count enforced per fair play rule; blocked mid-sequence in triple ball
-- **Substitutions** -- per-team counter; fair play restrictions enforced automatically; deciding-set limits applied automatically
-- **Misconduct sanctions** -- Warning → Penalty → Expulsion → Disqualification; one warning per team per match; individual escalation enforced
-- **Delay sanctions** -- Delay Warning (one per team per match) + Delay Penalty; penalty awards a point
-- **Improper requests** -- first is free per team per match; subsequent flags a warning
-- **Fair play rules** -- None / Triple Ball / Full / Partial; timeout and sub limits enforced per set, including 12-sub deciding sets
-- **Set management** -- End Set, serve picker inline in the bar, pulsing Start Next Set
-- **End Game** -- final score stays on screen; Undo available immediately (with optional confirm); Done returns to setup
-- **Side switching** -- Sides button swaps panels for court-side reference; TB indicator arrows update accordingly
-- **Undo / Redo** -- active during games and immediately after End Game
-- **Match Log** -- event log + set summary; tap a set number pill to filter; available during active games
-- **Games history** -- browse, resume, export, delete; event log filterable by set
-- **Import / Export** -- JSON per game or all at once
-- **Triple Ball** -- animated sequence indicator between team panels; directional arrows; configurable
-- **Dark mode & colors** -- full dark mode with proper contrast; team colors, sidebar, and button colors all customizable
-- **Keep Screen Awake** -- optional Wake Lock prevents display sleep during a game (iOS 16.4+ PWA, Android, desktop Chrome)
-- **Auto-update toast** -- when a new version of the app is cached in the background, a "Update available — tap to refresh" toast appears; tapping it reloads to the new version
-- **Mobile Display** -- auto safe-area handling for notch/rounded-corner phones; manual notch padding configurable in Setup
+1. **Score page** — enter team names, pick a format, fair play rule, and first server → **Start Game**
+2. Tap **+** to score a point; the serve indicator updates automatically
+3. Sidebar buttons: **TO** (timeout), **Sub** (substitution), card icon (sanctions)
+4. **End Set** → choose who serves → **Start Set 2** (pulses green when ready)
+5. Repeat until the match is complete → **End Game** → **Done** to return to setup
+6. **Match Log** (nav bar) — full event log; tap a set number pill to filter by set
 
-## Game Formats
-
-| Format | Sets | Win condition |
-|--------|------|--------------|
-| Single Set | 1 | First to reach set win score (default 25), win by 2 |
-| 2 Straight Sets | 2 | Both sets must be won; regular set rules apply to all sets |
-| Best of 3 | up to 3 | First to win 2 sets; set 3 uses deciding set rules |
-| Best of 5 | up to 5 | First to win 3 sets; set 5 uses deciding set rules |
-
-Default rules: regular sets to 25, win by 2; deciding set to 15, win by 2. All configurable per game and in Setup → Scoring Defaults.
-
-## Scoring Rules
-
-Each game stores its own win conditions, set at game start and configurable in Setup → Scoring Defaults as global defaults.
-
-**Regular sets** and the **deciding set** (set 3 in Best of 3, set 5 in Best of 5) can each have independent rules:
-
-| Setting | Description | Default |
-|---------|-------------|---------|
-| Win at | Score a team must reach to be eligible to win | 25 (regular) / 15 (decider) |
-| Win by | Minimum lead required once Win at is reached | 2 |
-| Cap | Hard ceiling -- reaching this score wins immediately, regardless of lead (0 = no cap) | 0 |
-
-**Examples:**
-- Standard: Win at 25, Win by 2, no cap → play until 25+ with a 2-point lead (26–24, 27–25, …)
-- Capped at 27: Win at 25, Win by 2, Cap 27 → if tied at 26–26, next point wins; score cannot exceed 27
-- 2 Straight Sets to 15, capped at 17: set Win at 15 / Win by 2 / Cap 17 for regular sets
-- Best of 3, decider capped at 7: set decider Win at 5 / Win by 2 / Cap 7
-
-## Win Alerts
-
-When a team's score meets the win condition the app **alerts without acting** -- it never automatically ends a set or match.
-
-**What triggers an alert:**
-
-| Situation | Triggered by |
-|-----------|-------------|
-| Set win condition met | Scoring a point that satisfies Win at + Win by (or reaches Cap) |
-| Match win pending | Same point would also clinch enough sets to win the match |
-| Match won (between sets) | Ending a set that gives one team the required number of sets |
-
-**Visual indicators:**
-- **End Set** button -- glow/outline
-- Winning team **name** -- glow/outline
-- Winning team **score** -- glow/outline
-- **End Game** button -- glow/outline when match winner is determined (between sets)
-
-**Toast notifications:**
-- Set win: `🥅 Team A at set win! (25–22 in Set 1)`
-- Match win during scoring: `🏆 Team A wins the MATCH! (25–22 in Set 2 · Sets 2–0)`
-- Match win after End Set: `🏆 Team A wins the match! (2–0 sets)`
-
-Glows and toasts reset on Undo so they re-fire if the winning point is re-scored.
-
-**Configurable in Setup → Scoring Defaults → Win Alert:**
-
-| Setting | Default |
-|---------|---------|
-| Glow / highlight color | Amber (#f59e0b) |
-| Glow duration | 3 seconds |
-
-The glow pulses for the configured duration, then holds a steady outline until the set is ended or the score changes.
-
-## Action Alerts
-
-A one-shot glow flashes on the relevant indicator whenever a timeout, substitution, or sanction is recorded. No toast is shown -- the glow is the notification.
-
-| Action | Glows on |
-|--------|----------|
-| Timeout taken | TO indicator (label + dots + count) for that team |
-| Substitution recorded | Sub counter for that team |
-| Misconduct sanction issued | The new sanction chip in the sanctions bar |
-| Delay sanction issued | The new sanction chip in the sanctions bar |
-| Improper request recorded | The IR chip in the sanctions bar |
-
-For sanctions the glow targets only the chip just added -- existing chips are not re-glowed.
-
-The animation runs once and fades out completely; a rapid second action on the same indicator correctly restarts the animation.
-
-**Configurable in Setup → Scoring Defaults → Action Alert:**
-
-| Setting | Default |
-|---------|---------|
-| Glow / highlight color | Purple (#a855f7) |
-| Glow duration | 2 seconds |
-
-## Workflow
-
-1. **Score** -- fill in teams, format, fair play rule, first server -- **Start Game**
-2. Tap **+** to score; serve indicator moves automatically
-3. Use sidebar buttons for **TO**, **Sub**, and sanctions
-4. **End Set** -- pick who serves -- pulsing **Start Set**
-5. **End Game** when the match is complete -- **Done** to return to setup
-6. **Match Log** nav button -- full event log (tap a set number to filter)
+---
 
 ## Pages
 
@@ -168,61 +38,131 @@ The animation runs once and fades out completely; a rapid second action on the s
 |------|---------|
 | Score | Live scorekeeping |
 | Match Log | Event log + set summary (active games only) |
-| Games | Saved games -- resume, export, delete |
-| Setup | Colors, defaults, import/export |
+| Games | Browse, resume, export, or delete saved games |
+| Setup | Appearance, scoring defaults, data management |
 
-## Triple Ball
+---
 
-Three balls fed in sequence before rotating. Six-phase cycle:
+## Features
 
-```
-A Serves -->  ->B Toss  <-A Toss  |  B Serves <--  <-A Toss  ->B Toss
-   [0]          [1]       [2]     |     [3]           [4]       [5]
-```
+- **Scoring** — tap +/− per team; serve dot follows the last scorer automatically
+- **Timeouts** — dot indicator (filled = used); count enforced per fair play rule; blocked mid-sequence in Triple Ball
+- **Substitutions** — per-team counter; fair play restrictions applied automatically
+- **Sanctions** — full misconduct and delay sanction system with escalation enforcement (see [Sanctions](#sanctions))
+- **Fair Play rules** — None / Triple Ball / Full / Partial; all timeout and sub limits enforced automatically (see [Fair Play Rules](#fair-play-rules))
+- **Configurable scoring** — per-game win target, win-by margin, and score cap for regular and deciding sets (see [Scoring Rules](#scoring-rules))
+- **Win & action alerts** — visual glow + toast when a win condition is met; glow on the TO/sub indicator and sanction chip when actions are recorded (see [Alerts](#alerts))
+- **Triple Ball** — animated 6-phase sequence indicator with directional arrows (see [Triple Ball](#triple-ball))
+- **Set & match management** — End Set, between-sets serve picker, Start Next Set
+- **Undo / Redo** — available during play and immediately after End Game (with optional confirmation)
+- **Side switching** — swap which panel each team appears on; Triple Ball arrows update accordingly
+- **Match Log** — filterable event log with per-set score summary
+- **Games history** — browse, resume, export (JSON), or delete saved games
+- **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable
+- **Keep Screen Awake** — optional Wake Lock (iOS 16.4+ PWA, Android, desktop Chrome)
+- **PWA / offline** — installs to home screen; auto-update toast when a new version is cached
 
-First toss matches the serve direction; second toss reverses it.
+---
 
-### Sequence Indicator
+## Game Formats
 
-A vertical column (landscape) or horizontal strip (portrait) between the team panels shows the preceding / current / next phase. The current phase sits inside a stationary green ring; phases scroll through it as points are scored.
+| Format | Sets | Match win |
+|--------|------|-----------|
+| Single Set | 1 | Win the set |
+| 2 Straight Sets | 2 | Win both sets |
+| Best of 3 | up to 3 | First to win 2 sets |
+| Best of 5 | up to 5 | First to win 3 sets |
 
-Each box shows the team letter, action (Serves / Toss), and a directional arrow showing ball flow -- flips automatically on side-swap.
+In Best of 3 and Best of 5, the final possible set (set 3 or set 5) uses the **deciding set** scoring rules. All other sets use the **regular set** rules. Both are configurable.
 
-- **Serve dot** stays on the serving team for the full 3-ball half; winning a rally does not transfer the serve
-- **- button** acts as Undo in triple ball, stepping the sequence back
-- **Configurable** in Setup -> Triple Ball: box size (default 84 px), highlight color, scroll speed
+---
 
-### Timeouts & Substitutions
+## Scoring Rules
 
-Allowed only **between sequences** -- at phase 0 (before first server's serve) or phase 3 (before second server's serve). TO and Sub buttons disable at other phases.
+Each game stores its own win conditions, configured at game start. Global defaults live in **Setup → Scoring Defaults**.
 
-### Penalties
+| Setting | Description | Default (regular / deciding) |
+|---------|-------------|------------------------------|
+| Win at | Score a team must reach to be eligible to win | 25 / 15 |
+| Win by | Minimum lead required once Win at is reached | 2 / 2 |
+| Cap | Reaching this score wins immediately regardless of lead; 0 = no cap | 0 / 0 |
 
-Red card or Delay Penalty awards a point and advances the sequence. A toast identifies the replaced slot. A toggle in the sanction dialog handles mid-rally vs after-rally scenarios.
+**Examples**
+
+| Scenario | Regular sets | Deciding set |
+|----------|-------------|--------------|
+| Standard volleyball | Win at 25, Win by 2 | Win at 15, Win by 2 |
+| Capped standard | Win at 25, Win by 2, Cap 27 | — |
+| 2 Straight Sets to 15, capped at 17 | Win at 15, Win by 2, Cap 17 | n/a |
+| Best of 3, short decider | Win at 25, Win by 2 | Win at 5, Win by 2, Cap 7 |
+
+With a cap: if the score reaches the cap value, that team wins regardless of the lead.
+
+---
+
+## Alerts
+
+The app never automatically ends a set or match — it only draws attention to win conditions.
+
+### Win Alerts
+
+When a team's score meets the set-win condition:
+
+- **End Set** button, winning team **name**, and winning team **score** all glow
+- A toast appears: `🥅 Team A at set win! (25–22 in Set 1)`
+- If that win also clinches the match: `🏆 Team A wins the MATCH! (25–22 in Set 2 · Sets 2–0)`
+- After **End Set** reveals a match winner: `🏆 Team A wins the match! (2–0 sets)`
+- **End Game** button glows between sets when a match winner is already determined
+
+Glows and toasts reset on Undo and re-fire if the winning point is re-scored.
+
+Configure in **Setup → Scoring Defaults → Win Alert**: color (default amber) and duration (default 3 s).
+
+### Action Alerts
+
+A one-shot glow flashes on the relevant indicator when an action is recorded — no toast.
+
+| Action | Glows on |
+|--------|----------|
+| Timeout taken | TO indicator (label + dots + count) |
+| Substitution recorded | Sub counter |
+| Sanction / delay sanction issued | The new chip in the sanctions bar |
+| Improper request recorded | The IR chip |
+
+Only the chip just added glows — existing chips are not re-glowed. Rapid repeat actions restart the animation.
+
+Configure in **Setup → Scoring Defaults → Action Alert**: color (default purple) and duration (default 2 s).
+
+---
 
 ## Fair Play Rules
 
-| Rule | Sets 1-2 | Deciding set |
+| Rule | Sets 1–2 | Deciding set |
 |------|----------|--------------|
 | None | Standard | Standard |
 | Triple Ball | 3 TOs, no subs | 2 TOs, 12 subs (after last toss only) |
 | Full | 3 TOs, no subs | 2 TOs, 12 subs (any time) |
 | Partial | 2 TOs, subs unlock at 15 pts | 2 TOs, subs any time |
 
-When a fair play rule is active the Timeouts/Set and Subs/Set fields are hidden -- the rule sets those values. For Partial, a toast fires when either team reaches 15 points.
+When a fair play rule is active the Timeouts/Set and Subs/Set steppers are hidden — the rule controls those values. For Partial, a toast fires when either team reaches 15 points.
+
+---
 
 ## Sanctions
 
 ### Misconduct (individual)
 
-| Sanction | Cards | Effect |
-|----------|-------|--------|
+| Sanction | Display | Effect |
+|----------|---------|--------|
 | Warning | 🟨 | No point; one per team per match |
 | Penalty | 🟥 | Point + serve to opponent |
 | Expulsion | 🟨🟥 | Player removed for rest of set |
 | Disqualification | 🟨 🟥 | Player removed for rest of match |
 
-**Escalation** -- next sanction must always be higher; app enforces this and disables lower buttons. Asst. Coach escalation is not individually tracked (different ACs may each receive a penalty); team-level warning still applies.
+Escalation is enforced — each sanction must be higher than the last for the same individual. Two roles are exempt from individual tracking:
+
+- **Unnumbered players** — if no jersey number is entered, the app cannot identify the individual, so escalation is not tracked and all levels remain available. The team-level one-warning limit still applies.
+- **Asst. Coach** — different assistants may each receive their own sanctions; escalation is not tracked per-assistant. The team-level warning limit still applies.
 
 ### Delay (team)
 
@@ -233,32 +173,65 @@ When a fair play rule is active the Timeouts/Set and Subs/Set fields are hidden 
 
 ### Improper Request
 
-One free per team per match; app tracks usage and warns if the free request has already been used.
+One free per team per match. The button is disabled once the free request has been used.
+
+---
+
+## Triple Ball
+
+Three balls are played in sequence before the serve rotates. The six-phase cycle:
+
+```
+A Serves →   → B Toss   ← A Toss  |  B Serves ←   ← A Toss   → B Toss
+   [0]          [1]        [2]     |     [3]           [4]         [5]
+```
+
+The first toss follows the serve direction; the second toss reverses it.
+
+### Sequence Indicator
+
+A scrolling column (landscape) or strip (portrait) between the team panels shows the previous, current, and next phase inside a stationary highlighted ring. Each box shows the team letter, action type, and a directional arrow that flips automatically on side-swap.
+
+- The **serve dot** stays on the serving team for the full 3-ball half — scoring a rally does not transfer it
+- The **− button** acts as Undo, stepping the sequence back
+- Configurable in **Setup → Triple Ball**: box size, highlight color, scroll speed
+
+### Timeouts & Substitutions
+
+Only allowed at phase 0 (before A serves) or phase 3 (before B serves). TO and Sub buttons disable at all other phases.
+
+### Penalties
+
+A Red card or Delay Penalty awards a point and advances the sequence. A toast identifies which phase slot was replaced. A toggle in the sanction dialog handles mid-rally vs. after-rally.
+
+---
 
 ## Setup
 
-| Section | Key settings |
-|---------|-------------|
-| Appearance | Dark mode, font size, team colors, sidebar border color, Start Set button colors, Keep Screen Awake, Confirm before Undo |
-| Mobile Display | Notch padding -- enable and choose left/right side to push team panels away from the phone notch in landscape mode; padding size configurable |
-| Game Defaults | Default team names, default location, default format, variation, fair play, timeouts/set, subs/set |
-| Scoring Defaults | Per-set win rules (Win at / Win by / Cap) for both regular sets and the deciding set; Win Alert color and glow duration; Action Alert color and glow duration |
+| Section | Settings |
+|---------|----------|
+| Appearance | Dark mode, font size, team colors, sidebar border, Start Set button colors, Keep Screen Awake, Confirm before Undo |
+| Mobile Display | Notch padding — side (left/right) and amount; useful in landscape when a phone notch covers the sidebar buttons |
+| Game Defaults | Default team names, location, format, variation, fair play rule, timeouts/set, subs/set |
+| Scoring Defaults | Win at / Win by / Cap for regular and deciding sets; Win Alert and Action Alert color and duration |
 | Triple Ball | Phase box size, highlight color, scroll speed |
-| Data | Export all games, import, clear all |
-| About | App version and active cache name; a toast appears automatically when a new version is ready |
+| Data | Export all games (JSON), import, clear all data |
+| About | App version and cache name; an update toast appears automatically when a new version is cached |
 
-## Side Switching
-
-**Sides** button swaps which panel each team appears on -- useful when teams change ends. Visual only; all data stays attached to the correct team. In triple ball the directional arrows update to match. Resets on new game.
+---
 
 ## Data & Storage
 
-Saves automatically to `localStorage` (IndexedDB fallback when quota exceeded). Export/import via JSON -- single game or full collection. Transfer between devices by exporting and importing the file.
+Games save automatically to `localStorage` with an IndexedDB fallback when storage is nearly full. Export and import via JSON — one game at a time or the full collection. Transfer between devices by exporting on one and importing on the other.
+
+---
 
 ## Tech
 
-Vanilla JavaScript, no frameworks, no build step. Single `app.js` + `styles.css` + `index.html` + `manifest.json` + `sw.js` (service worker for offline/PWA support) + `icons/`.
+Vanilla JavaScript — no frameworks, no build step. Files: `app.js`, `styles.css`, `index.html`, `manifest.json`, `sw.js` (service worker), `icons/`.
+
+---
 
 ## License
 
-Copyright (c) 2025 Jared Mathes -- [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+Copyright © 2025 Jared Mathes — [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
