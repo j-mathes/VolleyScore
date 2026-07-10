@@ -64,6 +64,10 @@
   /* Win condition alert */
   --win-glow-color: #f59e0b;
   --win-glow-duration: 3s;
+
+  /* Action alert (timeouts, subs, sanctions) */
+  --action-glow-color: #a855f7;
+  --action-glow-duration: 2s;
 }
 
 /* ---- Dark theme ---- */
@@ -2350,6 +2354,18 @@ input.player-num-input {
 .stepper.stepper-sm .stepper-val {
   font-size: 0.9rem;
   min-width: 2.2ch;
+}
+
+/* ---- Action glow (timeouts, subs, sanctions) ---- */
+@keyframes action-glow-pulse {
+  0%   { box-shadow: 0 0 0 2px var(--action-glow-color); outline: 2px solid var(--action-glow-color); outline-offset: 2px; }
+  35%  { box-shadow: 0 0 14px 5px var(--action-glow-color); outline: 3px solid var(--action-glow-color); outline-offset: 3px; }
+  100% { box-shadow: none; outline: 2px solid transparent; outline-offset: 2px; }
+}
+
+.action-glow {
+  animation: action-glow-pulse var(--action-glow-duration) ease forwards;
+  border-radius: var(--radius-sm);
 }
 
 /* ---- Scrollbars (thin) ---- */

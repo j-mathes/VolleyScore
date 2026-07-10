@@ -46,6 +46,7 @@ The app opens in its own window without browser chrome, and can be launched from
 
 - **Scoring** -- tap-friendly +/- buttons; serve indicator advances automatically
 - **Win condition alerts** -- glow, highlight, and toast when a team reaches the set-win score; also alerts when a set win would clinch the match; does not auto-end anything (see [Win Alerts](#win-alerts))
+- **Action alerts** -- one-shot glow on the relevant indicator when a timeout is taken, a substitution is recorded, or a sanction is issued; color and duration configurable independently from win alerts (see [Action Alerts](#action-alerts))
 - **Configurable scoring rules** -- per-game win target, win-by margin, and score cap for both regular sets and the deciding set (see [Scoring Rules](#scoring-rules))
 - **Timeouts** -- diamond-dot indicator (filled = used, outlined = remaining); count enforced per fair play rule; blocked mid-sequence in triple ball
 - **Substitutions** -- per-team counter; fair play restrictions enforced automatically; deciding-set limits applied automatically
@@ -128,6 +129,29 @@ Glows and toasts reset on Undo so they re-fire if the winning point is re-scored
 | Glow duration | 3 seconds |
 
 The glow pulses for the configured duration, then holds a steady outline until the set is ended or the score changes.
+
+## Action Alerts
+
+A one-shot glow flashes on the relevant indicator whenever a timeout, substitution, or sanction is recorded. No toast is shown -- the glow is the notification.
+
+| Action | Glows on |
+|--------|----------|
+| Timeout taken | TO indicator (label + dots + count) for that team |
+| Substitution recorded | Sub counter for that team |
+| Misconduct sanction issued | The new sanction chip in the sanctions bar |
+| Delay sanction issued | The new sanction chip in the sanctions bar |
+| Improper request recorded | The IR chip in the sanctions bar |
+
+For sanctions the glow targets only the chip just added -- existing chips are not re-glowed.
+
+The animation runs once and fades out completely; a rapid second action on the same indicator correctly restarts the animation.
+
+**Configurable in Setup → Scoring Defaults → Action Alert:**
+
+| Setting | Default |
+|---------|---------|
+| Glow / highlight color | Purple (#a855f7) |
+| Glow duration | 2 seconds |
 
 ## Workflow
 
@@ -218,7 +242,7 @@ One free per team per match; app tracks usage and warns if the free request has 
 | Appearance | Dark mode, font size, team colors, sidebar border color, Start Set button colors, Keep Screen Awake, Confirm before Undo |
 | Mobile Display | Notch padding -- enable and choose left/right side to push team panels away from the phone notch in landscape mode; padding size configurable |
 | Game Defaults | Default team names, default location, default format, variation, fair play, timeouts/set, subs/set |
-| Scoring Defaults | Per-set win rules (Win at / Win by / Cap) for both regular sets and the deciding set; Win Alert color and glow duration |
+| Scoring Defaults | Per-set win rules (Win at / Win by / Cap) for both regular sets and the deciding set; Win Alert color and glow duration; Action Alert color and glow duration |
 | Triple Ball | Phase box size, highlight color, scroll speed |
 | Data | Export all games, import, clear all |
 | About | App version and active cache name; a toast appears automatically when a new version is ready |

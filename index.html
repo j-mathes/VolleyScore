@@ -251,7 +251,7 @@
             </div>
             <div class="team-indicators">
               <div class="indicator-to-sub">
-                <div class="indicator-to">
+                <div class="indicator-to" id="toIndicatorA">
                   <span class="to-label">TO</span>
                   <span class="to-dots" id="toDotsA" aria-hidden="true"></span>
                   <span class="to-count" id="toCountA">0/2</span>
@@ -289,7 +289,7 @@
             </div>
             <div class="team-indicators">
               <div class="indicator-to-sub">
-                <div class="indicator-to">
+                <div class="indicator-to" id="toIndicatorB">
                   <span class="to-label">TO</span>
                   <span class="to-dots" id="toDotsB" aria-hidden="true"></span>
                   <span class="to-count" id="toCountB">0/2</span>
@@ -606,6 +606,21 @@
           <button id="btnWinGlowDurDown" type="button" class="stepper-btn">&minus;</button>
           <span id="cfgWinGlowDuration" class="stepper-val">3</span>
           <button id="btnWinGlowDurUp" type="button" class="stepper-btn">+</button>
+        </div>
+      </div>
+
+      <hr class="setup-divider">
+      <div class="setting-row"><span class="setting-label setting-label-section">Action Alert <span class="optional">(timeouts, subs, sanctions)</span></span></div>
+      <div class="color-setting-row">
+        <label class="setting-label" for="cfgActionGlowColor">Glow / highlight color</label>
+        <input type="color" id="cfgActionGlowColor" value="#a855f7" class="color-picker">
+      </div>
+      <div class="setting-row">
+        <label class="setting-label">Glow duration (seconds)</label>
+        <div class="stepper">
+          <button id="btnActionGlowDurDown" type="button" class="stepper-btn">&minus;</button>
+          <span id="cfgActionGlowDuration" class="stepper-val">2</span>
+          <button id="btnActionGlowDurUp" type="button" class="stepper-btn">+</button>
         </div>
       </div>
     </div>

@@ -79,6 +79,9 @@ var DEFAULT_SETTINGS = {
   // Win alert
   winGlowColor: "#f59e0b",
   winGlowDuration: 3,
+  // Action alert (timeouts, subs, sanctions)
+  actionGlowColor: "#a855f7",
+  actionGlowDuration: 2,
 };
 
 // ---- Settings -------------------------------------------
@@ -1209,6 +1212,8 @@ function updateTeamColors() {
   root.style.setProperty("--tb-highlight", settings.tbHighlightColor || "#15803d");
   root.style.setProperty("--win-glow-color", settings.winGlowColor || "#f59e0b");
   root.style.setProperty("--win-glow-duration", (settings.winGlowDuration || 3) + "s");
+  root.style.setProperty("--action-glow-color", settings.actionGlowColor || "#a855f7");
+  root.style.setProperty("--action-glow-duration", (settings.actionGlowDuration || 2) + "s");
 }
 
 function hexToRgb(hex) {
@@ -1243,6 +1248,19 @@ function applyWinGlow(elementId, apply) {
   } else if (!apply && has) {
     el.classList.remove("win-glow");
   }
+}
+
+// Flash a one-shot action glow on an element (timeout, sub, sanction).
+// Restarts the animation if called again while already glowing.
+function applyActionGlow(el) {
+  if (!el) return;
+  el.classList.remove("action-glow");
+  void el.offsetWidth; // force reflow to restart animation
+  el.classList.add("action-glow");
+  var duration = (settings.actionGlowDuration || 2) * 1000;
+  setTimeout(function () {
+    el.classList.remove("action-glow");
+  }, duration + 100);
 }
 
 // ---- Main scoreboard render ----
@@ -1871,6 +1889,7 @@ function dispatchTimeout(team) {
     timestamp: new Date().toISOString(),
   });
   renderScoreboard();
+  applyActionGlow($("toIndicator" + team));
 }
 
 function dispatchSub(team) {
@@ -1907,6 +1926,7 @@ function dispatchSub(team) {
     timestamp: new Date().toISOString(),
   });
   renderScoreboard();
+  applyActionGlow($("subIndicator" + team));
 }
 
 // ---- Sanction escalation helpers -------------------------
@@ -2038,6 +2058,7 @@ function closeSanctionModal() {
 function dispatchImproperRequest() {
   var state = controller.getState();
   if (!state || !state.activeSetNumber || !sanctionTargetTeam) return;
+  var glowTeam = sanctionTargetTeam;
   controller.dispatch({
     type: "IMPROPER_REQUEST",
     team: sanctionTargetTeam,
@@ -2046,11 +2067,14 @@ function dispatchImproperRequest() {
   });
   closeSanctionModal();
   renderScoreboard();
+  var irBar = $("sanctionsBar" + glowTeam);
+  if (irBar) applyActionGlow(irBar.querySelector(".sanction-chip-ir"));
 }
 
 function dispatchSanction(stype) {
   var state = controller.getState();
   if (!state || !state.activeSetNumber || !sanctionTargetTeam) return;
+  var glowTeam = sanctionTargetTeam;
   var player = sanctionSelectedRole === "player" ? (_sanctionPlayerNum || null) : null;
   // Enforce escalation rules — belt-and-suspenders guard if UI state is stale
   var avail = getMisconductAvailability(sanctionTargetTeam, sanctionSelectedRole, _sanctionPlayerNum, state);
@@ -2088,12 +2112,18 @@ function dispatchSanction(stype) {
   }
   closeSanctionModal();
   renderScoreboard();
+  // Glow the newest chip (last in the bar) for the sanctioned team
+  var sanBar = $("sanctionsBar" + glowTeam);
+  if (sanBar) {
+    var chips = sanBar.querySelectorAll(".sanction-chip");
+    if (chips.length) applyActionGlow(chips[chips.length - 1]);
+  }
 }
 
 function dispatchDelaySanction(dtype) {
   var state = controller.getState();
   if (!state || !state.activeSetNumber || !sanctionTargetTeam) return;
-  // Only one delay warning allowed per team per match
+  var glowTeam = sanctionTargetTeam;
   if (dtype === "warning" && !canIssueDelayWarning(sanctionTargetTeam, state)) return;
   controller.dispatch({
     type: "DELAY_SANCTION",
@@ -2125,6 +2155,12 @@ function dispatchDelaySanction(dtype) {
   }
   closeSanctionModal();
   renderScoreboard();
+  // Glow the newest chip (last in the bar) for the sanctioned team
+  var delBar = $("sanctionsBar" + glowTeam);
+  if (delBar) {
+    var delChips = delBar.querySelectorAll(".sanction-chip");
+    if (delChips.length) applyActionGlow(delChips[delChips.length - 1]);
+  }
 }
 
 function wireSanctionModal() {
@@ -2634,6 +2670,8 @@ function renderSetupPage() {
   $("cfgDefDeciderWinCap").textContent  = settings.defaultDeciderWinCap  !== undefined ? settings.defaultDeciderWinCap  : 0;
   $("cfgWinGlowColor").value    = settings.winGlowColor    || "#f59e0b";
   $("cfgWinGlowDuration").textContent = settings.winGlowDuration !== undefined ? settings.winGlowDuration : 3;
+  $("cfgActionGlowColor").value = settings.actionGlowColor || "#a855f7";
+  $("cfgActionGlowDuration").textContent = settings.actionGlowDuration !== undefined ? settings.actionGlowDuration : 2;
 
   // About: show app version and active SW cache name
   var verLine = $("appVersionLine");
@@ -2812,6 +2850,23 @@ function wireSetupPage() {
   $("btnWinGlowDurUp").addEventListener("click", function () {
     var v = settings.winGlowDuration !== undefined ? settings.winGlowDuration : 3;
     if (v < 30) { settings.winGlowDuration = v + 1; $("cfgWinGlowDuration").textContent = settings.winGlowDuration; updateTeamColors(); saveSettings(); }
+  });
+
+  // Action alert — glow color
+  $("cfgActionGlowColor").addEventListener("input", function () {
+    settings.actionGlowColor = this.value;
+    updateTeamColors();
+    saveSettings();
+  });
+
+  // Action alert — glow duration
+  $("btnActionGlowDurDown").addEventListener("click", function () {
+    var v = settings.actionGlowDuration !== undefined ? settings.actionGlowDuration : 2;
+    if (v > 1) { settings.actionGlowDuration = v - 1; $("cfgActionGlowDuration").textContent = settings.actionGlowDuration; saveSettings(); }
+  });
+  $("btnActionGlowDurUp").addEventListener("click", function () {
+    var v = settings.actionGlowDuration !== undefined ? settings.actionGlowDuration : 2;
+    if (v < 30) { settings.actionGlowDuration = v + 1; $("cfgActionGlowDuration").textContent = settings.actionGlowDuration; saveSettings(); }
   });
 
   // Keep screen awake
