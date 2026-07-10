@@ -69,6 +69,16 @@ var DEFAULT_SETTINGS = {
   defaultTeamA: "",
   defaultTeamB: "",
   defaultLocation: "",
+  // Scoring defaults
+  defaultSetWinScore: 25,
+  defaultSetWinBy: 2,
+  defaultSetWinCap: 0,
+  defaultDeciderWinScore: 15,
+  defaultDeciderWinBy: 2,
+  defaultDeciderWinCap: 0,
+  // Win alert
+  winGlowColor: "#f59e0b",
+  winGlowDuration: 3,
 };
 
 // ---- Settings -------------------------------------------
@@ -504,7 +514,45 @@ function deriveGameState(timeline) {
     timeoutAllowedInTripleBall = (tripleBallPhase === 0 || tripleBallPhase === 3);
   }
 
-  return {
+  // ---- Scoring rules & win condition detection ----------------------------
+  var rawSetWinScore     = startEv.setWinScore     !== undefined ? startEv.setWinScore     : 25;
+  var rawSetWinBy        = startEv.setWinBy        !== undefined ? startEv.setWinBy        : 2;
+  var rawSetWinCap       = startEv.setWinCap       !== undefined ? startEv.setWinCap       : 0;
+  var rawDeciderWinScore = startEv.deciderWinScore !== undefined ? startEv.deciderWinScore : 15;
+  var rawDeciderWinBy    = startEv.deciderWinBy    !== undefined ? startEv.deciderWinBy    : 2;
+  var rawDeciderWinCap   = startEv.deciderWinCap   !== undefined ? startEv.deciderWinCap   : 0;
+
+  // Deciding set = last possible set in a best-of format
+  var isBestOf = (startEv.gameFormat === "best3" || startEv.gameFormat === "best5");
+  var activeSetIsDecider = isBestOf && activeSetNumber === formatInfo.total;
+
+  var setWinConditionMet = false;
+  var setWinnerTeam = null;
+  var pendingMatchWin = false; // true when current set win would also clinch the match
+
+  if (activeSetNumber && !endedAt) {
+    var activeSetData = setsMap[activeSetNumber];
+    if (activeSetData) {
+      var wScore = activeSetIsDecider ? rawDeciderWinScore : rawSetWinScore;
+      var wBy    = activeSetIsDecider ? rawDeciderWinBy    : rawSetWinBy;
+      var wCap   = activeSetIsDecider ? rawDeciderWinCap   : rawSetWinCap;
+      var sA = activeSetData.scoreA;
+      var sB = activeSetData.scoreB;
+
+      var teamAWins = (wCap > 0 && sA >= wCap) || (sA >= wScore && (sA - sB) >= wBy);
+      var teamBWins = (wCap > 0 && sB >= wCap) || (sB >= wScore && (sB - sA) >= wBy);
+
+      if (teamAWins) {
+        setWinConditionMet = true;
+        setWinnerTeam = "A";
+        if ((setsWonA + 1) >= formatInfo.toWin) pendingMatchWin = true;
+      } else if (teamBWins) {
+        setWinConditionMet = true;
+        setWinnerTeam = "B";
+        if ((setsWonB + 1) >= formatInfo.toWin) pendingMatchWin = true;
+      }
+    }
+  }
     gameId: startEv.gameId,
     gameName: startEv.gameName || "Untitled Game",
     teamA: startEv.teamA || "Team A",
@@ -536,6 +584,18 @@ function deriveGameState(timeline) {
     subsGrantedForSet: subsGrantedForSet,
     fairPlayNote: fairPlayNote,
     timeoutAllowedInTripleBall: timeoutAllowedInTripleBall,
+    // Scoring rules
+    setWinScore: rawSetWinScore,
+    setWinBy: rawSetWinBy,
+    setWinCap: rawSetWinCap,
+    deciderWinScore: rawDeciderWinScore,
+    deciderWinBy: rawDeciderWinBy,
+    deciderWinCap: rawDeciderWinCap,
+    activeSetIsDecider: activeSetIsDecider,
+    // Win condition
+    setWinConditionMet: setWinConditionMet,
+    setWinnerTeam: setWinnerTeam,
+    pendingMatchWin: pendingMatchWin,
     cursor: timeline.cursor,
     canUndo: timeline.cursor > 0,
     canRedo: timeline.cursor < timeline.events.length,
@@ -851,6 +911,20 @@ function initGameSetupForm() {
   $("cfgSubs").textContent = setupSubs;
   $("cfgScheduledAt").value = toLocalDatetimeValue(new Date());
 
+  // Pre-fill scoring rules from settings defaults
+  setupSetWinScore = settings.defaultSetWinScore !== undefined ? settings.defaultSetWinScore : 25;
+  setupSetWinBy = settings.defaultSetWinBy !== undefined ? settings.defaultSetWinBy : 2;
+  setupSetWinCap = settings.defaultSetWinCap !== undefined ? settings.defaultSetWinCap : 0;
+  setupDeciderWinScore = settings.defaultDeciderWinScore !== undefined ? settings.defaultDeciderWinScore : 15;
+  setupDeciderWinBy = settings.defaultDeciderWinBy !== undefined ? settings.defaultDeciderWinBy : 2;
+  setupDeciderWinCap = settings.defaultDeciderWinCap !== undefined ? settings.defaultDeciderWinCap : 0;
+  $("cfgSetWinScore").textContent = setupSetWinScore;
+  $("cfgSetWinBy").textContent = setupSetWinBy;
+  $("cfgSetWinCap").textContent = setupSetWinCap;
+  $("cfgDeciderWinScore").textContent = setupDeciderWinScore;
+  $("cfgDeciderWinBy").textContent = setupDeciderWinBy;
+  $("cfgDeciderWinCap").textContent = setupDeciderWinCap;
+
   // Reset fair play tooltip
   $("fpTooltip").hidden = true;
   $("btnFpInfo").setAttribute("aria-expanded", "false");
@@ -859,6 +933,8 @@ function initGameSetupForm() {
   updateFirstServeBtnLabels();
   // Show only fair play options relevant to the current variation
   updateFairPlayOptions();
+  // Show/hide deciding set rules based on game format
+  updateDeciderRulesVisibility();
 }
 
 // Show/hide fair play options and reset selection based on variation
@@ -891,6 +967,14 @@ function updateFairPlayOptions() {
     });
   });
 })();
+
+// Show/hide the deciding set rules fieldset based on game format
+function updateDeciderRulesVisibility() {
+  var format = document.querySelector('input[name="gameFormat"]:checked').value;
+  var hasdecider = (format === "best3" || format === "best5");
+  var deciderFieldset = $("deciderRulesFieldset");
+  if (deciderFieldset) deciderFieldset.hidden = !hasdecider;
+}
 
 function updateFirstServeBtnLabels() {
   var btnA = $("btnFirstServeA");
@@ -937,6 +1021,51 @@ function wireGameSetupForm() {
     radio.addEventListener("change", updateFairPlayOptions);
   });
 
+  // Format change → update deciding set rules visibility
+  document.querySelectorAll('input[name="gameFormat"]').forEach(function (radio) {
+    radio.addEventListener("change", updateDeciderRulesVisibility);
+  });
+
+  // Scoring rule steppers — regular sets
+  $("btnSetWinScoreDown").addEventListener("click", function () {
+    if (setupSetWinScore > 1) { setupSetWinScore--; $("cfgSetWinScore").textContent = setupSetWinScore; }
+  });
+  $("btnSetWinScoreUp").addEventListener("click", function () {
+    if (setupSetWinScore < 50) { setupSetWinScore++; $("cfgSetWinScore").textContent = setupSetWinScore; }
+  });
+  $("btnSetWinByDown").addEventListener("click", function () {
+    if (setupSetWinBy > 1) { setupSetWinBy--; $("cfgSetWinBy").textContent = setupSetWinBy; }
+  });
+  $("btnSetWinByUp").addEventListener("click", function () {
+    if (setupSetWinBy < 10) { setupSetWinBy++; $("cfgSetWinBy").textContent = setupSetWinBy; }
+  });
+  $("btnSetWinCapDown").addEventListener("click", function () {
+    if (setupSetWinCap > 0) { setupSetWinCap--; $("cfgSetWinCap").textContent = setupSetWinCap; }
+  });
+  $("btnSetWinCapUp").addEventListener("click", function () {
+    if (setupSetWinCap < 60) { setupSetWinCap++; $("cfgSetWinCap").textContent = setupSetWinCap; }
+  });
+
+  // Scoring rule steppers — deciding set
+  $("btnDeciderWinScoreDown").addEventListener("click", function () {
+    if (setupDeciderWinScore > 1) { setupDeciderWinScore--; $("cfgDeciderWinScore").textContent = setupDeciderWinScore; }
+  });
+  $("btnDeciderWinScoreUp").addEventListener("click", function () {
+    if (setupDeciderWinScore < 50) { setupDeciderWinScore++; $("cfgDeciderWinScore").textContent = setupDeciderWinScore; }
+  });
+  $("btnDeciderWinByDown").addEventListener("click", function () {
+    if (setupDeciderWinBy > 1) { setupDeciderWinBy--; $("cfgDeciderWinBy").textContent = setupDeciderWinBy; }
+  });
+  $("btnDeciderWinByUp").addEventListener("click", function () {
+    if (setupDeciderWinBy < 10) { setupDeciderWinBy++; $("cfgDeciderWinBy").textContent = setupDeciderWinBy; }
+  });
+  $("btnDeciderWinCapDown").addEventListener("click", function () {
+    if (setupDeciderWinCap > 0) { setupDeciderWinCap--; $("cfgDeciderWinCap").textContent = setupDeciderWinCap; }
+  });
+  $("btnDeciderWinCapUp").addEventListener("click", function () {
+    if (setupDeciderWinCap < 60) { setupDeciderWinCap++; $("cfgDeciderWinCap").textContent = setupDeciderWinCap; }
+  });
+
   // Info icon → toggle fair play tooltip
   $("btnFpInfo").addEventListener("click", function (e) {
     e.stopPropagation();
@@ -974,6 +1103,8 @@ async function startNewGame() {
   selectedLogSetFilter = null; // reset filter for new game
   sidesSwapped = false;        // reset side layout for new game
   _tbPrevPhase = -1;           // reset triple ball animation state
+  _setWinKey = null;           // reset win condition alert state
+  _matchWinKey = null;
 
   var startEvent = {
     type: "GAME_STARTED",
@@ -989,6 +1120,12 @@ async function startNewGame() {
     timeoutsPerSet: setupTimeouts,
     subsPerSet: setupSubs,
     firstServer: setupFirstServer,
+    setWinScore: setupSetWinScore,
+    setWinBy: setupSetWinBy,
+    setWinCap: setupSetWinCap,
+    deciderWinScore: setupDeciderWinScore,
+    deciderWinBy: setupDeciderWinBy,
+    deciderWinCap: setupDeciderWinCap,
     timestamp: now,
   };
   controller.dispatch(startEvent);
@@ -1019,6 +1156,18 @@ var _tbPrevPhase = -1;             // previous TB phase, used to choose animatio
 var _tbAnimating = false;          // prevents overlapping TB phase animations
 var _prevPortrait = window.innerHeight > window.innerWidth; // orientation tracking for TB re-render
 
+// Per-game scoring rules (pre-filled from settings, can be changed per game)
+var setupSetWinScore = 25;
+var setupSetWinBy = 2;
+var setupSetWinCap = 0;
+var setupDeciderWinScore = 15;
+var setupDeciderWinBy = 2;
+var setupDeciderWinCap = 0;
+
+// Win condition alert state — track last triggered key to avoid duplicate toasts
+var _setWinKey = null;   // e.g. "A-2" = Team A at win condition in set 2, or null
+var _matchWinKey = null; // "A" or "B" or null
+
 function showScoreboard() {
   $("gameSetupPanel").hidden = true;
   $("scoreboard").hidden = false;
@@ -1032,6 +1181,8 @@ function showSetupPanel() {
   $("navLogBtn").hidden = true;
   _justEndedGame = false; // navigating away clears the undo window
   _tbPrevPhase = -1;
+  _setWinKey = null;
+  _matchWinKey = null;
   initGameSetupForm();
 }
 
@@ -1056,6 +1207,8 @@ function updateTeamColors() {
   root.style.setProperty("--tb-box-sz", (settings.tbBoxSize || 84) + "px");
   root.style.setProperty("--tb-unit", ((settings.tbBoxSize || 84) + 16) + "px");
   root.style.setProperty("--tb-highlight", settings.tbHighlightColor || "#15803d");
+  root.style.setProperty("--win-glow-color", settings.winGlowColor || "#f59e0b");
+  root.style.setProperty("--win-glow-duration", (settings.winGlowDuration || 3) + "s");
 }
 
 function hexToRgb(hex) {
@@ -1077,6 +1230,18 @@ function updateSidesDisplay(state) {
     indicator.textContent = sidesSwapped
       ? "\u21C4 " + state.teamB + " left \u00B7 " + state.teamA + " right"
       : "";
+  }
+}
+
+// Apply or remove the win-glow class without restarting the animation when already active
+function applyWinGlow(elementId, apply) {
+  var el = $(elementId);
+  if (!el) return;
+  var has = el.classList.contains("win-glow");
+  if (apply && !has) {
+    el.classList.add("win-glow");
+  } else if (!apply && has) {
+    el.classList.remove("win-glow");
   }
 }
 
@@ -1232,6 +1397,22 @@ function renderScoreboard() {
 
   // Show/hide the Match Log nav button
   $("navLogBtn").hidden = false;
+
+  // ---- Win condition glow -----------------------------------------------
+  var winA = !isGameOver && state.setWinConditionMet && state.setWinnerTeam === "A";
+  var winB = !isGameOver && state.setWinConditionMet && state.setWinnerTeam === "B";
+  applyWinGlow("btnEndSet",    (winA || winB) && hasActiveSet);
+  applyWinGlow("sbTeamAName",  winA);
+  applyWinGlow("scoreValA",    winA);
+  applyWinGlow("sbTeamBName",  winB);
+  applyWinGlow("scoreValB",    winB);
+  // End Game button glow when match can end (between sets)
+  applyWinGlow("btnEndGame", state.gameCanEnd && isBetweenSets && !isGameOver);
+
+  // Clear the toast-key trackers when win condition is no longer present,
+  // so the toast will fire again if the user re-scores the winning point (e.g. after undo).
+  if (!state.setWinConditionMet) _setWinKey = null;
+  if (!state.gameCanEnd && !state.pendingMatchWin) _matchWinKey = null;
 
   // Apply side swap display
   updateSidesDisplay(state);
@@ -1450,7 +1631,7 @@ function formatLabel(fmt) {
 
 // Show a temporary toast message at the bottom of the screen.
 var _toastTimer = null;
-function showToast(message, duration) {
+function showToast(message, duration, extraClass) {
   duration = duration || 4000;
   // Remove any existing toast immediately
   var existing = document.querySelector(".toast");
@@ -1458,7 +1639,7 @@ function showToast(message, duration) {
   if (_toastTimer) { clearTimeout(_toastTimer); _toastTimer = null; }
 
   var toast = document.createElement("div");
-  toast.className = "toast";
+  toast.className = "toast" + (extraClass ? " " + extraClass : "");
   toast.textContent = message;
   document.body.appendChild(toast);
 
@@ -1514,6 +1695,19 @@ function wireScoreboardControls() {
       setNumber: state.activeSetNumber,
       timestamp: new Date().toISOString(),
     });
+    // Check if ending this set results in a match win
+    var stateAfterEnd = controller.getState();
+    if (stateAfterEnd && stateAfterEnd.gameCanEnd) {
+      var matchWinner = stateAfterEnd.setsWonA >= stateAfterEnd.setsToWin ? "A" :
+                        stateAfterEnd.setsWonB >= stateAfterEnd.setsToWin ? "B" : null;
+      if (matchWinner && matchWinner !== _matchWinKey) {
+        _matchWinKey = matchWinner;
+        var mTeamName = matchWinner === "A" ? stateAfterEnd.teamA : stateAfterEnd.teamB;
+        var glowMs = (settings.winGlowDuration || 3) * 1000;
+        showToast("\uD83C\uDFC6 " + mTeamName + " wins the match! (" +
+          stateAfterEnd.setsWonA + "\u2013" + stateAfterEnd.setsWonB + " sets)", glowMs, "toast-win");
+      }
+    }
     renderScoreboard();
   });
 
@@ -1622,6 +1816,35 @@ function dispatchPoint(team, delta) {
   var stateAfter = controller.getState();
   if (!subsBefore && stateAfter && stateAfter.subsAllowedInActiveSet && stateAfter.fairPlay === "standard-partial") {
     showToast("\u26A1 15 points reached \u2014 substitutions are now available for both teams");
+  }
+  // Notify referee when win condition is newly met (or changes to a different team)
+  if (stateAfter && stateAfter.setWinConditionMet) {
+    var newWinKey = stateAfter.setWinnerTeam + "-" + stateAfter.activeSetNumber;
+    if (newWinKey !== _setWinKey) {
+      _setWinKey = newWinKey;
+      var winTeamName = stateAfter.setWinnerTeam === "A" ? stateAfter.teamA : stateAfter.teamB;
+      var winningSet = stateAfter.sets.find(function (s) { return s.setNumber === stateAfter.activeSetNumber; });
+      var wScoreA = winningSet ? winningSet.scoreA : 0;
+      var wScoreB = winningSet ? winningSet.scoreB : 0;
+      var toastMsg;
+      if (stateAfter.pendingMatchWin) {
+        var matchKey = stateAfter.setWinnerTeam;
+        if (matchKey !== _matchWinKey) {
+          _matchWinKey = matchKey;
+          var projA = stateAfter.setsWonA + (stateAfter.setWinnerTeam === "A" ? 1 : 0);
+          var projB = stateAfter.setsWonB + (stateAfter.setWinnerTeam === "B" ? 1 : 0);
+          toastMsg = "\uD83C\uDFC6 " + winTeamName + " wins the MATCH! (" +
+            wScoreA + "\u2013" + wScoreB + " in Set " + stateAfter.activeSetNumber +
+            " \u00B7 Sets " + projA + "\u2013" + projB + ")";
+        }
+      }
+      if (!toastMsg) {
+        toastMsg = "\uD83C\uDFC5 " + winTeamName + " at set win! (" +
+          wScoreA + "\u2013" + wScoreB + " in Set " + stateAfter.activeSetNumber + ")";
+      }
+      var glowMs = (settings.winGlowDuration || 3) * 1000;
+      showToast(toastMsg, glowMs, "toast-win");
+    }
   }
   renderScoreboard();
 }
@@ -2402,6 +2625,15 @@ function renderSetupPage() {
   $("cfgDefTeamA").value    = settings.defaultTeamA    || "";
   $("cfgDefTeamB").value    = settings.defaultTeamB    || "";
   $("cfgDefLocation").value = settings.defaultLocation || "";
+  // Scoring defaults
+  $("cfgDefSetWinScore").textContent    = settings.defaultSetWinScore    !== undefined ? settings.defaultSetWinScore    : 25;
+  $("cfgDefSetWinBy").textContent       = settings.defaultSetWinBy       !== undefined ? settings.defaultSetWinBy       : 2;
+  $("cfgDefSetWinCap").textContent      = settings.defaultSetWinCap      !== undefined ? settings.defaultSetWinCap      : 0;
+  $("cfgDefDeciderWinScore").textContent = settings.defaultDeciderWinScore !== undefined ? settings.defaultDeciderWinScore : 15;
+  $("cfgDefDeciderWinBy").textContent   = settings.defaultDeciderWinBy   !== undefined ? settings.defaultDeciderWinBy   : 2;
+  $("cfgDefDeciderWinCap").textContent  = settings.defaultDeciderWinCap  !== undefined ? settings.defaultDeciderWinCap  : 0;
+  $("cfgWinGlowColor").value    = settings.winGlowColor    || "#f59e0b";
+  $("cfgWinGlowDuration").textContent = settings.winGlowDuration !== undefined ? settings.winGlowDuration : 3;
 
   // About: show app version and active SW cache name
   var verLine = $("appVersionLine");
@@ -2511,6 +2743,75 @@ function wireSetupPage() {
   });
   $("btnDefSubsUp").addEventListener("click", function () {
     if (settings.defaultSubs < 18) { settings.defaultSubs++; $("cfgDefSubs").textContent = settings.defaultSubs; saveSettings(); }
+  });
+
+  // Scoring defaults — regular sets
+  $("btnDefSetWinScoreDown").addEventListener("click", function () {
+    var v = settings.defaultSetWinScore !== undefined ? settings.defaultSetWinScore : 25;
+    if (v > 1) { settings.defaultSetWinScore = v - 1; $("cfgDefSetWinScore").textContent = settings.defaultSetWinScore; saveSettings(); }
+  });
+  $("btnDefSetWinScoreUp").addEventListener("click", function () {
+    var v = settings.defaultSetWinScore !== undefined ? settings.defaultSetWinScore : 25;
+    if (v < 50) { settings.defaultSetWinScore = v + 1; $("cfgDefSetWinScore").textContent = settings.defaultSetWinScore; saveSettings(); }
+  });
+  $("btnDefSetWinByDown").addEventListener("click", function () {
+    var v = settings.defaultSetWinBy !== undefined ? settings.defaultSetWinBy : 2;
+    if (v > 1) { settings.defaultSetWinBy = v - 1; $("cfgDefSetWinBy").textContent = settings.defaultSetWinBy; saveSettings(); }
+  });
+  $("btnDefSetWinByUp").addEventListener("click", function () {
+    var v = settings.defaultSetWinBy !== undefined ? settings.defaultSetWinBy : 2;
+    if (v < 10) { settings.defaultSetWinBy = v + 1; $("cfgDefSetWinBy").textContent = settings.defaultSetWinBy; saveSettings(); }
+  });
+  $("btnDefSetWinCapDown").addEventListener("click", function () {
+    var v = settings.defaultSetWinCap !== undefined ? settings.defaultSetWinCap : 0;
+    if (v > 0) { settings.defaultSetWinCap = v - 1; $("cfgDefSetWinCap").textContent = settings.defaultSetWinCap; saveSettings(); }
+  });
+  $("btnDefSetWinCapUp").addEventListener("click", function () {
+    var v = settings.defaultSetWinCap !== undefined ? settings.defaultSetWinCap : 0;
+    if (v < 60) { settings.defaultSetWinCap = v + 1; $("cfgDefSetWinCap").textContent = settings.defaultSetWinCap; saveSettings(); }
+  });
+
+  // Scoring defaults — deciding set
+  $("btnDefDeciderWinScoreDown").addEventListener("click", function () {
+    var v = settings.defaultDeciderWinScore !== undefined ? settings.defaultDeciderWinScore : 15;
+    if (v > 1) { settings.defaultDeciderWinScore = v - 1; $("cfgDefDeciderWinScore").textContent = settings.defaultDeciderWinScore; saveSettings(); }
+  });
+  $("btnDefDeciderWinScoreUp").addEventListener("click", function () {
+    var v = settings.defaultDeciderWinScore !== undefined ? settings.defaultDeciderWinScore : 15;
+    if (v < 50) { settings.defaultDeciderWinScore = v + 1; $("cfgDefDeciderWinScore").textContent = settings.defaultDeciderWinScore; saveSettings(); }
+  });
+  $("btnDefDeciderWinByDown").addEventListener("click", function () {
+    var v = settings.defaultDeciderWinBy !== undefined ? settings.defaultDeciderWinBy : 2;
+    if (v > 1) { settings.defaultDeciderWinBy = v - 1; $("cfgDefDeciderWinBy").textContent = settings.defaultDeciderWinBy; saveSettings(); }
+  });
+  $("btnDefDeciderWinByUp").addEventListener("click", function () {
+    var v = settings.defaultDeciderWinBy !== undefined ? settings.defaultDeciderWinBy : 2;
+    if (v < 10) { settings.defaultDeciderWinBy = v + 1; $("cfgDefDeciderWinBy").textContent = settings.defaultDeciderWinBy; saveSettings(); }
+  });
+  $("btnDefDeciderWinCapDown").addEventListener("click", function () {
+    var v = settings.defaultDeciderWinCap !== undefined ? settings.defaultDeciderWinCap : 0;
+    if (v > 0) { settings.defaultDeciderWinCap = v - 1; $("cfgDefDeciderWinCap").textContent = settings.defaultDeciderWinCap; saveSettings(); }
+  });
+  $("btnDefDeciderWinCapUp").addEventListener("click", function () {
+    var v = settings.defaultDeciderWinCap !== undefined ? settings.defaultDeciderWinCap : 0;
+    if (v < 60) { settings.defaultDeciderWinCap = v + 1; $("cfgDefDeciderWinCap").textContent = settings.defaultDeciderWinCap; saveSettings(); }
+  });
+
+  // Win alert — glow color
+  $("cfgWinGlowColor").addEventListener("input", function () {
+    settings.winGlowColor = this.value;
+    updateTeamColors();
+    saveSettings();
+  });
+
+  // Win alert — glow duration
+  $("btnWinGlowDurDown").addEventListener("click", function () {
+    var v = settings.winGlowDuration !== undefined ? settings.winGlowDuration : 3;
+    if (v > 1) { settings.winGlowDuration = v - 1; $("cfgWinGlowDuration").textContent = settings.winGlowDuration; updateTeamColors(); saveSettings(); }
+  });
+  $("btnWinGlowDurUp").addEventListener("click", function () {
+    var v = settings.winGlowDuration !== undefined ? settings.winGlowDuration : 3;
+    if (v < 30) { settings.winGlowDuration = v + 1; $("cfgWinGlowDuration").textContent = settings.winGlowDuration; updateTeamColors(); saveSettings(); }
   });
 
   // Keep screen awake

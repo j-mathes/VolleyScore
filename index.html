@@ -124,6 +124,67 @@
 
         <hr class="setup-divider">
 
+        <!-- Scoring rules (win target, win-by, cap) —— hidden when fair play overrides -->
+        <div class="setup-row-group scoring-rules-row" id="scoringRulesRow">
+          <fieldset class="scoring-fieldset">
+            <legend>Regular Sets</legend>
+            <div class="scoring-rule-line">
+              <span class="scoring-rule-label">Win at</span>
+              <div class="stepper stepper-sm">
+                <button id="btnSetWinScoreDown" type="button" class="stepper-btn">&minus;</button>
+                <span id="cfgSetWinScore" class="stepper-val">25</span>
+                <button id="btnSetWinScoreUp" type="button" class="stepper-btn">+</button>
+              </div>
+            </div>
+            <div class="scoring-rule-line">
+              <span class="scoring-rule-label">Win by</span>
+              <div class="stepper stepper-sm">
+                <button id="btnSetWinByDown" type="button" class="stepper-btn">&minus;</button>
+                <span id="cfgSetWinBy" class="stepper-val">2</span>
+                <button id="btnSetWinByUp" type="button" class="stepper-btn">+</button>
+              </div>
+            </div>
+            <div class="scoring-rule-line">
+              <span class="scoring-rule-label">Cap <span class="optional">(0&nbsp;=&nbsp;none)</span></span>
+              <div class="stepper stepper-sm">
+                <button id="btnSetWinCapDown" type="button" class="stepper-btn">&minus;</button>
+                <span id="cfgSetWinCap" class="stepper-val">0</span>
+                <button id="btnSetWinCapUp" type="button" class="stepper-btn">+</button>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="scoring-fieldset" id="deciderRulesFieldset">
+            <legend>Deciding Set</legend>
+            <div class="scoring-rule-line">
+              <span class="scoring-rule-label">Win at</span>
+              <div class="stepper stepper-sm">
+                <button id="btnDeciderWinScoreDown" type="button" class="stepper-btn">&minus;</button>
+                <span id="cfgDeciderWinScore" class="stepper-val">15</span>
+                <button id="btnDeciderWinScoreUp" type="button" class="stepper-btn">+</button>
+              </div>
+            </div>
+            <div class="scoring-rule-line">
+              <span class="scoring-rule-label">Win by</span>
+              <div class="stepper stepper-sm">
+                <button id="btnDeciderWinByDown" type="button" class="stepper-btn">&minus;</button>
+                <span id="cfgDeciderWinBy" class="stepper-val">2</span>
+                <button id="btnDeciderWinByUp" type="button" class="stepper-btn">+</button>
+              </div>
+            </div>
+            <div class="scoring-rule-line">
+              <span class="scoring-rule-label">Cap <span class="optional">(0&nbsp;=&nbsp;none)</span></span>
+              <div class="stepper stepper-sm">
+                <button id="btnDeciderWinCapDown" type="button" class="stepper-btn">&minus;</button>
+                <span id="cfgDeciderWinCap" class="stepper-val">0</span>
+                <button id="btnDeciderWinCapUp" type="button" class="stepper-btn">+</button>
+              </div>
+            </div>
+          </fieldset>
+        </div>
+
+        <hr class="setup-divider">
+
         <div class="setup-serve-row">
           <span class="setup-field-label">First Serve</span>
           <div class="serve-pick-group">
@@ -473,6 +534,78 @@
           <button id="btnDefSubsDown" type="button" class="stepper-btn">&minus;</button>
           <span id="cfgDefSubs" class="stepper-val">6</span>
           <button id="btnDefSubsUp" type="button" class="stepper-btn">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="setup-card">
+      <h2>Scoring Defaults</h2>
+      <p class="setup-hint">Default win conditions for new games. These can be overridden per game in the new game form.</p>
+
+      <div class="setting-row"><span class="setting-label setting-label-section">Regular Sets</span></div>
+      <div class="setting-row">
+        <label class="setting-label">Win at</label>
+        <div class="stepper">
+          <button id="btnDefSetWinScoreDown" type="button" class="stepper-btn">&minus;</button>
+          <span id="cfgDefSetWinScore" class="stepper-val">25</span>
+          <button id="btnDefSetWinScoreUp" type="button" class="stepper-btn">+</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <label class="setting-label">Win by</label>
+        <div class="stepper">
+          <button id="btnDefSetWinByDown" type="button" class="stepper-btn">&minus;</button>
+          <span id="cfgDefSetWinBy" class="stepper-val">2</span>
+          <button id="btnDefSetWinByUp" type="button" class="stepper-btn">+</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <label class="setting-label">Cap <span class="optional">(0&nbsp;=&nbsp;none)</span></label>
+        <div class="stepper">
+          <button id="btnDefSetWinCapDown" type="button" class="stepper-btn">&minus;</button>
+          <span id="cfgDefSetWinCap" class="stepper-val">0</span>
+          <button id="btnDefSetWinCapUp" type="button" class="stepper-btn">+</button>
+        </div>
+      </div>
+
+      <div class="setting-row"><span class="setting-label setting-label-section">Deciding Set <span class="optional">(Best of 3 / Best of 5 only)</span></span></div>
+      <div class="setting-row">
+        <label class="setting-label">Win at</label>
+        <div class="stepper">
+          <button id="btnDefDeciderWinScoreDown" type="button" class="stepper-btn">&minus;</button>
+          <span id="cfgDefDeciderWinScore" class="stepper-val">15</span>
+          <button id="btnDefDeciderWinScoreUp" type="button" class="stepper-btn">+</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <label class="setting-label">Win by</label>
+        <div class="stepper">
+          <button id="btnDefDeciderWinByDown" type="button" class="stepper-btn">&minus;</button>
+          <span id="cfgDefDeciderWinBy" class="stepper-val">2</span>
+          <button id="btnDefDeciderWinByUp" type="button" class="stepper-btn">+</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <label class="setting-label">Cap <span class="optional">(0&nbsp;=&nbsp;none)</span></label>
+        <div class="stepper">
+          <button id="btnDefDeciderWinCapDown" type="button" class="stepper-btn">&minus;</button>
+          <span id="cfgDefDeciderWinCap" class="stepper-val">0</span>
+          <button id="btnDefDeciderWinCapUp" type="button" class="stepper-btn">+</button>
+        </div>
+      </div>
+
+      <hr class="setup-divider">
+      <div class="setting-row"><span class="setting-label setting-label-section">Win Alert</span></div>
+      <div class="color-setting-row">
+        <label class="setting-label" for="cfgWinGlowColor">Glow / highlight color</label>
+        <input type="color" id="cfgWinGlowColor" value="#f59e0b" class="color-picker">
+      </div>
+      <div class="setting-row">
+        <label class="setting-label">Glow duration (seconds)</label>
+        <div class="stepper">
+          <button id="btnWinGlowDurDown" type="button" class="stepper-btn">&minus;</button>
+          <span id="cfgWinGlowDuration" class="stepper-val">3</span>
+          <button id="btnWinGlowDurUp" type="button" class="stepper-btn">+</button>
         </div>
       </div>
     </div>

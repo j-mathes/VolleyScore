@@ -60,6 +60,10 @@
 
   /* Notch padding (landscape mobile) */
   --notch-pad: 0px;
+
+  /* Win condition alert */
+  --win-glow-color: #f59e0b;
+  --win-glow-duration: 3s;
 }
 
 /* ---- Dark theme ---- */
@@ -1828,6 +1832,14 @@ details[open] .event-log-summary::before {
   color: var(--ink);
 }
 
+.setting-label-section {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+}
+
 .setting-row select {
   width: auto;
   min-width: 140px;
@@ -2267,6 +2279,77 @@ input.player-num-input {
 @keyframes toast-out {
   from { opacity: 1; transform: translateX(-50%) translateY(0); }
   to   { opacity: 0; transform: translateX(-50%) translateY(6px); }
+}
+
+/* ---- Win condition glow ---- */
+@keyframes win-glow-pulse {
+  0%   { box-shadow: 0 0 0 2px var(--win-glow-color); }
+  25%  { box-shadow: 0 0 18px 7px var(--win-glow-color), 0 0 0 3px var(--win-glow-color); }
+  55%  { box-shadow: 0 0 4px 2px var(--win-glow-color); }
+  80%  { box-shadow: 0 0 14px 5px var(--win-glow-color), 0 0 0 3px var(--win-glow-color); }
+  100% { box-shadow: 0 0 6px 3px var(--win-glow-color); }
+}
+
+.win-glow {
+  animation: win-glow-pulse var(--win-glow-duration) ease forwards;
+  outline: 2px solid var(--win-glow-color);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.toast.toast-win {
+  border-left-color: var(--win-glow-color);
+  animation: toast-in 200ms ease, toast-out 350ms ease var(--win-glow-duration) forwards;
+}
+
+/* ---- Scoring rules fieldsets in new game setup ---- */
+.scoring-rules-row {
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.scoring-fieldset {
+  flex: 1 1 0;
+  min-width: 120px;
+  padding: 0.4rem 0.6rem 0.5rem;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+
+.scoring-fieldset legend {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  padding: 0 0.2rem;
+  margin-bottom: 0.25rem;
+}
+
+.scoring-rule-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.15rem 0;
+}
+
+.scoring-rule-label {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.stepper.stepper-sm .stepper-btn {
+  width: 26px;
+  height: 26px;
+  font-size: 0.9rem;
+}
+
+.stepper.stepper-sm .stepper-val {
+  font-size: 0.9rem;
+  min-width: 2.2ch;
 }
 
 /* ---- Scrollbars (thin) ---- */

@@ -45,6 +45,8 @@ The app opens in its own window without browser chrome, and can be launched from
 ## Features
 
 - **Scoring** -- tap-friendly +/- buttons; serve indicator advances automatically
+- **Win condition alerts** -- glow, highlight, and toast when a team reaches the set-win score; also alerts when a set win would clinch the match; does not auto-end anything (see [Win Alerts](#win-alerts))
+- **Configurable scoring rules** -- per-game win target, win-by margin, and score cap for both regular sets and the deciding set (see [Scoring Rules](#scoring-rules))
 - **Timeouts** -- diamond-dot indicator (filled = used, outlined = remaining); count enforced per fair play rule; blocked mid-sequence in triple ball
 - **Substitutions** -- per-team counter; fair play restrictions enforced automatically; deciding-set limits applied automatically
 - **Misconduct sanctions** -- Warning → Penalty → Expulsion → Disqualification; one warning per team per match; individual escalation enforced
@@ -66,12 +68,66 @@ The app opens in its own window without browser chrome, and can be launched from
 
 ## Game Formats
 
-| Format | Win condition |
-|--------|--------------|
-| Single Set | First to 25, win by 2 |
-| 2 Straight Sets | Play all 2 sets |
-| Best of 3 | First to win 2 sets |
-| Best of 5 | First to win 3 sets |
+| Format | Sets | Win condition |
+|--------|------|--------------|
+| Single Set | 1 | First to reach set win score (default 25), win by 2 |
+| 2 Straight Sets | 2 | Both sets must be won; regular set rules apply to all sets |
+| Best of 3 | up to 3 | First to win 2 sets; set 3 uses deciding set rules |
+| Best of 5 | up to 5 | First to win 3 sets; set 5 uses deciding set rules |
+
+Default rules: regular sets to 25, win by 2; deciding set to 15, win by 2. All configurable per game and in Setup → Scoring Defaults.
+
+## Scoring Rules
+
+Each game stores its own win conditions, set at game start and configurable in Setup → Scoring Defaults as global defaults.
+
+**Regular sets** and the **deciding set** (set 3 in Best of 3, set 5 in Best of 5) can each have independent rules:
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| Win at | Score a team must reach to be eligible to win | 25 (regular) / 15 (decider) |
+| Win by | Minimum lead required once Win at is reached | 2 |
+| Cap | Hard ceiling -- reaching this score wins immediately, regardless of lead (0 = no cap) | 0 |
+
+**Examples:**
+- Standard: Win at 25, Win by 2, no cap → play until 25+ with a 2-point lead (26–24, 27–25, …)
+- Capped at 27: Win at 25, Win by 2, Cap 27 → if tied at 26–26, next point wins; score cannot exceed 27
+- 2 Straight Sets to 15, capped at 17: set Win at 15 / Win by 2 / Cap 17 for regular sets
+- Best of 3, decider capped at 7: set decider Win at 5 / Win by 2 / Cap 7
+
+## Win Alerts
+
+When a team's score meets the win condition the app **alerts without acting** -- it never automatically ends a set or match.
+
+**What triggers an alert:**
+
+| Situation | Triggered by |
+|-----------|-------------|
+| Set win condition met | Scoring a point that satisfies Win at + Win by (or reaches Cap) |
+| Match win pending | Same point would also clinch enough sets to win the match |
+| Match won (between sets) | Ending a set that gives one team the required number of sets |
+
+**Visual indicators:**
+- **End Set** button -- glow/outline
+- Winning team **name** -- glow/outline
+- Winning team **score** -- glow/outline
+- **End Game** button -- glow/outline when match winner is determined (between sets)
+
+**Toast notifications:**
+- Set win: `🥅 Team A at set win! (25–22 in Set 1)`
+- Match win during scoring: `🏆 Team A wins the MATCH! (25–22 in Set 2 · Sets 2–0)`
+- Match win after End Set: `🏆 Team A wins the match! (2–0 sets)`
+
+Glows and toasts reset on Undo so they re-fire if the winning point is re-scored.
+
+**Configurable in Setup → Scoring Defaults → Win Alert:**
+
+| Setting | Default |
+|---------|---------|
+| Glow / highlight color | Amber (#f59e0b) |
+| Glow duration | 3 seconds |
+
+The glow pulses for the configured duration, then holds a steady outline until the set is ended or the score changes.
 
 ## Workflow
 
@@ -162,6 +218,7 @@ One free per team per match; app tracks usage and warns if the free request has 
 | Appearance | Dark mode, font size, team colors, sidebar border color, Start Set button colors, Keep Screen Awake, Confirm before Undo |
 | Mobile Display | Notch padding -- enable and choose left/right side to push team panels away from the phone notch in landscape mode; padding size configurable |
 | Game Defaults | Default team names, default location, default format, variation, fair play, timeouts/set, subs/set |
+| Scoring Defaults | Per-set win rules (Win at / Win by / Cap) for both regular sets and the deciding set; Win Alert color and glow duration |
 | Triple Ball | Phase box size, highlight color, scroll speed |
 | Data | Export all games, import, clear all |
 | About | App version and active cache name; a toast appears automatically when a new version is ready |
