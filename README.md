@@ -27,7 +27,7 @@ After installing, the app opens full-screen without browser chrome and works off
 2. Tap **+** to score a point; the serve indicator updates automatically
 3. Sidebar buttons: **TO** (timeout), **Sub** (substitution), card icon (sanctions)
 4. **End Set** → choose who serves → **Start Set 2** (pulses green when ready)
-5. Repeat until the match is complete → **End Game** → **Done** to return to setup
+5. Repeat until done → **End Game** → **Done** to return to setup
 6. **Match Log** (nav bar) — full event log; tap a set number pill to filter by set
 
 ---
@@ -38,7 +38,7 @@ After installing, the app opens full-screen without browser chrome and works off
 |------|---------|
 | Score | Live scorekeeping |
 | Match Log | Event log + set summary (active games only) |
-| Games | Browse, resume, export, or delete saved games; shows date and time for each |
+| Games | Browse, resume, export, or delete saved games (date and time shown for each) |
 | Setup | Appearance, scoring defaults, data management |
 
 ---
@@ -51,13 +51,12 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Sanctions** — full misconduct and delay sanction system with escalation enforcement (see [Sanctions](#sanctions))
 - **Fair Play rules** — None / Triple Ball / Full / Partial; all timeout and sub limits enforced automatically (see [Fair Play Rules](#fair-play-rules))
 - **Configurable scoring** — per-game win target, win-by margin, and score cap for regular and deciding sets (see [Scoring Rules](#scoring-rules))
-- **Win & action alerts** — visual glow + toast when a win condition is met; glow on the TO/sub indicator and sanction chip when actions are recorded (see [Alerts](#alerts))
+- **Win & action alerts** — glow + toast when a win condition is met; glow on the TO/sub indicator and sanction chip when actions are recorded (see [Alerts](#alerts))
+- **Win condition reminder** — current set's rules shown in the game bar during active play
 - **Triple Ball** — animated 6-phase sequence indicator with directional arrows (see [Triple Ball](#triple-ball))
 - **Set & match management** — End Set, between-sets serve picker, Start Next Set
-- **Undo / Redo** — available during play and immediately after End Game (with optional confirmation)
+- **Undo / Redo** — available during play and immediately after End Game (with optional confirm)
 - **Side switching** — swap which panel each team appears on; Triple Ball arrows update accordingly
-- **Match Log** — filterable event log with per-set score summary
-- **Games history** — browse, resume, export (JSON), or delete saved games
 - **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable
 - **Keep Screen Awake** — optional Wake Lock (iOS 16.4+ PWA, Android, desktop Chrome)
 - **PWA / offline** — installs to home screen; auto-update toast when a new version is cached
@@ -73,30 +72,30 @@ After installing, the app opens full-screen without browser chrome and works off
 | Best of 3 | up to 3 | First to win 2 sets |
 | Best of 5 | up to 5 | First to win 3 sets |
 
-In Best of 3 and Best of 5, the final possible set (set 3 or set 5) uses the **deciding set** scoring rules. All other sets use the **regular set** rules. Both are configurable.
+In Best of 3 and Best of 5, the last possible set uses **deciding set** scoring rules; all earlier sets use **regular set** rules. Both are independently configurable.
 
 ---
 
 ## Scoring Rules
 
-Each game stores its own win conditions, configured at game start. Global defaults live in **Setup → Scoring Defaults**.
+Each game stores its own win conditions, set at game start. Global defaults live in **Setup → Scoring Defaults**.
 
-| Setting | Description | Default (regular / deciding) |
-|---------|-------------|------------------------------|
-| Win at | Score a team must reach to be eligible to win | 25 / 15 |
-| Win by | Minimum lead required once Win at is reached; hidden when Cap = Win at (irrelevant) | 2 / 2 |
-| Cap | Toggle on to set a hard ceiling — reaching it wins immediately regardless of lead; must be ≥ Win at | off |
+| Setting | Description | Default |
+|---------|-------------|---------|
+| Win at | Score a team must reach to be eligible to win | 25 (regular) / 15 (deciding) |
+| Win by | Minimum lead required once Win at is reached | 2 |
+| Cap | Toggle — reaching this score wins immediately regardless of lead; must be ≥ Win at | off |
+
+**Win by is automatically hidden** when Cap is enabled and `Cap − Win at ≤ Win by`, because the cap fires before a win-by lead becomes reachable. Example: Win at 15, Win by 2, Cap 16 — the cap at 16 means a 2-point lead from 15 (needing 16–14) is cut short, so Win by is hidden.
 
 **Examples**
 
 | Scenario | Regular sets | Deciding set |
 |----------|-------------|--------------|
 | Standard volleyball | Win at 25, Win by 2 | Win at 15, Win by 2 |
-| Capped standard | Win at 25, Win by 2, Cap 27 | — |
-| 2 Straight Sets to 15, capped at 17 | Win at 15, Win by 2, Cap 17 | n/a |
-| Best of 3, short decider | Win at 25, Win by 2 | Win at 5, Win by 2, Cap 7 |
-
-With a cap enabled: reaching the cap score wins immediately regardless of the lead. Cap must be ≥ Win at; when Cap = Win at the Win by field is hidden (the cap makes it irrelevant).
+| Capped (wide margin) | Win at 25, Win by 2, Cap 28 | — |
+| 2 Straight Sets to 15, capped at 17 | Win at 15, Cap 17 *(Win by hidden)* | n/a |
+| Best of 3, short decider | Win at 25, Win by 2 | Win at 5, Cap 7 *(Win by hidden)* |
 
 ---
 
@@ -109,21 +108,19 @@ The app never automatically ends a set or match — it only draws attention to w
 When a team's score meets the set-win condition:
 
 - **End Set** button glows persistently until the set is ended
-- Winning team **name** and **score** flash a one-shot glow (fades out after the configured duration)
-- A toast appears: `🥅 Team A at set win! (25–22 in Set 1)`
-- If that win also clinches the match: `🏆 Team A wins the MATCH! (25–22 in Set 2 · Sets 2–0)`
+- Winning team **name** and **score** flash a one-shot glow (fades out)
+- Toast: `🥅 Team A at set win! (25–22 in Set 1)`
+- If it also clinches the match: `🏆 Team A wins the MATCH! (25–22 in Set 2 · Sets 2–0)`
 - After **End Set** reveals a match winner: `🏆 Team A wins the match! (2–0 sets)`
-- **End Game** button glows between sets when a match winner is already determined
-
-A win condition reminder is shown centered in the game bar during an active set (e.g. *First to 25, win by 2* or *First to 25, win by 2 · cap 27*).
+- **End Game** button glows between sets when a match winner is determined
 
 Glows and toasts reset on Undo and re-fire if the winning point is re-scored.
 
-Configure in **Setup → Scoring Defaults → Win Alert**: color (default amber) and duration (default 3 s).
+Configure color and duration in **Setup → Scoring Defaults → Win Alert** (default: amber, 3 s).
 
 ### Action Alerts
 
-A one-shot glow flashes on the relevant indicator when an action is recorded — no toast.
+A one-shot glow (no toast) flashes on the relevant indicator for each action:
 
 | Action | Glows on |
 |--------|----------|
@@ -134,7 +131,7 @@ A one-shot glow flashes on the relevant indicator when an action is recorded —
 
 Only the chip just added glows — existing chips are not re-glowed. Rapid repeat actions restart the animation.
 
-Configure in **Setup → Scoring Defaults → Action Alert**: color (default purple) and duration (default 2 s).
+Configure color and duration in **Setup → Scoring Defaults → Action Alert** (default: purple, 2 s).
 
 ---
 
@@ -162,10 +159,10 @@ When a fair play rule is active the Timeouts/Set and Subs/Set steppers are hidde
 | Expulsion | 🟨🟥 | Player removed for rest of set |
 | Disqualification | 🟨 🟥 | Player removed for rest of match |
 
-Escalation is enforced — each sanction must be higher than the last for the same individual. Two roles are exempt from individual tracking:
+Escalation is enforced — each sanction for the same individual must be higher than the last. Two roles are exempt from individual tracking:
 
-- **Unnumbered players** — if no jersey number is entered, the app cannot identify the individual, so escalation is not tracked and all levels remain available. The team-level one-warning limit still applies.
-- **Asst. Coach** — different assistants may each receive their own sanctions; escalation is not tracked per-assistant. The team-level warning limit still applies.
+- **Unnumbered players** — without a jersey number the app can't identify the individual, so escalation is not tracked and all levels remain available. The team-level one-warning limit still applies.
+- **Asst. Coach** — each assistant may receive their own sanctions independently. The team-level warning limit still applies.
 
 ### Delay (team)
 
@@ -176,26 +173,26 @@ Escalation is enforced — each sanction must be higher than the last for the sa
 
 ### Improper Request
 
-One free per team per match. The button is disabled once the free request has been used.
+One free per team per match. The button disables once used.
 
 ---
 
 ## Triple Ball
 
-Three balls are played in sequence before the serve rotates. The six-phase cycle:
+Three balls are played in sequence before the serve rotates. Six-phase cycle:
 
 ```
 A Serves →   → B Toss   ← A Toss  |  B Serves ←   ← A Toss   → B Toss
    [0]          [1]        [2]     |     [3]           [4]         [5]
 ```
 
-The first toss follows the serve direction; the second toss reverses it.
+The first toss follows the serve direction; the second reverses it.
 
 ### Sequence Indicator
 
 A scrolling column (landscape) or strip (portrait) between the team panels shows the previous, current, and next phase inside a stationary highlighted ring. Each box shows the team letter, action type, and a directional arrow that flips automatically on side-swap.
 
-- The **serve dot** stays on the serving team for the full 3-ball half — scoring a rally does not transfer it
+- The **serve dot** stays on the serving team for the full 3-ball half — scoring does not transfer it
 - The **− button** acts as Undo, stepping the sequence back
 - Configurable in **Setup → Triple Ball**: box size, highlight color, scroll speed
 
@@ -205,7 +202,7 @@ Only allowed at phase 0 (before A serves) or phase 3 (before B serves). TO and S
 
 ### Penalties
 
-A Red card or Delay Penalty awards a point and advances the sequence. A toast identifies which phase slot was replaced. A toggle in the sanction dialog handles mid-rally vs. after-rally.
+A Red card or Delay Penalty awards a point and advances the sequence. A toast identifies the replaced phase slot. A toggle in the sanction dialog handles mid-rally vs. after-rally.
 
 ---
 
@@ -214,12 +211,12 @@ A Red card or Delay Penalty awards a point and advances the sequence. A toast id
 | Section | Settings |
 |---------|----------|
 | Appearance | Dark mode, font size, team colors, sidebar border, Start Set button colors, Keep Screen Awake, Confirm before Undo |
-| Mobile Display | Notch padding — side (left/right) and amount; useful in landscape when a phone notch covers the sidebar buttons |
+| Mobile Display | Notch padding — side (left/right) and amount; useful in landscape when the phone notch covers the sidebar |
 | Game Defaults | Default team names, location, format, variation, fair play rule, timeouts/set, subs/set |
-| Scoring Defaults | Win at / Win by / Cap for regular and deciding sets; Win Alert and Action Alert color and duration |
+| Scoring Defaults | Win at / Cap / Win by for regular and deciding sets; Win Alert and Action Alert color and duration |
 | Triple Ball | Phase box size, highlight color, scroll speed |
 | Data | Export all games (JSON), import, clear all data |
-| About | App version and cache name; an update toast appears automatically when a new version is cached |
+| About | App version and cache name; update toast appears automatically when a new version is cached |
 
 ---
 

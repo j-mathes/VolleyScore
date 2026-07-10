@@ -999,7 +999,7 @@ function updateScoringRuleInteractivity() {
       setupSetWinCap = setupSetWinScore;
       if ($("cfgSetWinCap")) $("cfgSetWinCap").textContent = setupSetWinCap;
     }
-    if (rowWinBy) rowWinBy.hidden = (setupSetWinCap === setupSetWinScore);
+    if (rowWinBy) rowWinBy.hidden = (setupSetWinCap - setupSetWinScore <= setupSetWinBy);
   }
   // Deciding set
   var decCapEnabled = $("chkDeciderWinCap") && $("chkDeciderWinCap").checked;
@@ -1014,7 +1014,7 @@ function updateScoringRuleInteractivity() {
       setupDeciderWinCap = setupDeciderWinScore;
       if ($("cfgDeciderWinCap")) $("cfgDeciderWinCap").textContent = setupDeciderWinCap;
     }
-    if (rowDecWinBy) rowDecWinBy.hidden = (setupDeciderWinCap === setupDeciderWinScore);
+    if (rowDecWinBy) rowDecWinBy.hidden = (setupDeciderWinCap - setupDeciderWinScore <= setupDeciderWinBy);
   }
 }
 
@@ -1034,7 +1034,7 @@ function updateDefScoringRuleInteractivity() {
       settings.defaultSetWinCap = winScore;
       if ($("cfgDefSetWinCap")) $("cfgDefSetWinCap").textContent = settings.defaultSetWinCap;
     }
-    if (rowWinBy) rowWinBy.hidden = (settings.defaultSetWinCap === winScore);
+    if (rowWinBy) rowWinBy.hidden = (settings.defaultSetWinCap - winScore <= (settings.defaultSetWinBy !== undefined ? settings.defaultSetWinBy : 2));
   }
   var deciderWinScore = settings.defaultDeciderWinScore !== undefined ? settings.defaultDeciderWinScore : 15;
   var decCapEnabled = $("chkDefDeciderWinCap") && $("chkDefDeciderWinCap").checked;
@@ -1050,7 +1050,7 @@ function updateDefScoringRuleInteractivity() {
       settings.defaultDeciderWinCap = deciderWinScore;
       if ($("cfgDefDeciderWinCap")) $("cfgDefDeciderWinCap").textContent = settings.defaultDeciderWinCap;
     }
-    if (rowDecWinBy) rowDecWinBy.hidden = (settings.defaultDeciderWinCap === deciderWinScore);
+    if (rowDecWinBy) rowDecWinBy.hidden = (settings.defaultDeciderWinCap - deciderWinScore <= (settings.defaultDeciderWinBy !== undefined ? settings.defaultDeciderWinBy : 2));
   }
   saveSettings();
 }
@@ -1756,6 +1756,20 @@ function renderDetailSetTable(state) {
 
 function formatLabel(fmt) {
   return { "single": "Single Set", "straight2": "2 Sets", "best3": "Best of 3", "best5": "Best of 5" }[fmt] || fmt;
+}
+
+// Compact win-condition string for display in game details / meta lines.
+// e.g. "to 25, by 2" or "to 25, by 2, cap 28" or "to 15, cap 17"
+function winCondLabel(winScore, winBy, winCap) {
+  var capHidesWinBy = winCap > 0 && (winCap - winScore) <= winBy;
+  if (winCap > 0 && capHidesWinBy) {
+    return "to " + winScore + (winCap > winScore ? ", cap " + winCap : "");
+  } else if (winCap > 0) {
+    return "to " + winScore + ", by " + winBy + ", cap " + winCap;
+  } else if (winBy > 1) {
+    return "to " + winScore + ", by " + winBy;
+  }
+  return "to " + winScore;
 }
 
 // Show a temporary toast message at the bottom of the screen.
@@ -2662,6 +2676,13 @@ async function selectDetailGame(gameId) {
   var metaParts = [];
   if (state.teamA && state.teamB) metaParts.push(state.teamA + " vs " + state.teamB);
   metaParts.push(formatLabel(state.gameFormat));
+  // Win condition summary
+  var bestOfFmt = (state.gameFormat === "best3" || state.gameFormat === "best5");
+  var condStr = winCondLabel(state.setWinScore, state.setWinBy, state.setWinCap);
+  if (bestOfFmt) {
+    condStr += " \u00B7 dec. " + winCondLabel(state.deciderWinScore, state.deciderWinBy, state.deciderWinCap);
+  }
+  metaParts.push(condStr);
   if (state.location) metaParts.push(state.location);
   if (state.scheduledAt) metaParts.push(formatDateTime(state.scheduledAt));
   metaParts.push(isActive ? "In Progress" : "Complete");
