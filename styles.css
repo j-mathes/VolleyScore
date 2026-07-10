@@ -718,6 +718,37 @@ details summary::-webkit-details-marker { display: none; }
 .sb-sets-b { color: var(--team-b); font-weight: 700; }
 .sets-dash { color: var(--ink-muted); }
 
+/* Win condition reminder — second row of the game bar */
+.sb-win-condition {
+  flex-basis: 100%;
+  order: 100;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  letter-spacing: 0.02em;
+  padding: 0.05rem 0 0.1rem;
+}
+
+/* Small toggle for scoring-rule-line (fieldset layout) */
+.scoring-rule-toggle {
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.scoring-rule-toggle .toggle-slider {
+  border-radius: 10px;
+}
+.scoring-rule-toggle .toggle-slider::before {
+  width: 14px;
+  height: 14px;
+  left: 3px;
+  top: 3px;
+}
+.scoring-rule-toggle input:checked + .toggle-slider::before {
+  transform: translateX(16px);
+}
+
 .game-controls {
   display: flex;
   align-items: center;

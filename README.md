@@ -38,7 +38,7 @@ After installing, the app opens full-screen without browser chrome and works off
 |------|---------|
 | Score | Live scorekeeping |
 | Match Log | Event log + set summary (active games only) |
-| Games | Browse, resume, export, or delete saved games |
+| Games | Browse, resume, export, or delete saved games; shows date and time for each |
 | Setup | Appearance, scoring defaults, data management |
 
 ---
@@ -84,8 +84,8 @@ Each game stores its own win conditions, configured at game start. Global defaul
 | Setting | Description | Default (regular / deciding) |
 |---------|-------------|------------------------------|
 | Win at | Score a team must reach to be eligible to win | 25 / 15 |
-| Win by | Minimum lead required once Win at is reached | 2 / 2 |
-| Cap | Reaching this score wins immediately regardless of lead; 0 = no cap | 0 / 0 |
+| Win by | Minimum lead required once Win at is reached; hidden when Cap = Win at (irrelevant) | 2 / 2 |
+| Cap | Toggle on to set a hard ceiling — reaching it wins immediately regardless of lead; must be ≥ Win at | off |
 
 **Examples**
 
@@ -96,7 +96,7 @@ Each game stores its own win conditions, configured at game start. Global defaul
 | 2 Straight Sets to 15, capped at 17 | Win at 15, Win by 2, Cap 17 | n/a |
 | Best of 3, short decider | Win at 25, Win by 2 | Win at 5, Win by 2, Cap 7 |
 
-With a cap: if the score reaches the cap value, that team wins regardless of the lead.
+With a cap enabled: reaching the cap score wins immediately regardless of the lead. Cap must be ≥ Win at; when Cap = Win at the Win by field is hidden (the cap makes it irrelevant).
 
 ---
 
@@ -108,11 +108,14 @@ The app never automatically ends a set or match — it only draws attention to w
 
 When a team's score meets the set-win condition:
 
-- **End Set** button, winning team **name**, and winning team **score** all glow
+- **End Set** button glows persistently until the set is ended
+- Winning team **name** and **score** flash a one-shot glow (fades out after the configured duration)
 - A toast appears: `🥅 Team A at set win! (25–22 in Set 1)`
 - If that win also clinches the match: `🏆 Team A wins the MATCH! (25–22 in Set 2 · Sets 2–0)`
 - After **End Set** reveals a match winner: `🏆 Team A wins the match! (2–0 sets)`
 - **End Game** button glows between sets when a match winner is already determined
+
+A win condition reminder is shown centered in the game bar during an active set (e.g. *First to 25, win by 2* or *First to 25, win by 2 · cap 27*).
 
 Glows and toasts reset on Undo and re-fire if the winning point is re-scored.
 

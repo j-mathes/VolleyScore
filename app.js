@@ -925,10 +925,13 @@ function initGameSetupForm() {
   setupDeciderWinCap = settings.defaultDeciderWinCap !== undefined ? settings.defaultDeciderWinCap : 0;
   $("cfgSetWinScore").textContent = setupSetWinScore;
   $("cfgSetWinBy").textContent = setupSetWinBy;
-  $("cfgSetWinCap").textContent = setupSetWinCap;
+  $("chkSetWinCap").checked = setupSetWinCap > 0;
+  $("cfgSetWinCap").textContent = setupSetWinCap > 0 ? setupSetWinCap : setupSetWinScore;
   $("cfgDeciderWinScore").textContent = setupDeciderWinScore;
   $("cfgDeciderWinBy").textContent = setupDeciderWinBy;
-  $("cfgDeciderWinCap").textContent = setupDeciderWinCap;
+  $("chkDeciderWinCap").checked = setupDeciderWinCap > 0;
+  $("cfgDeciderWinCap").textContent = setupDeciderWinCap > 0 ? setupDeciderWinCap : setupDeciderWinScore;
+  updateScoringRuleInteractivity();
 
   // Reset fair play tooltip
   $("fpTooltip").hidden = true;
@@ -979,6 +982,77 @@ function updateDeciderRulesVisibility() {
   var hasdecider = (format === "best3" || format === "best5");
   var deciderFieldset = $("deciderRulesFieldset");
   if (deciderFieldset) deciderFieldset.hidden = !hasdecider;
+}
+
+// Enforce cap/win-by interactivity rules for the per-game setup form.
+function updateScoringRuleInteractivity() {
+  // Regular sets
+  var capEnabled = $("chkSetWinCap") && $("chkSetWinCap").checked;
+  var rowCapVal = $("rowSetWinCapVal");
+  var rowWinBy  = $("rowSetWinBy");
+  if (rowCapVal) rowCapVal.hidden = !capEnabled;
+  if (!capEnabled) {
+    setupSetWinCap = 0;
+    if (rowWinBy) rowWinBy.hidden = false;
+  } else {
+    if (setupSetWinCap < setupSetWinScore) {
+      setupSetWinCap = setupSetWinScore;
+      if ($("cfgSetWinCap")) $("cfgSetWinCap").textContent = setupSetWinCap;
+    }
+    if (rowWinBy) rowWinBy.hidden = (setupSetWinCap === setupSetWinScore);
+  }
+  // Deciding set
+  var decCapEnabled = $("chkDeciderWinCap") && $("chkDeciderWinCap").checked;
+  var rowDecCapVal = $("rowDeciderWinCapVal");
+  var rowDecWinBy  = $("rowDeciderWinBy");
+  if (rowDecCapVal) rowDecCapVal.hidden = !decCapEnabled;
+  if (!decCapEnabled) {
+    setupDeciderWinCap = 0;
+    if (rowDecWinBy) rowDecWinBy.hidden = false;
+  } else {
+    if (setupDeciderWinCap < setupDeciderWinScore) {
+      setupDeciderWinCap = setupDeciderWinScore;
+      if ($("cfgDeciderWinCap")) $("cfgDeciderWinCap").textContent = setupDeciderWinCap;
+    }
+    if (rowDecWinBy) rowDecWinBy.hidden = (setupDeciderWinCap === setupDeciderWinScore);
+  }
+}
+
+// Same enforcement for the Setup page Scoring Defaults section.
+function updateDefScoringRuleInteractivity() {
+  var winScore = settings.defaultSetWinScore !== undefined ? settings.defaultSetWinScore : 25;
+  var capEnabled = $("chkDefSetWinCap") && $("chkDefSetWinCap").checked;
+  var rowCapVal = $("rowDefSetWinCapVal");
+  var rowWinBy  = $("rowDefSetWinBy");
+  if (rowCapVal) rowCapVal.hidden = !capEnabled;
+  if (!capEnabled) {
+    settings.defaultSetWinCap = 0;
+    if (rowWinBy) rowWinBy.hidden = false;
+  } else {
+    var cap = settings.defaultSetWinCap || 0;
+    if (cap < winScore) {
+      settings.defaultSetWinCap = winScore;
+      if ($("cfgDefSetWinCap")) $("cfgDefSetWinCap").textContent = settings.defaultSetWinCap;
+    }
+    if (rowWinBy) rowWinBy.hidden = (settings.defaultSetWinCap === winScore);
+  }
+  var deciderWinScore = settings.defaultDeciderWinScore !== undefined ? settings.defaultDeciderWinScore : 15;
+  var decCapEnabled = $("chkDefDeciderWinCap") && $("chkDefDeciderWinCap").checked;
+  var rowDecCapVal = $("rowDefDeciderWinCapVal");
+  var rowDecWinBy  = $("rowDefDeciderWinBy");
+  if (rowDecCapVal) rowDecCapVal.hidden = !decCapEnabled;
+  if (!decCapEnabled) {
+    settings.defaultDeciderWinCap = 0;
+    if (rowDecWinBy) rowDecWinBy.hidden = false;
+  } else {
+    var decCap = settings.defaultDeciderWinCap || 0;
+    if (decCap < deciderWinScore) {
+      settings.defaultDeciderWinCap = deciderWinScore;
+      if ($("cfgDefDeciderWinCap")) $("cfgDefDeciderWinCap").textContent = settings.defaultDeciderWinCap;
+    }
+    if (rowDecWinBy) rowDecWinBy.hidden = (settings.defaultDeciderWinCap === deciderWinScore);
+  }
+  saveSettings();
 }
 
 function updateFirstServeBtnLabels() {
@@ -1033,10 +1107,10 @@ function wireGameSetupForm() {
 
   // Scoring rule steppers — regular sets
   $("btnSetWinScoreDown").addEventListener("click", function () {
-    if (setupSetWinScore > 1) { setupSetWinScore--; $("cfgSetWinScore").textContent = setupSetWinScore; }
+    if (setupSetWinScore > 1) { setupSetWinScore--; $("cfgSetWinScore").textContent = setupSetWinScore; updateScoringRuleInteractivity(); }
   });
   $("btnSetWinScoreUp").addEventListener("click", function () {
-    if (setupSetWinScore < 50) { setupSetWinScore++; $("cfgSetWinScore").textContent = setupSetWinScore; }
+    if (setupSetWinScore < 50) { setupSetWinScore++; $("cfgSetWinScore").textContent = setupSetWinScore; updateScoringRuleInteractivity(); }
   });
   $("btnSetWinByDown").addEventListener("click", function () {
     if (setupSetWinBy > 1) { setupSetWinBy--; $("cfgSetWinBy").textContent = setupSetWinBy; }
@@ -1044,19 +1118,26 @@ function wireGameSetupForm() {
   $("btnSetWinByUp").addEventListener("click", function () {
     if (setupSetWinBy < 10) { setupSetWinBy++; $("cfgSetWinBy").textContent = setupSetWinBy; }
   });
+  $("chkSetWinCap").addEventListener("change", function () {
+    if (this.checked && setupSetWinCap === 0) {
+      setupSetWinCap = setupSetWinScore;
+      $("cfgSetWinCap").textContent = setupSetWinCap;
+    }
+    updateScoringRuleInteractivity();
+  });
   $("btnSetWinCapDown").addEventListener("click", function () {
-    if (setupSetWinCap > 0) { setupSetWinCap--; $("cfgSetWinCap").textContent = setupSetWinCap; }
+    if (setupSetWinCap > setupSetWinScore) { setupSetWinCap--; $("cfgSetWinCap").textContent = setupSetWinCap; updateScoringRuleInteractivity(); }
   });
   $("btnSetWinCapUp").addEventListener("click", function () {
-    if (setupSetWinCap < 60) { setupSetWinCap++; $("cfgSetWinCap").textContent = setupSetWinCap; }
+    if (setupSetWinCap < 60) { setupSetWinCap++; $("cfgSetWinCap").textContent = setupSetWinCap; updateScoringRuleInteractivity(); }
   });
 
   // Scoring rule steppers — deciding set
   $("btnDeciderWinScoreDown").addEventListener("click", function () {
-    if (setupDeciderWinScore > 1) { setupDeciderWinScore--; $("cfgDeciderWinScore").textContent = setupDeciderWinScore; }
+    if (setupDeciderWinScore > 1) { setupDeciderWinScore--; $("cfgDeciderWinScore").textContent = setupDeciderWinScore; updateScoringRuleInteractivity(); }
   });
   $("btnDeciderWinScoreUp").addEventListener("click", function () {
-    if (setupDeciderWinScore < 50) { setupDeciderWinScore++; $("cfgDeciderWinScore").textContent = setupDeciderWinScore; }
+    if (setupDeciderWinScore < 50) { setupDeciderWinScore++; $("cfgDeciderWinScore").textContent = setupDeciderWinScore; updateScoringRuleInteractivity(); }
   });
   $("btnDeciderWinByDown").addEventListener("click", function () {
     if (setupDeciderWinBy > 1) { setupDeciderWinBy--; $("cfgDeciderWinBy").textContent = setupDeciderWinBy; }
@@ -1064,11 +1145,18 @@ function wireGameSetupForm() {
   $("btnDeciderWinByUp").addEventListener("click", function () {
     if (setupDeciderWinBy < 10) { setupDeciderWinBy++; $("cfgDeciderWinBy").textContent = setupDeciderWinBy; }
   });
+  $("chkDeciderWinCap").addEventListener("change", function () {
+    if (this.checked && setupDeciderWinCap === 0) {
+      setupDeciderWinCap = setupDeciderWinScore;
+      $("cfgDeciderWinCap").textContent = setupDeciderWinCap;
+    }
+    updateScoringRuleInteractivity();
+  });
   $("btnDeciderWinCapDown").addEventListener("click", function () {
-    if (setupDeciderWinCap > 0) { setupDeciderWinCap--; $("cfgDeciderWinCap").textContent = setupDeciderWinCap; }
+    if (setupDeciderWinCap > setupDeciderWinScore) { setupDeciderWinCap--; $("cfgDeciderWinCap").textContent = setupDeciderWinCap; updateScoringRuleInteractivity(); }
   });
   $("btnDeciderWinCapUp").addEventListener("click", function () {
-    if (setupDeciderWinCap < 60) { setupDeciderWinCap++; $("cfgDeciderWinCap").textContent = setupDeciderWinCap; }
+    if (setupDeciderWinCap < 60) { setupDeciderWinCap++; $("cfgDeciderWinCap").textContent = setupDeciderWinCap; updateScoringRuleInteractivity(); }
   });
 
   // Info icon → toggle fair play tooltip
@@ -1421,13 +1509,34 @@ function renderScoreboard() {
   // ---- Win condition glow -----------------------------------------------
   var winA = !isGameOver && state.setWinConditionMet && state.setWinnerTeam === "A";
   var winB = !isGameOver && state.setWinConditionMet && state.setWinnerTeam === "B";
-  applyWinGlow("btnEndSet",    (winA || winB) && hasActiveSet);
-  applyWinGlow("sbTeamAName",  winA);
-  applyWinGlow("scoreValA",    winA);
-  applyWinGlow("sbTeamBName",  winB);
-  applyWinGlow("scoreValB",    winB);
-  // End Game button glow when match can end (between sets)
+  // End Set button glows persistently while win condition is met
+  applyWinGlow("btnEndSet", (winA || winB) && hasActiveSet);
+  // End Game button glows between sets when match winner is determined
   applyWinGlow("btnEndGame", state.gameCanEnd && isBetweenSets && !isGameOver);
+
+  // Win condition reminder in game bar
+  var wcEl = $("sbWinCondition");
+  if (wcEl) {
+    if (hasActiveSet && !isGameOver) {
+      var wscore = state.activeSetIsDecider ? state.deciderWinScore : state.setWinScore;
+      var wby    = state.activeSetIsDecider ? state.deciderWinBy    : state.setWinBy;
+      var wcap   = state.activeSetIsDecider ? state.deciderWinCap   : state.setWinCap;
+      var condText;
+      if (wcap > 0 && wcap === wscore) {
+        condText = "First to " + wscore;
+      } else if (wcap > 0) {
+        condText = "First to " + wscore + ", win by " + wby + " \u00B7 cap " + wcap;
+      } else if (wby > 1) {
+        condText = "First to " + wscore + ", win by " + wby;
+      } else {
+        condText = "First to " + wscore;
+      }
+      wcEl.textContent = condText;
+      wcEl.hidden = false;
+    } else {
+      wcEl.hidden = true;
+    }
+  }
 
   // Clear the toast-key trackers when win condition is no longer present,
   // so the toast will fire again if the user re-scores the winning point (e.g. after undo).
@@ -1842,6 +1951,9 @@ function dispatchPoint(team, delta) {
     var newWinKey = stateAfter.setWinnerTeam + "-" + stateAfter.activeSetNumber;
     if (newWinKey !== _setWinKey) {
       _setWinKey = newWinKey;
+      // One-shot glow on winning team name and score (fades out, not persistent)
+      applyActionGlow(stateAfter.setWinnerTeam === "A" ? $("sbTeamAName") : $("sbTeamBName"));
+      applyActionGlow(stateAfter.setWinnerTeam === "A" ? $("scoreValA") : $("scoreValB"));
       var winTeamName = stateAfter.setWinnerTeam === "A" ? stateAfter.teamA : stateAfter.teamB;
       var winningSet = stateAfter.sets.find(function (s) { return s.setNumber === stateAfter.activeSetNumber; });
       var wScoreA = winningSet ? winningSet.scoreA : 0;
@@ -2485,7 +2597,7 @@ async function renderGamesList() {
 
     var isActive = !g.endedAt;
     var meta = (g.teamA || "?") + " vs " + (g.teamB || "?") + " · " + formatLabel(g.gameFormat || "best3");
-    var dateStr = g.scheduledAt ? formatDate(g.scheduledAt) : formatDate(g.updatedAt);
+    var dateStr = g.scheduledAt ? formatDateTimeShort(g.scheduledAt) : formatDateTimeShort(g.updatedAt);
 
     btn.innerHTML =
       '<span class="gli-name">' + esc(g.gameName || meta) + '</span>' +
@@ -2666,10 +2778,14 @@ function renderSetupPage() {
   // Scoring defaults
   $("cfgDefSetWinScore").textContent    = settings.defaultSetWinScore    !== undefined ? settings.defaultSetWinScore    : 25;
   $("cfgDefSetWinBy").textContent       = settings.defaultSetWinBy       !== undefined ? settings.defaultSetWinBy       : 2;
-  $("cfgDefSetWinCap").textContent      = settings.defaultSetWinCap      !== undefined ? settings.defaultSetWinCap      : 0;
+  var defSetWinCap = settings.defaultSetWinCap !== undefined ? settings.defaultSetWinCap : 0;
+  $("chkDefSetWinCap").checked = defSetWinCap > 0;
+  $("cfgDefSetWinCap").textContent = defSetWinCap > 0 ? defSetWinCap : (settings.defaultSetWinScore || 25);
   $("cfgDefDeciderWinScore").textContent = settings.defaultDeciderWinScore !== undefined ? settings.defaultDeciderWinScore : 15;
   $("cfgDefDeciderWinBy").textContent   = settings.defaultDeciderWinBy   !== undefined ? settings.defaultDeciderWinBy   : 2;
-  $("cfgDefDeciderWinCap").textContent  = settings.defaultDeciderWinCap  !== undefined ? settings.defaultDeciderWinCap  : 0;
+  var defDeciderWinCap = settings.defaultDeciderWinCap !== undefined ? settings.defaultDeciderWinCap : 0;
+  $("chkDefDeciderWinCap").checked = defDeciderWinCap > 0;
+  $("cfgDefDeciderWinCap").textContent = defDeciderWinCap > 0 ? defDeciderWinCap : (settings.defaultDeciderWinScore || 15);
   $("cfgWinGlowColor").value    = settings.winGlowColor    || "#f59e0b";
   $("cfgWinGlowDuration").textContent = settings.winGlowDuration !== undefined ? settings.winGlowDuration : 3;
   $("cfgActionGlowColor").value = settings.actionGlowColor || "#a855f7";
@@ -2687,6 +2803,8 @@ function renderSetupPage() {
       verLine.textContent = "Version " + APP_VERSION;
     }
   }
+  // Apply cap toggle visibility after all values are set
+  updateDefScoringRuleInteractivity();
 }
 
 function wireSetupPage() {
@@ -2788,11 +2906,11 @@ function wireSetupPage() {
   // Scoring defaults — regular sets
   $("btnDefSetWinScoreDown").addEventListener("click", function () {
     var v = settings.defaultSetWinScore !== undefined ? settings.defaultSetWinScore : 25;
-    if (v > 1) { settings.defaultSetWinScore = v - 1; $("cfgDefSetWinScore").textContent = settings.defaultSetWinScore; saveSettings(); }
+    if (v > 1) { settings.defaultSetWinScore = v - 1; $("cfgDefSetWinScore").textContent = settings.defaultSetWinScore; updateDefScoringRuleInteractivity(); }
   });
   $("btnDefSetWinScoreUp").addEventListener("click", function () {
     var v = settings.defaultSetWinScore !== undefined ? settings.defaultSetWinScore : 25;
-    if (v < 50) { settings.defaultSetWinScore = v + 1; $("cfgDefSetWinScore").textContent = settings.defaultSetWinScore; saveSettings(); }
+    if (v < 50) { settings.defaultSetWinScore = v + 1; $("cfgDefSetWinScore").textContent = settings.defaultSetWinScore; updateDefScoringRuleInteractivity(); }
   });
   $("btnDefSetWinByDown").addEventListener("click", function () {
     var v = settings.defaultSetWinBy !== undefined ? settings.defaultSetWinBy : 2;
@@ -2802,23 +2920,31 @@ function wireSetupPage() {
     var v = settings.defaultSetWinBy !== undefined ? settings.defaultSetWinBy : 2;
     if (v < 10) { settings.defaultSetWinBy = v + 1; $("cfgDefSetWinBy").textContent = settings.defaultSetWinBy; saveSettings(); }
   });
+  $("chkDefSetWinCap").addEventListener("change", function () {
+    if (this.checked && (settings.defaultSetWinCap || 0) === 0) {
+      settings.defaultSetWinCap = settings.defaultSetWinScore || 25;
+      $("cfgDefSetWinCap").textContent = settings.defaultSetWinCap;
+    }
+    updateDefScoringRuleInteractivity();
+  });
   $("btnDefSetWinCapDown").addEventListener("click", function () {
+    var min = settings.defaultSetWinScore || 25;
     var v = settings.defaultSetWinCap !== undefined ? settings.defaultSetWinCap : 0;
-    if (v > 0) { settings.defaultSetWinCap = v - 1; $("cfgDefSetWinCap").textContent = settings.defaultSetWinCap; saveSettings(); }
+    if (v > min) { settings.defaultSetWinCap = v - 1; $("cfgDefSetWinCap").textContent = settings.defaultSetWinCap; updateDefScoringRuleInteractivity(); }
   });
   $("btnDefSetWinCapUp").addEventListener("click", function () {
     var v = settings.defaultSetWinCap !== undefined ? settings.defaultSetWinCap : 0;
-    if (v < 60) { settings.defaultSetWinCap = v + 1; $("cfgDefSetWinCap").textContent = settings.defaultSetWinCap; saveSettings(); }
+    if (v < 60) { settings.defaultSetWinCap = v + 1; $("cfgDefSetWinCap").textContent = settings.defaultSetWinCap; updateDefScoringRuleInteractivity(); }
   });
 
   // Scoring defaults — deciding set
   $("btnDefDeciderWinScoreDown").addEventListener("click", function () {
     var v = settings.defaultDeciderWinScore !== undefined ? settings.defaultDeciderWinScore : 15;
-    if (v > 1) { settings.defaultDeciderWinScore = v - 1; $("cfgDefDeciderWinScore").textContent = settings.defaultDeciderWinScore; saveSettings(); }
+    if (v > 1) { settings.defaultDeciderWinScore = v - 1; $("cfgDefDeciderWinScore").textContent = settings.defaultDeciderWinScore; updateDefScoringRuleInteractivity(); }
   });
   $("btnDefDeciderWinScoreUp").addEventListener("click", function () {
     var v = settings.defaultDeciderWinScore !== undefined ? settings.defaultDeciderWinScore : 15;
-    if (v < 50) { settings.defaultDeciderWinScore = v + 1; $("cfgDefDeciderWinScore").textContent = settings.defaultDeciderWinScore; saveSettings(); }
+    if (v < 50) { settings.defaultDeciderWinScore = v + 1; $("cfgDefDeciderWinScore").textContent = settings.defaultDeciderWinScore; updateDefScoringRuleInteractivity(); }
   });
   $("btnDefDeciderWinByDown").addEventListener("click", function () {
     var v = settings.defaultDeciderWinBy !== undefined ? settings.defaultDeciderWinBy : 2;
@@ -2828,13 +2954,21 @@ function wireSetupPage() {
     var v = settings.defaultDeciderWinBy !== undefined ? settings.defaultDeciderWinBy : 2;
     if (v < 10) { settings.defaultDeciderWinBy = v + 1; $("cfgDefDeciderWinBy").textContent = settings.defaultDeciderWinBy; saveSettings(); }
   });
+  $("chkDefDeciderWinCap").addEventListener("change", function () {
+    if (this.checked && (settings.defaultDeciderWinCap || 0) === 0) {
+      settings.defaultDeciderWinCap = settings.defaultDeciderWinScore || 15;
+      $("cfgDefDeciderWinCap").textContent = settings.defaultDeciderWinCap;
+    }
+    updateDefScoringRuleInteractivity();
+  });
   $("btnDefDeciderWinCapDown").addEventListener("click", function () {
+    var min = settings.defaultDeciderWinScore || 15;
     var v = settings.defaultDeciderWinCap !== undefined ? settings.defaultDeciderWinCap : 0;
-    if (v > 0) { settings.defaultDeciderWinCap = v - 1; $("cfgDefDeciderWinCap").textContent = settings.defaultDeciderWinCap; saveSettings(); }
+    if (v > min) { settings.defaultDeciderWinCap = v - 1; $("cfgDefDeciderWinCap").textContent = settings.defaultDeciderWinCap; updateDefScoringRuleInteractivity(); }
   });
   $("btnDefDeciderWinCapUp").addEventListener("click", function () {
     var v = settings.defaultDeciderWinCap !== undefined ? settings.defaultDeciderWinCap : 0;
-    if (v < 60) { settings.defaultDeciderWinCap = v + 1; $("cfgDefDeciderWinCap").textContent = settings.defaultDeciderWinCap; saveSettings(); }
+    if (v < 60) { settings.defaultDeciderWinCap = v + 1; $("cfgDefDeciderWinCap").textContent = settings.defaultDeciderWinCap; updateDefScoringRuleInteractivity(); }
   });
 
   // Win alert — glow color

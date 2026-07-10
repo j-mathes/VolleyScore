@@ -136,7 +136,7 @@
                 <button id="btnSetWinScoreUp" type="button" class="stepper-btn">+</button>
               </div>
             </div>
-            <div class="scoring-rule-line">
+            <div class="scoring-rule-line" id="rowSetWinBy">
               <span class="scoring-rule-label">Win by</span>
               <div class="stepper stepper-sm">
                 <button id="btnSetWinByDown" type="button" class="stepper-btn">&minus;</button>
@@ -145,10 +145,17 @@
               </div>
             </div>
             <div class="scoring-rule-line">
-              <span class="scoring-rule-label">Cap <span class="optional">(0&nbsp;=&nbsp;none)</span></span>
+              <span class="scoring-rule-label">Cap</span>
+              <label class="toggle-switch scoring-rule-toggle">
+                <input type="checkbox" id="chkSetWinCap">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="scoring-rule-line" id="rowSetWinCapVal" hidden>
+              <span class="scoring-rule-label">Cap at</span>
               <div class="stepper stepper-sm">
                 <button id="btnSetWinCapDown" type="button" class="stepper-btn">&minus;</button>
-                <span id="cfgSetWinCap" class="stepper-val">0</span>
+                <span id="cfgSetWinCap" class="stepper-val">25</span>
                 <button id="btnSetWinCapUp" type="button" class="stepper-btn">+</button>
               </div>
             </div>
@@ -164,7 +171,7 @@
                 <button id="btnDeciderWinScoreUp" type="button" class="stepper-btn">+</button>
               </div>
             </div>
-            <div class="scoring-rule-line">
+            <div class="scoring-rule-line" id="rowDeciderWinBy">
               <span class="scoring-rule-label">Win by</span>
               <div class="stepper stepper-sm">
                 <button id="btnDeciderWinByDown" type="button" class="stepper-btn">&minus;</button>
@@ -173,10 +180,17 @@
               </div>
             </div>
             <div class="scoring-rule-line">
-              <span class="scoring-rule-label">Cap <span class="optional">(0&nbsp;=&nbsp;none)</span></span>
+              <span class="scoring-rule-label">Cap</span>
+              <label class="toggle-switch scoring-rule-toggle">
+                <input type="checkbox" id="chkDeciderWinCap">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="scoring-rule-line" id="rowDeciderWinCapVal" hidden>
+              <span class="scoring-rule-label">Cap at</span>
               <div class="stepper stepper-sm">
                 <button id="btnDeciderWinCapDown" type="button" class="stepper-btn">&minus;</button>
-                <span id="cfgDeciderWinCap" class="stepper-val">0</span>
+                <span id="cfgDeciderWinCap" class="stepper-val">15</span>
                 <button id="btnDeciderWinCapUp" type="button" class="stepper-btn">+</button>
               </div>
             </div>
@@ -229,6 +243,8 @@
           <button id="btnNewGame" class="ctrl-btn ctrl-btn-done">Done</button>
         </div>
       </div>
+      <div id="sbWinCondition" class="sb-win-condition" hidden aria-live="polite"></div>
+    </div><!-- end game-bar -->
 
       <!-- Team panels -->
       <div class="team-panels" id="teamPanels">
@@ -551,7 +567,7 @@
           <button id="btnDefSetWinScoreUp" type="button" class="stepper-btn">+</button>
         </div>
       </div>
-      <div class="setting-row">
+      <div class="setting-row" id="rowDefSetWinBy">
         <label class="setting-label">Win by</label>
         <div class="stepper">
           <button id="btnDefSetWinByDown" type="button" class="stepper-btn">&minus;</button>
@@ -560,10 +576,17 @@
         </div>
       </div>
       <div class="setting-row">
-        <label class="setting-label">Cap <span class="optional">(0&nbsp;=&nbsp;none)</span></label>
+        <label class="setting-label">Cap</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="chkDefSetWinCap">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="setting-row" id="rowDefSetWinCapVal" hidden>
+        <label class="setting-label">Cap at</label>
         <div class="stepper">
           <button id="btnDefSetWinCapDown" type="button" class="stepper-btn">&minus;</button>
-          <span id="cfgDefSetWinCap" class="stepper-val">0</span>
+          <span id="cfgDefSetWinCap" class="stepper-val">25</span>
           <button id="btnDefSetWinCapUp" type="button" class="stepper-btn">+</button>
         </div>
       </div>
@@ -577,7 +600,7 @@
           <button id="btnDefDeciderWinScoreUp" type="button" class="stepper-btn">+</button>
         </div>
       </div>
-      <div class="setting-row">
+      <div class="setting-row" id="rowDefDeciderWinBy">
         <label class="setting-label">Win by</label>
         <div class="stepper">
           <button id="btnDefDeciderWinByDown" type="button" class="stepper-btn">&minus;</button>
@@ -586,10 +609,17 @@
         </div>
       </div>
       <div class="setting-row">
-        <label class="setting-label">Cap <span class="optional">(0&nbsp;=&nbsp;none)</span></label>
+        <label class="setting-label">Cap</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="chkDefDeciderWinCap">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="setting-row" id="rowDefDeciderWinCapVal" hidden>
+        <label class="setting-label">Cap at</label>
         <div class="stepper">
           <button id="btnDefDeciderWinCapDown" type="button" class="stepper-btn">&minus;</button>
-          <span id="cfgDefDeciderWinCap" class="stepper-val">0</span>
+          <span id="cfgDefDeciderWinCap" class="stepper-val">15</span>
           <button id="btnDefDeciderWinCapUp" type="button" class="stepper-btn">+</button>
         </div>
       </div>
