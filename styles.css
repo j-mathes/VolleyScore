@@ -730,25 +730,6 @@ details summary::-webkit-details-marker { display: none; }
   padding: 0.05rem 0 0.1rem;
 }
 
-/* Small toggle for scoring-rule-line (fieldset layout) */
-.scoring-rule-toggle {
-  width: 36px;
-  height: 20px;
-  flex-shrink: 0;
-}
-.scoring-rule-toggle .toggle-slider {
-  border-radius: 10px;
-}
-.scoring-rule-toggle .toggle-slider::before {
-  width: 14px;
-  height: 14px;
-  left: 3px;
-  top: 3px;
-}
-.scoring-rule-toggle input:checked + .toggle-slider::before {
-  transform: translateX(16px);
-}
-
 .game-controls {
   display: flex;
   align-items: center;
@@ -2522,6 +2503,11 @@ input.player-num-input {
 }
 [data-theme="dark"] .stepper-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.20);
+}
+
+/* Toggle switch off-state — lighten the track so it's visible on dark backgrounds */
+[data-theme="dark"] .toggle-slider {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* Serve-pick buttons */
