@@ -41,7 +41,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "7";
+var APP_VERSION = "10";
 
 // Default settings
 var DEFAULT_SETTINGS = {
@@ -59,6 +59,7 @@ var DEFAULT_SETTINGS = {
   defaultFormat: "best3",
   defaultVariation: "standard",
   defaultFairPlay: "none",
+  autoSwitchSidesBetweenSets: false,
   defaultTimeouts: 2,
   defaultSubs: 6,
   notchEnabled: false,
@@ -79,6 +80,7 @@ var DEFAULT_SETTINGS = {
   // Win alert
   winGlowColor: "#f59e0b",
   winGlowDuration: 3,
+  winToastDuration: 3,
   // Action alert (timeouts, subs, sanctions)
   actionGlowColor: "#a855f7",
   actionGlowDuration: 2,
@@ -1066,7 +1068,15 @@ function updateFirstServeBtnLabels() {
   btnB.classList.toggle("active", setupFirstServer === "B");
 }
 
+function clearGenericTeamNameOnFocus(input, genericName) {
+  input.addEventListener("focus", function () {
+    if (input.value === genericName) input.value = "";
+  });
+}
+
 function wireGameSetupForm() {
+  clearGenericTeamNameOnFocus($("cfgTeamA"), "Team A");
+  clearGenericTeamNameOnFocus($("cfgTeamB"), "Team B");
   $("cfgTeamA").addEventListener("input", updateFirstServeBtnLabels);
   $("cfgTeamB").addEventListener("input", updateFirstServeBtnLabels);
 
@@ -1846,9 +1856,9 @@ function wireScoreboardControls() {
       if (matchWinner && matchWinner !== _matchWinKey) {
         _matchWinKey = matchWinner;
         var mTeamName = matchWinner === "A" ? stateAfterEnd.teamA : stateAfterEnd.teamB;
-        var glowMs = (settings.winGlowDuration || 3) * 1000;
+        var toastMs = (settings.winToastDuration || 3) * 1000;
         showToast("\uD83C\uDFC6 " + mTeamName + " wins the match! (" +
-          stateAfterEnd.setsWonA + "\u2013" + stateAfterEnd.setsWonB + " sets)", glowMs, "toast-win");
+          stateAfterEnd.setsWonA + "\u2013" + stateAfterEnd.setsWonB + " sets)", toastMs, "toast-win");
       }
     }
     renderScoreboard();
@@ -1876,6 +1886,10 @@ function wireScoreboardControls() {
       var prevSets = state.sets.filter(function (s) { return !!s.endedAt; });
       var lastSet = prevSets.length ? prevSets[prevSets.length - 1] : null;
       server = lastSet ? (lastSet.firstServer === "A" ? "B" : "A") : "A";
+    }
+    if (settings.autoSwitchSidesBetweenSets) {
+      sidesSwapped = !sidesSwapped;
+      updateSidesDisplay(state);
     }
     controller.dispatch({
       type: "SET_STARTED",
@@ -1988,8 +2002,8 @@ function dispatchPoint(team, delta) {
         toastMsg = "\uD83C\uDFC5 " + winTeamName + " at set win! (" +
           wScoreA + "\u2013" + wScoreB + " in Set " + stateAfter.activeSetNumber + ")";
       }
-      var glowMs = (settings.winGlowDuration || 3) * 1000;
-      showToast(toastMsg, glowMs, "toast-win");
+      var toastMs = (settings.winToastDuration || 3) * 1000;
+      showToast(toastMsg, toastMs, "toast-win");
     }
   }
   renderScoreboard();
@@ -2784,6 +2798,7 @@ function renderSetupPage() {
   var defVarRadio = document.querySelector('input[name="cfgDefVariation"][value="' + (settings.defaultVariation || "standard") + '"]');
   if (defVarRadio) defVarRadio.checked = true;
   $("cfgDefFairPlay").value = settings.defaultFairPlay || "none";
+  $("cfgAutoSwitchSidesBetweenSets").checked = !!settings.autoSwitchSidesBetweenSets;
   $("cfgDefTimeouts").textContent = settings.defaultTimeouts;
   $("cfgDefSubs").textContent = settings.defaultSubs;
   $("cfgNotchEnabled").checked = !!settings.notchEnabled;
@@ -2809,6 +2824,7 @@ function renderSetupPage() {
   $("cfgDefDeciderWinCap").textContent = defDeciderWinCap > 0 ? defDeciderWinCap : (settings.defaultDeciderWinScore || 15);
   $("cfgWinGlowColor").value    = settings.winGlowColor    || "#f59e0b";
   $("cfgWinGlowDuration").textContent = settings.winGlowDuration !== undefined ? settings.winGlowDuration : 3;
+  $("cfgWinToastDuration").textContent = settings.winToastDuration !== undefined ? settings.winToastDuration : 3;
   $("cfgActionGlowColor").value = settings.actionGlowColor || "#a855f7";
   $("cfgActionGlowDuration").textContent = settings.actionGlowDuration !== undefined ? settings.actionGlowDuration : 2;
 
@@ -2905,6 +2921,11 @@ function wireSetupPage() {
 
   $("cfgDefFairPlay").addEventListener("change", function () {
     settings.defaultFairPlay = this.value;
+    saveSettings();
+  });
+
+  $("cfgAutoSwitchSidesBetweenSets").addEventListener("change", function () {
+    settings.autoSwitchSidesBetweenSets = this.checked;
     saveSettings();
   });
 
@@ -3007,6 +3028,16 @@ function wireSetupPage() {
   $("btnWinGlowDurUp").addEventListener("click", function () {
     var v = settings.winGlowDuration !== undefined ? settings.winGlowDuration : 3;
     if (v < 30) { settings.winGlowDuration = v + 1; $("cfgWinGlowDuration").textContent = settings.winGlowDuration; updateTeamColors(); saveSettings(); }
+  });
+
+  // Win alert — toast duration
+  $("btnWinToastDurDown").addEventListener("click", function () {
+    var v = settings.winToastDuration !== undefined ? settings.winToastDuration : 3;
+    if (v > 1) { settings.winToastDuration = v - 1; $("cfgWinToastDuration").textContent = settings.winToastDuration; saveSettings(); }
+  });
+  $("btnWinToastDurUp").addEventListener("click", function () {
+    var v = settings.winToastDuration !== undefined ? settings.winToastDuration : 3;
+    if (v < 30) { settings.winToastDuration = v + 1; $("cfgWinToastDuration").textContent = settings.winToastDuration; saveSettings(); }
   });
 
   // Action alert — glow color

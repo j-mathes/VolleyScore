@@ -23,7 +23,7 @@ After installing, the app opens full-screen without browser chrome and works off
 
 ## Quickstart
 
-1. **Score page** — enter team names, pick a format, fair play rule, and first server → **Start Game**
+1. **Score page** — enter team names, pick a format, fair play rule, and first server → **Start Game**. The generic `Team A` and `Team B` values clear when focused; saved custom defaults remain available.
 2. Tap **+** to score a point; the serve indicator updates automatically
 3. Sidebar buttons: **TO** (timeout), **Sub** (substitution), card icon (sanctions)
 4. **End Set** → choose who serves → **Start Set 2** (pulses green when ready)
@@ -51,12 +51,12 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Sanctions** — full misconduct and delay sanction system with escalation enforcement (see [Sanctions](#sanctions))
 - **Fair Play rules** — None / Triple Ball / Full / Partial; all timeout and sub limits enforced automatically (see [Fair Play Rules](#fair-play-rules))
 - **Configurable scoring** — per-game win target, win-by margin, and score cap for regular and deciding sets (see [Scoring Rules](#scoring-rules))
-- **Win & action alerts** — glow + toast when a win condition is met; glow on the TO/sub indicator and sanction chip when actions are recorded (see [Alerts](#alerts))
+- **Win & action alerts** — independently configurable glow and win-condition-toast durations; glow on the TO/sub indicator and sanction chip when actions are recorded (see [Alerts](#alerts))
 - **Win condition reminder** — current set's rules shown in the game bar during active play
 - **Triple Ball** — animated 6-phase sequence indicator with directional arrows (see [Triple Ball](#triple-ball))
 - **Set & match management** — End Set, between-sets serve picker, Start Next Set
 - **Undo / Redo** — available during play and immediately after End Game (with optional confirm)
-- **Side switching** — swap which panel each team appears on; Triple Ball arrows update accordingly
+- **Side switching** — swap which panel each team appears on, or automatically switch sides between sets; Triple Ball arrows update accordingly
 - **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable
 - **Keep Screen Awake** — optional Wake Lock (iOS 16.4+ PWA, Android, desktop Chrome)
 - **PWA / offline** — installs to home screen; auto-update toast when a new version is cached
@@ -116,7 +116,7 @@ When a team's score meets the set-win condition:
 
 Glows and toasts reset on Undo and re-fire if the winning point is re-scored.
 
-Configure color and duration in **Setup → Scoring Defaults → Win Alert** (default: amber, 3 s).
+Configure the glow color, glow duration, and win-condition toast duration independently in **Setup → Scoring Defaults → Win Alert**. Both durations default to 3 s and can be set from 1 to 30 seconds.
 
 ### Action Alerts
 
@@ -212,8 +212,8 @@ A Red card or Delay Penalty awards a point and advances the sequence. A toast id
 |---------|----------|
 | Appearance | Dark mode, font size, team colors, sidebar border, Start Set button colors, Keep Screen Awake, Confirm before Undo |
 | Mobile Display | Notch padding — side (left/right) and amount; useful in landscape when the phone notch covers the sidebar |
-| Game Defaults | Default team names, location, format, variation, fair play rule, timeouts/set, subs/set |
-| Scoring Defaults | Win at / Cap / Win by for regular and deciding sets; Win Alert and Action Alert color and duration |
+| Game Defaults | Default team names, location, format, variation, fair play rule, automatic side switching between sets, timeouts/set, subs/set |
+| Scoring Defaults | Win at / Cap / Win by for regular and deciding sets; Win Alert glow and toast color/duration settings; Action Alert color and duration |
 | Triple Ball | Phase box size, highlight color, scroll speed |
 | Data | Export all games (JSON), import, clear all data |
 | About | App version and cache name; update toast appears automatically when a new version is cached |
