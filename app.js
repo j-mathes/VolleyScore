@@ -2538,7 +2538,11 @@ function renderLogPage() {
   if (meta && state) {
     var parts = [state.teamA + " vs " + state.teamB, formatLabel(state.gameFormat)];
     if (state.location) parts.push(state.location);
-    if (state.scheduledAt) parts.push(formatDate(state.scheduledAt));
+    // Only call out the scheduled time separately when it differs from the actual start
+    if (state.scheduledAt && formatDate(state.scheduledAt) !== formatDate(state.startedAt)) {
+      parts.push("Scheduled " + formatDate(state.scheduledAt));
+    }
+    if (state.startedAt) parts.push(formatDate(state.startedAt));
     parts.push(state.endedAt ? "Final" : (state.activeSetNumber ? "Set " + state.activeSetNumber + " in progress" : "Between sets"));
     meta.textContent = parts.join(" \u00B7 ");
   }
@@ -2570,7 +2574,8 @@ function renderRecentGames() {
   games.forEach(function (g) {
     var isActive = !g.endedAt;
     var meta = [g.teamA, "vs", g.teamB, "·", formatLabel(g.gameFormat)].join(" ");
-    var dateStr = formatDateTimeShort(g.scheduledAt || g.createdAt || g.updatedAt);
+    // Actual start (createdAt) takes priority over the pre-configured scheduled time
+    var dateStr = formatDateTimeShort(g.createdAt || g.scheduledAt || g.updatedAt);
     html += '<div class="recent-game-item" data-id="' + esc(g.gameId) + '">' +
       '<span class="recent-game-name">' + esc(g.gameName || meta) + '</span>' +
       '<span class="recent-game-meta">' + esc(dateStr) + '</span>' +
@@ -2625,7 +2630,8 @@ async function renderGamesList() {
 
     var isActive = !g.endedAt;
     var meta = (g.teamA || "?") + " vs " + (g.teamB || "?") + " · " + formatLabel(g.gameFormat || "best3");
-    var dateStr = g.scheduledAt ? formatDateTimeShort(g.scheduledAt) : formatDateTimeShort(g.updatedAt);
+    // Actual start (createdAt) takes priority over the pre-configured scheduled time
+    var dateStr = formatDateTimeShort(g.createdAt || g.scheduledAt || g.updatedAt);
 
     btn.innerHTML =
       '<span class="gli-name">' + esc(g.gameName || meta) + '</span>' +
@@ -2698,7 +2704,11 @@ async function selectDetailGame(gameId) {
   }
   metaParts.push(condStr);
   if (state.location) metaParts.push(state.location);
-  if (state.scheduledAt) metaParts.push(formatDateTime(state.scheduledAt));
+  // Only call out the scheduled time separately when it differs from the actual start
+  var schedStr = state.scheduledAt ? formatDateTime(state.scheduledAt) : "";
+  var startStr = state.startedAt ? formatDateTime(state.startedAt) : "";
+  if (schedStr && schedStr !== startStr) metaParts.push("Scheduled " + schedStr);
+  if (startStr) metaParts.push("Started " + startStr);
   metaParts.push(isActive ? "In Progress" : "Complete");
   $("detailGameMeta").textContent = metaParts.join(" · ");
 
