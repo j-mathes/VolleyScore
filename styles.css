@@ -1214,14 +1214,19 @@ input.color-picker-sm {
   color: var(--ink-soft);
 }
 
-/* Score button layout options (default DOM order is minus, plus) */
-.score-layout-plusMinus .score-btn.btn-score-minus { order: 2; }
+/* Score button layout options. The score value must keep an explicit middle
+   order — otherwise it jumps to the front whenever a button's order is set. */
+.score-row .btn-score-minus { order: 1; }
+.score-row .score-val       { order: 2; }
+.score-row .btn-score-plus  { order: 3; }
+
+.score-layout-plusMinus .score-btn.btn-score-minus { order: 3; }
 .score-layout-plusMinus .score-btn.btn-score-plus  { order: 1; }
 
-.score-layout-mirrorPlus .team-panel-b .score-btn.btn-score-minus { order: 2; }
+.score-layout-mirrorPlus .team-panel-b .score-btn.btn-score-minus { order: 3; }
 .score-layout-mirrorPlus .team-panel-b .score-btn.btn-score-plus  { order: 1; }
 
-.score-layout-mirrorMinus .team-panel-a .score-btn.btn-score-minus { order: 2; }
+.score-layout-mirrorMinus .team-panel-a .score-btn.btn-score-minus { order: 3; }
 .score-layout-mirrorMinus .team-panel-a .score-btn.btn-score-plus  { order: 1; }
 
 /* Team stats row */
@@ -1961,6 +1966,89 @@ details[open] .event-log-summary::before {
   cursor: pointer;
   border: 1.5px solid var(--border-strong);
   background: var(--bg-card);
+}
+
+/* Visible trigger swatch that replaces the (hidden) native color input */
+.color-swatch-btn {
+  width: 48px;
+  height: 32px;
+  padding: 0;
+  min-height: unset;
+  min-width: unset;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-strong);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.color-swatch-btn.color-swatch-btn-sm {
+  width: 36px;
+  height: 32px;
+}
+
+/* Visually hidden (not display:none) so script-triggered .click() still opens the native picker */
+.color-input-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.color-preset-popover {
+  position: fixed;
+  z-index: 300;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+  padding: 0.6rem;
+  width: 220px;
+}
+
+.color-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.color-preset-swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  min-height: unset;
+  min-width: unset;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+.color-preset-swatch.active {
+  outline: 2px solid var(--serve-color);
+  outline-offset: 2px;
+}
+
+.color-preset-custom-btn {
+  width: 100%;
+  padding: 0.35rem;
+  font-size: 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-strong);
+  background: var(--bg-card);
+  cursor: pointer;
+}
+
+.color-preset-custom-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="dark"] .color-preset-custom-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* Toggle switch */

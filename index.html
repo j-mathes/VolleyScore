@@ -478,8 +478,8 @@
         <select id="cfgScoreBtnLayout">
           <option value="minusPlus" selected>&minus; then + (both sides)</option>
           <option value="plusMinus">+ then &minus; (both sides)</option>
-          <option value="mirrorPlus">Mirrored &mdash; + toward middle</option>
-          <option value="mirrorMinus">Mirrored &mdash; &minus; toward middle</option>
+          <option value="mirrorPlus">Mirrored: + toward middle</option>
+          <option value="mirrorMinus">Mirrored: &minus; toward middle</option>
         </select>
       </div>
 
@@ -974,6 +974,12 @@
 
       <button id="btnCloseSanctionModal" class="modal-close-btn">Cancel</button>
     </div>
+  </div>
+
+  <!-- ===== Color Preset Popover (shared by all color pickers) ===== -->
+  <div id="colorPresetPopover" class="color-preset-popover" hidden role="dialog" aria-label="Choose a color">
+    <div id="colorPresetGrid" class="color-preset-grid"></div>
+    <button type="button" id="btnColorPresetCustom" class="color-preset-custom-btn">Custom&hellip;</button>
   </div>
 
   <script src="app.js"></script>

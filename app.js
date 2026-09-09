@@ -1235,6 +1235,7 @@ function initGameSetupForm() {
   // Per-game color override — reset to the current global defaults each time
   $("cfgTeamAColorOverride").value = settings.teamAColor;
   $("cfgTeamBColorOverride").value = settings.teamBColor;
+  syncColorSwatchButtons();
   // Prefill defaults from settings
   document.querySelector('input[name="gameFormat"][value="' + settings.defaultFormat + '"]').checked = true;
   document.querySelector('input[name="variation"][value="' + (settings.defaultVariation || "standard") + '"]').checked = true;
@@ -1669,6 +1670,128 @@ function hexToRgb(hex) {
   var m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
   if (!m) return null;
   return parseInt(m[1], 16) + "," + parseInt(m[2], 16) + "," + parseInt(m[3], 16);
+}
+
+// ---- Color preset popover (shared by all color pickers) -------------
+
+var COLOR_PRESET_SWATCHES = [
+  "#dc2626", "#ea580c", "#f59e0b", "#eab308", "#65a30d", "#16a34a",
+  "#059669", "#0d9488", "#0891b2", "#0284c7", "#2563eb", "#4f46e5",
+  "#7c3aed", "#9333ea", "#c026d3", "#db2777", "#e11d48", "#78350f",
+  "#1e3a8a", "#4b5563", "#000000", "#ffffff",
+];
+
+var _colorPopoverInput = null; // the hidden <input type=color> currently being edited
+
+// Replaces a native color input's visible control with a swatch button that
+// opens a shared preset-grid popover; the original input stays for "Custom…".
+function enhanceColorInput(inputId) {
+  var input = $(inputId);
+  if (!input || input.dataset.enhanced) return;
+  input.dataset.enhanced = "1";
+
+  var btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "color-swatch-btn" + (input.classList.contains("color-picker-sm") ? " color-swatch-btn-sm" : "");
+  btn.style.background = input.value;
+  var label = input.getAttribute("title") || input.getAttribute("aria-label") || "Choose color";
+  btn.title = label;
+  btn.setAttribute("aria-label", label);
+
+  input.insertAdjacentElement("beforebegin", btn);
+  // Visually hidden (not display:none) so .click() can still open the native picker
+  input.classList.add("color-input-visually-hidden");
+  input.tabIndex = -1;
+
+  btn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    openColorPresetPopover(input, btn);
+  });
+  // Keep the swatch in sync when the native picker ("Custom…") changes the value
+  input.addEventListener("input", function () { btn.style.background = input.value; });
+}
+
+// Re-applies each swatch button's background from its paired input's current
+// value — needed because setting `.value` in JS doesn't fire input/change events.
+function syncColorSwatchButtons() {
+  document.querySelectorAll(".color-swatch-btn").forEach(function (btn) {
+    var input = btn.nextElementSibling;
+    if (input && input.type === "color") btn.style.background = input.value;
+  });
+}
+
+function openColorPresetPopover(input, anchorBtn) {
+  _colorPopoverInput = input;
+  var grid = $("colorPresetGrid");
+  grid.innerHTML = "";
+  COLOR_PRESET_SWATCHES.forEach(function (hex) {
+    var sw = document.createElement("button");
+    sw.type = "button";
+    sw.className = "color-preset-swatch" + (hex.toLowerCase() === (input.value || "").toLowerCase() ? " active" : "");
+    sw.style.background = hex;
+    sw.title = hex;
+    sw.setAttribute("aria-label", hex);
+    sw.addEventListener("click", function () {
+      setColorInputValue(input, hex);
+      closeColorPresetPopover();
+    });
+    grid.appendChild(sw);
+  });
+
+  var pop = $("colorPresetPopover");
+  pop.hidden = false;
+  positionColorPopover(pop, anchorBtn);
+}
+
+function closeColorPresetPopover() {
+  $("colorPresetPopover").hidden = true;
+  _colorPopoverInput = null;
+}
+
+function positionColorPopover(pop, anchor) {
+  var r = anchor.getBoundingClientRect();
+  var pw = pop.offsetWidth, ph = pop.offsetHeight;
+  var left = Math.min(r.left, window.innerWidth - pw - 8);
+  left = Math.max(8, left);
+  var top = r.bottom + 6;
+  if (top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - 6);
+  pop.style.left = left + "px";
+  pop.style.top = top + "px";
+}
+
+function setColorInputValue(input, hex) {
+  input.value = hex;
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+  syncColorSwatchButtons();
+}
+
+function wireColorPresetPopover() {
+  [
+    "cfgTeamAColor", "cfgTeamBColor", "cfgSidebarBtnBorder",
+    "cfgStartSetColor", "cfgStartSetPulseColor", "cfgTbHighlight",
+    "cfgWinGlowColor", "cfgActionGlowColor",
+    "cfgTeamAColorOverride", "cfgTeamBColorOverride",
+  ].forEach(enhanceColorInput);
+
+  $("btnColorPresetCustom").addEventListener("click", function () {
+    var input = _colorPopoverInput;
+    closeColorPresetPopover();
+    if (input) input.click(); // opens the native OS color picker
+  });
+
+  document.addEventListener("click", function (e) {
+    var pop = $("colorPresetPopover");
+    if (!pop.hidden && !pop.contains(e.target) && !e.target.closest(".color-swatch-btn")) {
+      closeColorPresetPopover();
+    }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !$("colorPresetPopover").hidden) closeColorPresetPopover();
+  });
+  window.addEventListener("scroll", function () {
+    if (!$("colorPresetPopover").hidden) closeColorPresetPopover();
+  }, true);
 }
 
 // Update the team-panels flex order and side indicator to reflect sidesSwapped
@@ -3267,6 +3390,7 @@ function renderSetupPage() {
   }
   // Apply cap toggle visibility after all values are set
   updateDefScoringRuleInteractivity();
+  syncColorSwatchButtons();
 }
 
 function wireSetupPage() {
@@ -3698,6 +3822,7 @@ async function init() {
   wireSanctionModal();
   wireGamesPage();
   wireSetupPage();
+  wireColorPresetPopover();
 
   // Re-request wake lock when page becomes visible again (browser releases it on hide)
   document.addEventListener("visibilitychange", function () {
