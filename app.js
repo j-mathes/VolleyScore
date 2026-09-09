@@ -1735,8 +1735,10 @@ function closeColorPresetPopover() {
 function positionColorPopover(pop, anchor) {
   var r = anchor.getBoundingClientRect();
   var pw = pop.offsetWidth, ph = pop.offsetHeight;
-  var left = Math.min(r.left, window.innerWidth - pw - 8);
-  left = Math.max(8, left);
+  // Right-align to the button (swatch buttons are usually the last thing in
+  // their row), so the popover tends to stay within the card instead of
+  // spilling into the page background when the button sits near the right edge.
+  var left = Math.max(8, Math.min(r.right - pw, window.innerWidth - pw - 8));
   var top = r.bottom + 6;
   if (top + ph > window.innerHeight - 8) top = Math.max(8, r.top - ph - 6);
   pop.style.left = left + "px";
