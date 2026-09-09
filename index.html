@@ -226,11 +226,13 @@
           <span class="sets-dash" aria-hidden="true">–</span>
           <span id="sbSetsB" class="sb-sets-b" title="Sets won by Team B">0</span>
         </div>
-        <!-- Serve picker — shown inline in the bar between sets -->
+        <!-- Serve picker — shown between sets, and during an active set before its first point is scored -->
         <div id="servePicker" class="serve-picker" hidden>
-          <span class="serve-picker-label">Who serves Set <span id="servePickerSetNum">2</span>?</span>
-          <button id="btnPickServeA" class="serve-pick-btn" data-team="A">Team A</button>
-          <button id="btnPickServeB" class="serve-pick-btn" data-team="B">Team B</button>
+          <button id="btnOpenServePicker" class="serve-picker-chip" type="button" aria-haspopup="dialog">
+            <span class="serve-picker-chip-label">Set <span id="servePickerSetNum">2</span> serve:</span>
+            <span id="servePickerChipTeam" class="serve-picker-chip-team">Team A</span>
+            <span class="serve-picker-chip-edit" aria-hidden="true">&#9998;</span>
+          </button>
           <span id="sideIndicator" class="side-indicator" aria-live="polite"></span>
         </div>
         <div class="game-controls">
@@ -766,6 +768,18 @@
     </div>
 
   </div><!-- end logPage -->
+
+  <!-- ===== Serve Picker Modal ===== -->
+  <div id="servePickerModal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="servePickerModalTitle">
+    <div class="modal-card">
+      <h3 id="servePickerModalTitle">Who serves Set <span id="servePickerModalSetNum">2</span>?</h3>
+      <div class="serve-picker-modal-btns">
+        <button id="btnPickServeA" class="serve-pick-btn" data-team="A">Team A</button>
+        <button id="btnPickServeB" class="serve-pick-btn" data-team="B">Team B</button>
+      </div>
+      <button id="btnCloseServePickerModal" class="modal-close-btn">Cancel</button>
+    </div>
+  </div>
 
   <!-- ===== Sanction Modal ===== -->
   <div id="sanctionModal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="sanctionModalTitle">

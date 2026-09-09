@@ -884,21 +884,57 @@ details summary::-webkit-details-marker { display: none; }
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* ---- Serve picker (inline in game bar between sets) ---- */
+/* ---- Serve picker (compact chip in game bar; opens a modal to pick) ---- */
 .serve-picker {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  flex-wrap: wrap;
   font-size: 0.9rem;
   flex: 1;
+  min-width: 0;
   padding: 0 0.3rem;
 }
 
-.serve-picker-label {
+.serve-picker-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  color: inherit;
+  font-size: 0.85rem;
   font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.serve-picker-chip-label {
   color: var(--serve-color);
+}
+
+.serve-picker-chip-team {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 16ch;
+}
+
+.serve-picker-chip-edit {
+  opacity: 0.6;
+  font-size: 0.9em;
+}
+
+.serve-picker-modal-btns {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.serve-picker-modal-btns .serve-pick-btn {
+  flex: 1;
 }
 
 /* ---- Team panels ---- */

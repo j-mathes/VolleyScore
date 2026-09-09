@@ -370,6 +370,11 @@ function deriveGameState(timeline) {
         s.startedAt = ev.timestamp;
         break;
       }
+      case "FIRST_SERVER_CORRECTED": {
+        var fsc2 = getOrCreateSet(ev.setNumber);
+        fsc2.firstServer = ev.firstServer || fsc2.firstServer;
+        break;
+      }
       case "SET_ENDED": {
         var se = setsMap[ev.setNumber];
         if (se) se.endedAt = ev.timestamp;
@@ -1484,9 +1489,11 @@ function renderScoreboard() {
   $("btnNewGame").hidden = !isGameOver;
   $("btnSwitchSides").hidden = isGameOver;
 
-  // Between-sets serve picker — also hide when no more sets can be started
-  $("servePicker").hidden = !isBetweenSets || state.gameCanEnd;
-  if (isBetweenSets) {
+  // Serve picker: shown between sets (pick the next set's server) OR during
+  // the current set before any point is scored (fix a wrong initial pick).
+  var canCorrectActiveServe = hasActiveSet && !!activeSet && (activeSet.scoreA + activeSet.scoreB === 0);
+  $("servePicker").hidden = !((isBetweenSets && !state.gameCanEnd) || canCorrectActiveServe);
+  if (isBetweenSets && !state.gameCanEnd) {
     $("servePickerSetNum").textContent = state.nextSetNum;
     // Pre-suggest server (alternates from last set's first server)
     if (pendingServePickTeam === null) {
@@ -1494,8 +1501,10 @@ function renderScoreboard() {
       var lastEndedSet = prevEndedSets.length ? prevEndedSets[prevEndedSets.length - 1] : null;
       pendingServePickTeam = lastEndedSet ? (lastEndedSet.firstServer === "A" ? "B" : "A") : "A";
     }
-    $("btnPickServeA").classList.toggle("active", pendingServePickTeam === "A");
-    $("btnPickServeB").classList.toggle("active", pendingServePickTeam === "B");
+    $("servePickerChipTeam").textContent = pendingServePickTeam === "A" ? state.teamA : state.teamB;
+  } else if (canCorrectActiveServe) {
+    $("servePickerSetNum").textContent = state.activeSetNumber;
+    $("servePickerChipTeam").textContent = activeSet.firstServer === "A" ? state.teamA : state.teamB;
   }
 
   // Undo / Redo — Undo is disabled for completed games unless they were just ended
@@ -1868,17 +1877,38 @@ function wireScoreboardControls() {
     renderScoreboard();
   });
 
-  // Between-sets: serve picker
-  $("btnPickServeA").addEventListener("click", function () {
-    pendingServePickTeam = "A";
-    $("btnPickServeA").classList.add("active");
-    $("btnPickServeB").classList.remove("active");
+  // Serve picker chip opens a modal; between sets it stages a pick for
+  // "Start Next Set", during an unscored active set it corrects immediately.
+  $("btnOpenServePicker").addEventListener("click", openServePickerModal);
+  $("btnCloseServePickerModal").addEventListener("click", closeServePickerModal);
+  $("servePickerModal").addEventListener("click", function (e) {
+    if (e.target === $("servePickerModal")) closeServePickerModal();
   });
-  $("btnPickServeB").addEventListener("click", function () {
-    pendingServePickTeam = "B";
-    $("btnPickServeB").classList.add("active");
-    $("btnPickServeA").classList.remove("active");
-  });
+  $("btnPickServeA").addEventListener("click", function () { handleServePick("A"); });
+  $("btnPickServeB").addEventListener("click", function () { handleServePick("B"); });
+
+  function handleServePick(team) {
+    var state = controller.getState();
+    if (!state) return;
+    var activeSet = state.activeSetNumber
+      ? state.sets.find(function (s) { return s.setNumber === state.activeSetNumber; })
+      : null;
+    var canCorrect = activeSet && (activeSet.scoreA + activeSet.scoreB === 0);
+    if (canCorrect) {
+      if (activeSet.firstServer !== team) {
+        controller.dispatch({
+          type: "FIRST_SERVER_CORRECTED",
+          setNumber: state.activeSetNumber,
+          firstServer: team,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } else {
+      pendingServePickTeam = team;
+    }
+    closeServePickerModal();
+    renderScoreboard();
+  }
 
   // Start Next Set
   $("btnStartNextSet").addEventListener("click", function () {
@@ -2368,7 +2398,27 @@ function wireSanctionModal() {
   // Close on Escape
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && !$("sanctionModal").hidden) closeSanctionModal();
+    if (e.key === "Escape" && !$("servePickerModal").hidden) closeServePickerModal();
   });
+}
+
+function openServePickerModal() {
+  var state = controller.getState();
+  if (!state) return;
+  var activeSet = state.activeSetNumber
+    ? state.sets.find(function (s) { return s.setNumber === state.activeSetNumber; })
+    : null;
+  var canCorrect = activeSet && (activeSet.scoreA + activeSet.scoreB === 0);
+  var setNum = canCorrect ? state.activeSetNumber : state.nextSetNum;
+  var currentTeam = canCorrect ? activeSet.firstServer : pendingServePickTeam;
+  $("servePickerModalSetNum").textContent = setNum;
+  $("btnPickServeA").classList.toggle("active", currentTeam === "A");
+  $("btnPickServeB").classList.toggle("active", currentTeam === "B");
+  $("servePickerModal").removeAttribute("hidden");
+}
+
+function closeServePickerModal() {
+  $("servePickerModal").hidden = true;
 }
 
 // ---- Score Page — Event Log -----------------------------
@@ -2424,6 +2474,13 @@ function buildEventLogHtml(state, timeline, filterSetNumber) {
         '<span class="elr-time">' + esc(time) + '</span>' +
         '<span class="elr-score">0 – 0</span>' +
         '<span class="elr-desc">Set ' + ev.setNumber + ' started</span>' +
+        '<span class="elr-detail">First serve: ' + esc(ev.firstServer === "A" ? (state.teamA || "Team A") : (state.teamB || "Team B")) + '</span>' +
+        '</div>');
+    } else if (ev.type === "FIRST_SERVER_CORRECTED") {
+      rows.push('<div class="event-log-row event-log-system">' +
+        '<span class="elr-time">' + esc(time) + '</span>' +
+        '<span class="elr-score">0 – 0</span>' +
+        '<span class="elr-desc">Set ' + ev.setNumber + ' first serve corrected</span>' +
         '<span class="elr-detail">First serve: ' + esc(ev.firstServer === "A" ? (state.teamA || "Team A") : (state.teamB || "Team B")) + '</span>' +
         '</div>');
     } else if (ev.type === "SET_ENDED") {

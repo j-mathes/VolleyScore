@@ -24,7 +24,7 @@ After installing, the app opens full-screen without browser chrome and works off
 ## Quickstart
 
 1. **Score page** — enter team names, pick a format, fair play rule, and first server → **Start Game**. The generic `Team A` and `Team B` values clear when focused; saved custom defaults remain available.
-2. Tap **+** to score a point; the serve indicator updates automatically
+2. Tap **+** to score a point; the serve indicator updates automatically. Picked the wrong first server? A "Set 1 serve" chip stays available in the game bar until the first point is scored — tap it to correct via popup (see [Match Timing](#match-timing))
 3. Sidebar buttons: **TO** (timeout), **Sub** (substitution), card icon (sanctions)
 4. **End Set** → choose who serves → **Start Set 2** (pulses green when ready)
 5. Repeat until done → **End Game** → **Done** to return to setup
@@ -213,6 +213,10 @@ A Red card or Delay Penalty awards a point and advances the sequence. A toast id
 The **Scheduled Start** field (Score page setup, optional) lets you pre-configure a match for a planned time — useful when setting up a game ahead of the actual first serve. It has no effect on match logic.
 
 Separately, the app always records the real-world moment **Start Game** is tapped as the match's actual start time. Wherever a single date/time is shown (Recent Games, Games list), the actual start time is used. In the **Game Detail** view and **Match Log** header, if the scheduled time and actual start differ, both are shown — e.g. `Scheduled Sep 9 7:00 PM · Started Sep 9 7:12 PM`.
+
+### Fixing the First Server
+
+If the wrong team is picked to serve, a compact "Set N serve: Team X" chip stays available in the game bar for the *current* set — not just between sets — as long as its score is still 0–0. Tap the chip to open a popup and pick the other team; the chip disappears once either team scores a point, locking the server in. The correction is recorded in the Match Log.
 
 ---
 
