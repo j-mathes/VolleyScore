@@ -136,20 +136,6 @@ function removeFromMasterList(listName, value) {
   saveSettings();
 }
 
-function fillDatalist(id, values) {
-  var el = $(id);
-  if (!el) return;
-  el.innerHTML = (values || []).map(function (v) { return '<option value="' + esc(v) + '"></option>'; }).join("");
-}
-
-// Populates the New Game screen's pick-or-type datalists from the current master lists.
-function renderMasterDatalists() {
-  fillDatalist("teamNamesDatalist", settings.masterTeamNames);
-  fillDatalist("locationsDatalist", settings.masterLocations);
-  fillDatalist("ageCategoriesDatalist", settings.masterAgeCategories);
-  fillDatalist("leaguesDatalist", settings.masterLeagues);
-}
-
 function renderMasterListChips(containerId, listName) {
   var container = $(containerId);
   if (!container) return;
@@ -923,7 +909,6 @@ function importCategoriesFromJson(text) {
   (payload.leagues || []).forEach(function (v) { if (addToMasterList("masterLeagues", v)) added++; });
 
   renderMasterListEditors();
-  renderMasterDatalists();
   renderDefaultPickerOptions();
   alert("Imported " + added + " new entr" + (added === 1 ? "y" : "ies") + ".");
 }
@@ -1231,7 +1216,6 @@ function initGameSetupForm() {
   $("cfgGender").value = settings.defaultGender || "";
   $("cfgAgeCategory").value = settings.defaultAgeCategory || "";
   $("cfgLeague").value = settings.defaultLeague || "";
-  renderMasterDatalists();
   // Per-game color override — reset to the current global defaults each time
   $("cfgTeamAColorOverride").value = settings.teamAColor;
   $("cfgTeamBColorOverride").value = settings.teamBColor;
@@ -1791,6 +1775,133 @@ function wireColorPresetPopover() {
   });
   window.addEventListener("scroll", function () {
     if (!$("colorPresetPopover").hidden) closeColorPresetPopover();
+  }, true);
+}
+
+// ---- Combo dropdown (Team A/B, Location, Age Category, League) -------
+// Custom pick-or-type list that always opens below the field, unlike native
+// <datalist> which some browsers position inconsistently (e.g. flipped left).
+
+var COMBO_FIELDS = [
+  { inputId: "cfgTeamA", listKey: "masterTeamNames" },
+  { inputId: "cfgTeamB", listKey: "masterTeamNames" },
+  { inputId: "cfgLocation", listKey: "masterLocations" },
+  { inputId: "cfgAgeCategory", listKey: "masterAgeCategories" },
+  { inputId: "cfgLeague", listKey: "masterLeagues" },
+];
+
+var _comboInput = null;   // input currently showing the dropdown
+var _comboOptions = [];   // current filtered option strings
+var _comboActiveIndex = -1;
+
+function enhanceComboInput(inputId, listKey) {
+  var input = $(inputId);
+  if (!input || input.dataset.comboEnhanced) return;
+  input.dataset.comboEnhanced = "1";
+  input.setAttribute("role", "combobox");
+  input.setAttribute("aria-expanded", "false");
+  input.setAttribute("aria-autocomplete", "list");
+
+  input.addEventListener("focus", function () { openComboDropdown(input, listKey); });
+  input.addEventListener("input", function () { openComboDropdown(input, listKey); });
+  input.addEventListener("keydown", function (e) { handleComboKeydown(e, input); });
+  // mousedown on an option calls preventDefault (see below), so blur only fires
+  // for genuine focus-away actions (Tab, clicking elsewhere) — safe to close here.
+  input.addEventListener("blur", function () { closeComboDropdown(); });
+}
+
+function openComboDropdown(input, listKey) {
+  var values = settings[listKey] || [];
+  var q = input.value.trim().toLowerCase();
+  var filtered = q ? values.filter(function (v) { return v.toLowerCase().indexOf(q) !== -1; }) : values.slice();
+
+  if (!filtered.length) { closeComboDropdown(); return; }
+
+  _comboInput = input;
+  _comboOptions = filtered;
+  _comboActiveIndex = -1;
+
+  var panel = $("comboDropdown");
+  panel.innerHTML = filtered.map(function (v, i) {
+    return '<div class="combo-option" data-index="' + i + '" role="option">' + esc(v) + '</div>';
+  }).join("");
+  panel.querySelectorAll(".combo-option").forEach(function (opt, i) {
+    // mousedown (not click) fires before the input's blur, so the selection registers reliably
+    opt.addEventListener("mousedown", function (e) {
+      e.preventDefault();
+      selectComboOption(i);
+    });
+  });
+
+  panel.hidden = false;
+  input.setAttribute("aria-expanded", "true");
+  positionComboDropdown(panel, input);
+}
+
+function selectComboOption(index) {
+  if (!_comboInput || index < 0 || index >= _comboOptions.length) return;
+  _comboInput.value = _comboOptions[index];
+  _comboInput.dispatchEvent(new Event("input", { bubbles: true }));
+  closeComboDropdown();
+}
+
+function closeComboDropdown() {
+  var panel = $("comboDropdown");
+  panel.hidden = true;
+  if (_comboInput) _comboInput.setAttribute("aria-expanded", "false");
+  _comboInput = null;
+  _comboOptions = [];
+  _comboActiveIndex = -1;
+}
+
+// Always opens below the field (never flips to the side/above) so behavior stays predictable.
+function positionComboDropdown(panel, input) {
+  var r = input.getBoundingClientRect();
+  var top = r.bottom + 4;
+  panel.style.left = r.left + "px";
+  panel.style.width = r.width + "px";
+  panel.style.top = top + "px";
+  panel.style.maxHeight = Math.max(80, window.innerHeight - top - 8) + "px";
+}
+
+function handleComboKeydown(e, input) {
+  var panel = $("comboDropdown");
+  if (panel.hidden || _comboInput !== input) return;
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    _comboActiveIndex = Math.min(_comboActiveIndex + 1, _comboOptions.length - 1);
+    updateComboActiveOption();
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    _comboActiveIndex = Math.max(_comboActiveIndex - 1, 0);
+    updateComboActiveOption();
+  } else if (e.key === "Enter") {
+    if (_comboActiveIndex >= 0) { e.preventDefault(); selectComboOption(_comboActiveIndex); }
+  } else if (e.key === "Escape") {
+    closeComboDropdown();
+  }
+}
+
+function updateComboActiveOption() {
+  var panel = $("comboDropdown");
+  panel.querySelectorAll(".combo-option").forEach(function (opt, i) {
+    opt.classList.toggle("active", i === _comboActiveIndex);
+  });
+  var activeEl = panel.querySelector(".combo-option.active");
+  if (activeEl) activeEl.scrollIntoView({ block: "nearest" });
+}
+
+function wireComboInputs() {
+  COMBO_FIELDS.forEach(function (f) { enhanceComboInput(f.inputId, f.listKey); });
+
+  document.addEventListener("click", function (e) {
+    var panel = $("comboDropdown");
+    if (!panel.hidden && !panel.contains(e.target) && e.target !== _comboInput) {
+      closeComboDropdown();
+    }
+  });
+  window.addEventListener("scroll", function () {
+    if (!$("comboDropdown").hidden) closeComboDropdown();
   }, true);
 }
 
@@ -3356,7 +3467,6 @@ function renderSetupPage() {
   $("cfgDefTeamB").value    = settings.defaultTeamB    || "";
   $("cfgDefLocation").value = settings.defaultLocation || "";
   $("cfgDefGender").value = settings.defaultGender || "";
-  renderMasterDatalists();
   renderMasterListEditors();
   renderDefaultPickerOptions();
   // Scoring defaults
@@ -3653,7 +3763,6 @@ function wireSetupPage() {
       if (addToMasterList(listName, input.value)) {
         input.value = "";
         renderMasterListEditors();
-        renderMasterDatalists();
         renderDefaultPickerOptions();
       }
     }
@@ -3671,7 +3780,6 @@ function wireSetupPage() {
     if (!btn) return;
     removeFromMasterList(btn.getAttribute("data-list"), btn.getAttribute("data-value"));
     renderMasterListEditors();
-    renderMasterDatalists();
     renderDefaultPickerOptions();
   });
 
@@ -3823,6 +3931,7 @@ async function init() {
   wireGamesPage();
   wireSetupPage();
   wireColorPresetPopover();
+  wireComboInputs();
 
   // Re-request wake lock when page becomes visible again (browser releases it on hide)
   document.addEventListener("visibilitychange", function () {

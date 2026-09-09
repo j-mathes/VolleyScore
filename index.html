@@ -49,14 +49,14 @@
           <label class="setup-field">
             <span class="setup-field-label">Team A</span>
             <div class="setup-team-name-row">
-              <input id="cfgTeamA" type="text" value="Team A" placeholder="Team A" autocomplete="off" spellcheck="false" list="teamNamesDatalist">
+              <input id="cfgTeamA" type="text" value="Team A" placeholder="Team A" autocomplete="off" spellcheck="false">
               <input id="cfgTeamAColorOverride" type="color" value="#1d4ed8" class="color-picker color-picker-sm" title="Team A color (defaults to Setup \u2192 Appearance)">
             </div>
           </label>
           <label class="setup-field">
             <span class="setup-field-label">Team B</span>
             <div class="setup-team-name-row">
-              <input id="cfgTeamB" type="text" value="Team B" placeholder="Team B" autocomplete="off" spellcheck="false" list="teamNamesDatalist">
+              <input id="cfgTeamB" type="text" value="Team B" placeholder="Team B" autocomplete="off" spellcheck="false">
               <input id="cfgTeamBColorOverride" type="color" value="#b91c1c" class="color-picker color-picker-sm" title="Team B color (defaults to Setup \u2192 Appearance)">
             </div>
           </label>
@@ -65,7 +65,7 @@
         <div class="setup-optional-row">
           <label class="setup-field">
             <span class="setup-field-label">Location <span class="optional">(optional)</span></span>
-            <input id="cfgLocation" type="text" placeholder="e.g. Main Gym" autocomplete="off" list="locationsDatalist">
+            <input id="cfgLocation" type="text" placeholder="e.g. Main Gym" autocomplete="off">
           </label>
           <label class="setup-field">
             <span class="setup-field-label">Scheduled Start <span class="optional">(optional)</span></span>
@@ -84,18 +84,13 @@
           </label>
           <label class="setup-field">
             <span class="setup-field-label">Age Category <span class="optional">(optional)</span></span>
-            <input id="cfgAgeCategory" type="text" placeholder="e.g. 16U" autocomplete="off" list="ageCategoriesDatalist">
+            <input id="cfgAgeCategory" type="text" placeholder="e.g. 16U" autocomplete="off">
           </label>
           <label class="setup-field">
             <span class="setup-field-label">League <span class="optional">(optional)</span></span>
-            <input id="cfgLeague" type="text" placeholder="e.g. CSHSAA" autocomplete="off" list="leaguesDatalist">
+            <input id="cfgLeague" type="text" placeholder="e.g. CSHSAA" autocomplete="off">
           </label>
         </div>
-
-        <datalist id="teamNamesDatalist"></datalist>
-        <datalist id="locationsDatalist"></datalist>
-        <datalist id="ageCategoriesDatalist"></datalist>
-        <datalist id="leaguesDatalist"></datalist>
 
         <div class="setup-row-group setup-options-row">
           <fieldset class="radio-fieldset">
@@ -981,6 +976,9 @@
     <div id="colorPresetGrid" class="color-preset-grid"></div>
     <button type="button" id="btnColorPresetCustom" class="color-preset-custom-btn">Custom&hellip;</button>
   </div>
+
+  <!-- ===== Combo Dropdown (shared by Team A/B, Location, Age Category, League) ===== -->
+  <div id="comboDropdown" class="combo-dropdown" hidden role="listbox"></div>
 
   <script src="app.js"></script>
 </body>
