@@ -570,6 +570,8 @@ function deriveGameState(timeline) {
     gameName: startEv.gameName || "Untitled Game",
     teamA: startEv.teamA || "Team A",
     teamB: startEv.teamB || "Team B",
+    teamAColor: startEv.teamAColor || null,
+    teamBColor: startEv.teamBColor || null,
     location: startEv.location || "",
     scheduledAt: startEv.scheduledAt || null,
     gameFormat: startEv.gameFormat || "best3",
@@ -914,6 +916,9 @@ function initGameSetupForm() {
   $("cfgTeamA").value    = settings.defaultTeamA || "Team A";
   $("cfgTeamB").value    = settings.defaultTeamB || "Team B";
   $("cfgLocation").value = settings.defaultLocation || "";
+  // Per-game color override — reset to the current global defaults each time
+  $("cfgTeamAColorOverride").value = settings.teamAColor;
+  $("cfgTeamBColorOverride").value = settings.teamBColor;
   // Prefill defaults from settings
   document.querySelector('input[name="gameFormat"][value="' + settings.defaultFormat + '"]').checked = true;
   document.querySelector('input[name="variation"][value="' + (settings.defaultVariation || "standard") + '"]').checked = true;
@@ -1199,6 +1204,8 @@ function wireGameSetupForm() {
 async function startNewGame() {
   var teamA = $("cfgTeamA").value.trim() || "Team A";
   var teamB = $("cfgTeamB").value.trim() || "Team B";
+  var teamAColor = $("cfgTeamAColorOverride").value || settings.teamAColor;
+  var teamBColor = $("cfgTeamBColorOverride").value || settings.teamBColor;
   var location = $("cfgLocation").value.trim();
   var scheduledAt = $("cfgScheduledAt").value || toLocalDatetimeValue(new Date());
   var gameFormat = document.querySelector('input[name="gameFormat"]:checked').value;
@@ -1221,6 +1228,8 @@ async function startNewGame() {
     gameName: teamA + " vs " + teamB,
     teamA: teamA,
     teamB: teamB,
+    teamAColor: teamAColor,
+    teamBColor: teamBColor,
     location: location,
     scheduledAt: scheduledAt,
     gameFormat: gameFormat,
@@ -1280,7 +1289,8 @@ var _matchWinKey = null; // "A" or "B" or null
 function showScoreboard() {
   $("gameSetupPanel").hidden = true;
   $("scoreboard").hidden = false;
-  updateTeamColors();
+  var state = controller.getState();
+  updateTeamColors(state && state.teamAColor, state && state.teamBColor);
   requestWakeLock();
 }
 
@@ -1292,17 +1302,21 @@ function showSetupPanel() {
   _tbPrevPhase = -1;
   _setWinKey = null;
   _matchWinKey = null;
+  updateTeamColors(); // restore global default colors
   initGameSetupForm();
 }
 
-// Apply team colors from state (or CSS vars)
-function updateTeamColors() {
+// Apply team colors from state (or CSS vars). aOverride/bOverride let an
+// active game's per-game team colors take precedence over the global defaults.
+function updateTeamColors(aOverride, bOverride) {
   var root = document.documentElement;
-  root.style.setProperty("--team-a", settings.teamAColor);
-  var aRgb = hexToRgb(settings.teamAColor);
-  var bRgb = hexToRgb(settings.teamBColor);
+  var aColor = aOverride || settings.teamAColor;
+  var bColor = bOverride || settings.teamBColor;
+  root.style.setProperty("--team-a", aColor);
+  var aRgb = hexToRgb(aColor);
+  var bRgb = hexToRgb(bColor);
   if (aRgb) root.style.setProperty("--team-a-light", "rgba(" + aRgb + ",0.12)");
-  root.style.setProperty("--team-b", settings.teamBColor);
+  root.style.setProperty("--team-b", bColor);
   if (bRgb) root.style.setProperty("--team-b-light", "rgba(" + bRgb + ",0.12)");
   // Start Set button: separate fill and pulse/outline colors
   // Fall back to legacy startSetColor if the newer keys aren't saved yet

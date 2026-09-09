@@ -23,7 +23,7 @@ After installing, the app opens full-screen without browser chrome and works off
 
 ## Quickstart
 
-1. **Score page** — enter team names, pick a format, fair play rule, and first server → **Start Game**. The generic `Team A` and `Team B` values clear when focused; saved custom defaults remain available.
+1. **Score page** — enter team names, pick a format, fair play rule, and first server → **Start Game**. The generic `Team A` and `Team B` values clear when focused; saved custom defaults remain available. Each team name has a color swatch to override that team's color for this match only (see [New Game Team Colors](#new-game-team-colors))
 2. Tap **+** to score a point; the serve indicator updates automatically. Picked the wrong first server? A "Set 1 serve" chip stays available in the game bar until the first point is scored — tap it to correct via popup (see [Match Timing](#match-timing))
 3. Sidebar buttons: **TO** (timeout), **Sub** (substitution), card icon (sanctions)
 4. **End Set** → choose who serves → **Start Set 2** (pulses green when ready)
@@ -59,7 +59,7 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Side switching** — swap which panel each team appears on, or automatically switch sides between sets; Triple Ball arrows and the sets-won indicator update accordingly
 - **Scheduled vs. actual start time** — pre-configure a planned start time in Game Defaults, while the moment **Start Game** is tapped is always recorded as the actual start (see [Match Timing](#match-timing))
 - **Score button layout** — choose &minus;/+ or +/&minus; order, or mirror the two team panels so the same symbol always sits toward the middle
-- **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable
+- **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable; team colors can also be overridden per game when starting a new match (see [New Game Team Colors](#new-game-team-colors))
 - **Keep Screen Awake** — optional Wake Lock (iOS 16.4+ PWA, Android, desktop Chrome)
 - **PWA / offline** — installs to home screen; auto-update toast when a new version is cached
 
@@ -217,6 +217,14 @@ Separately, the app always records the real-world moment **Start Game** is tappe
 ### Fixing the First Server
 
 If the wrong team is picked to serve, a compact "Set N serve: Team X" chip stays available in the game bar for the *current* set — not just between sets — as long as its score is still 0–0. Tap the chip to open a popup and pick the other team; the chip disappears once either team scores a point, locking the server in. The correction is recorded in the Match Log.
+
+---
+
+## New Game Team Colors
+
+Each team name field on the **New Game** form has an inline color swatch, pre-filled with the global default colors (Setup → Appearance → Team A/B Color — blue and red out of the box). Tap a swatch to pick a different color just for that match; leave it untouched to use the current defaults.
+
+The override only affects that one game and applies everywhere team color drives the UI — score panels, serve dot, sanctions bar, event log, Match Log tables, and so on. It doesn't change your saved global defaults, and returning to the New Game form always resets the swatches back to those defaults.
 
 ---
 

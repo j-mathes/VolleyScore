@@ -378,6 +378,23 @@ details summary::-webkit-details-marker { display: none; }
   letter-spacing: 0.04em;
 }
 
+.setup-team-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.setup-team-name-row input[type="text"] {
+  flex: 1;
+  min-width: 0;
+}
+
+input.color-picker-sm {
+  width: 36px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
 .optional {
   font-weight: 400;
   text-transform: none;
