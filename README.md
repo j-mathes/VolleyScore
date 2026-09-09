@@ -56,7 +56,7 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Triple Ball** — animated 6-phase sequence indicator with directional arrows (see [Triple Ball](#triple-ball))
 - **Set & match management** — End Set, between-sets serve picker, Start Next Set
 - **Undo / Redo** — available during play and immediately after End Game (with optional confirm)
-- **Side switching** — swap which panel each team appears on, or automatically switch sides between sets; Triple Ball arrows update accordingly
+- **Side switching** — swap which panel each team appears on, or automatically switch sides between sets; Triple Ball arrows and the sets-won indicator update accordingly
 - **Scheduled vs. actual start time** — pre-configure a planned start time in Game Defaults, while the moment **Start Game** is tapped is always recorded as the actual start (see [Match Timing](#match-timing))
 - **Score button layout** — choose &minus;/+ or +/&minus; order, or mirror the two team panels so the same symbol always sits toward the middle
 - **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable

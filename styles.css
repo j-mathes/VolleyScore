@@ -718,6 +718,14 @@ details summary::-webkit-details-marker { display: none; }
 .sb-sets-b { color: var(--team-b); font-weight: 700; }
 .sets-dash { color: var(--ink-muted); }
 
+/* Explicit order so the sets-won pair can be swapped without disturbing earlier items */
+.game-info .sb-sets-a { order: 4; }
+.game-info .sets-dash { order: 5; }
+.game-info .sb-sets-b { order: 6; }
+
+.game-info.sides-swapped .sb-sets-a { order: 6; }
+.game-info.sides-swapped .sb-sets-b { order: 4; }
+
 /* Win condition reminder — second row of the game bar */
 .sb-win-condition {
   flex-basis: 100%;

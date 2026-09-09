@@ -1328,6 +1328,9 @@ function updateSidesDisplay(state) {
   var panels = $("teamPanels");
   if (panels) panels.classList.toggle("sides-swapped", sidesSwapped);
 
+  var gameInfo = $("gameInfo");
+  if (gameInfo) gameInfo.classList.toggle("sides-swapped", sidesSwapped);
+
   var btn = $("btnSwitchSides");
   if (btn) btn.title = sidesSwapped ? "Restore original sides" : "Swap which side each team appears on";
 
