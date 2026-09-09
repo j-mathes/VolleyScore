@@ -46,23 +46,22 @@ self.addEventListener("fetch", function (e) {
   if (!e.request.url.startsWith(self.location.origin)) return;
 
   e.respondWith(
-    caches.match(e.request).then(function (cached) {
-      // Serve cached version immediately; silently refresh it in the background
-      if (cached) {
-        fetch(e.request).then(function (res) {
-          if (res && res.status === 200) {
-            caches.open(CACHE_NAME).then(function (c) { c.put(e.request, res); });
-          }
-        }).catch(function () {});
-        return cached;
-      }
-      // Not yet cached — fetch from network and store for next time
-      return fetch(e.request).then(function (res) {
-        if (res && res.status === 200) {
-          var clone = res.clone();
-          caches.open(CACHE_NAME).then(function (c) { c.put(e.request, clone); });
+    // Scoped to this version's own cache only — otherwise a stale entry left in an
+    // older (not-yet-deleted) cache could keep being served/refreshed indefinitely.
+    caches.open(CACHE_NAME).then(function (c) {
+      return c.match(e.request).then(function (cached) {
+        // Serve cached version immediately; silently refresh it in the background
+        if (cached) {
+          fetch(e.request).then(function (res) {
+            if (res && res.status === 200) c.put(e.request, res);
+          }).catch(function () {});
+          return cached;
         }
-        return res;
+        // Not yet cached — fetch from network and store for next time
+        return fetch(e.request).then(function (res) {
+          if (res && res.status === 200) c.put(e.request, res.clone());
+          return res;
+        });
       });
     })
   );

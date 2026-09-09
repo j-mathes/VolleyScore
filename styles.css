@@ -2058,7 +2058,7 @@ details[open] .event-log-summary::before {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* Combo dropdown (Team A/B, Location, Age Category, League — always opens below) */
+/* Combo dropdown (Team A/B, Location, Age Category, League — opens below by default) */
 .combo-dropdown {
   position: fixed;
   z-index: 300;
@@ -2087,6 +2087,13 @@ details[open] .event-log-summary::before {
 [data-theme="dark"] .combo-option:hover,
 [data-theme="dark"] .combo-option.active {
   background: rgba(255, 255, 255, 0.1);
+}
+
+.combo-empty-hint {
+  padding: 0.45rem 0.7rem;
+  font-size: 0.88rem;
+  color: var(--ink-muted);
+  font-style: italic;
 }
 
 /* Toggle switch */

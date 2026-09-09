@@ -1993,23 +1993,29 @@ function openComboDropdown(input, listKey) {
   var q = input.value.trim().toLowerCase();
   var filtered = q ? values.filter(function (v) { return v.toLowerCase().indexOf(q) !== -1; }) : values.slice();
 
-  if (!filtered.length) { closeComboDropdown(); return; }
-
   _comboInput = input;
   _comboOptions = filtered;
   _comboActiveIndex = -1;
 
   var panel = $("comboDropdown");
-  panel.innerHTML = filtered.map(function (v, i) {
-    return '<div class="combo-option" data-index="' + i + '" role="option">' + esc(v) + '</div>';
-  }).join("");
-  panel.querySelectorAll(".combo-option").forEach(function (opt, i) {
-    // mousedown (not click) fires before the input's blur, so the selection registers reliably
-    opt.addEventListener("mousedown", function (e) {
-      e.preventDefault();
-      selectComboOption(i);
+  if (filtered.length) {
+    panel.innerHTML = filtered.map(function (v, i) {
+      return '<div class="combo-option" data-index="' + i + '" role="option">' + esc(v) + '</div>';
+    }).join("");
+    panel.querySelectorAll(".combo-option").forEach(function (opt, i) {
+      // mousedown (not click) fires before the input's blur, so the selection registers reliably
+      opt.addEventListener("mousedown", function (e) {
+        e.preventDefault();
+        selectComboOption(i);
+      });
     });
-  });
+  } else {
+    // Still show the panel with a hint — otherwise an empty/no-match list looks
+    // identical to the dropdown being broken rather than "nothing saved yet".
+    panel.innerHTML = '<div class="combo-empty-hint">' +
+      esc(values.length ? "No matches \u2014 keep typing to add a new one" : "No saved values yet \u2014 type to add one") +
+      '</div>';
+  }
 
   panel.hidden = false;
   input.setAttribute("aria-expanded", "true");
@@ -2036,17 +2042,28 @@ function closeComboDropdown() {
   _comboActiveIndex = -1;
 }
 
-// Always opens below the field (never flips to the side/above) so behavior stays predictable.
+// Opens below the field by default; flips above only when there's too little room
+// below (e.g. a lower field like League sitting near the bottom of the visible
+// area, covered by the on-screen keyboard) — otherwise it wouldn't be visible at all.
 function positionComboDropdown(panel, input) {
   var r = input.getBoundingClientRect();
-  var top = r.bottom + 4;
   // visualViewport reflects the space actually visible above an on-screen keyboard;
   // window.innerHeight doesn't shrink for the keyboard on iOS Safari.
   var visibleBottom = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  var spaceBelow = visibleBottom - r.bottom - 8;
+  var spaceAbove = r.top - 8;
+
   panel.style.left = r.left + "px";
   panel.style.width = r.width + "px";
-  panel.style.top = top + "px";
-  panel.style.maxHeight = Math.max(80, visibleBottom - top - 8) + "px";
+
+  if (spaceBelow < 80 && spaceAbove > spaceBelow) {
+    var height = Math.min(panel.scrollHeight, spaceAbove);
+    panel.style.top = Math.max(8, r.top - height - 4) + "px";
+    panel.style.maxHeight = Math.max(80, spaceAbove) + "px";
+  } else {
+    panel.style.top = (r.bottom + 4) + "px";
+    panel.style.maxHeight = Math.max(80, spaceBelow) + "px";
+  }
 }
 
 function handleComboKeydown(e, input) {
