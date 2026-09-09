@@ -188,6 +188,9 @@ select {
   width: 100%;
   min-height: 38px;
   min-width: 0;
+  /* Without this, a quick second tap on the same field can be interpreted as a
+     double-tap-to-zoom gesture and swallowed instead of firing a normal click. */
+  touch-action: manipulation;
 }
 
 input:focus, select:focus {
