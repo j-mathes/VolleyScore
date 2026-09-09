@@ -251,10 +251,12 @@ Team Name, Location, Age Category, and League fields are pick-or-type: tap the f
 
 ### Export / Import
 
-**Setup → Data** can export the four lists as:
+**Setup → Data** can export and import the four lists as either:
 
-- **JSON** — the canonical round-trip format; re-importable via the same section. Import merges new values into your existing lists (duplicates are skipped).
-- **Excel (.xlsx)** — one tab per category (Team Names, Locations, Age Categories, Leagues), for viewing or sharing outside the app. Excel export is one-way — only the JSON file can be imported back in.
+- **JSON** — the app's own round-trip format.
+- **Excel (.xlsx)** — one tab per category (Team Names, Locations, Age Categories, Leagues). You can edit values in Excel/Sheets/LibreOffice and import the file back in; sheets are matched by tab name, and each sheet's column A becomes that category's values.
+
+Either format merges new values into your existing lists (duplicates are skipped) rather than replacing them.
 
 ---
 
@@ -268,7 +270,7 @@ Team Name, Location, Age Category, and League fields are pick-or-type: tap the f
 | Scoring Defaults | Win at / Cap / Win by for regular and deciding sets; Win Alert glow and toast color/duration settings; Action Alert color and duration |
 | Match Info Lists | Add/remove Team Names, Locations, Age Categories, and Leagues (see [Match Info Lists](#match-info-lists)) |
 | Triple Ball | Phase box size, highlight color, scroll speed |
-| Data | Export/import all games (JSON); export/import Match Info Lists (JSON, plus Excel export) (see [Match Info Lists](#match-info-lists)); clear all data |
+| Data | Export/import all games (JSON); export/import Match Info Lists (JSON or Excel) (see [Match Info Lists](#match-info-lists)); clear all data |
 | About | App version and cache name; update toast appears automatically when a new version is cached |
 
 ---

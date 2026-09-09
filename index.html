@@ -779,12 +779,12 @@
       <button id="btnClearAllSetup" class="ctrl-btn danger-btn" style="margin-top:0.8rem">Clear All Data</button>
 
       <hr class="setup-divider">
-      <p class="setup-hint">Export the Match Info Lists (Team Names, Locations, Age Categories, Leagues). Excel export is for viewing/sharing &mdash; only the JSON file can be re-imported.</p>
+      <p class="setup-hint">Export or import the Match Info Lists (Team Names, Locations, Age Categories, Leagues) as JSON or Excel. New values from the file are merged into your existing lists.</p>
       <div class="data-actions">
         <button id="btnExportCategoriesJson" class="ctrl-btn">Export Lists (JSON)</button>
         <button id="btnExportCategoriesXlsx" class="ctrl-btn">Export Lists (Excel)</button>
         <button id="btnImportCategories" class="ctrl-btn">Import Lists</button>
-        <input id="importCategoriesFileInput" type="file" accept=".json" hidden aria-hidden="true">
+        <input id="importCategoriesFileInput" type="file" accept=".json,.xlsx" hidden aria-hidden="true">
       </div>
     </div>
 

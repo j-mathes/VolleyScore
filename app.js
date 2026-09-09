@@ -1109,6 +1109,167 @@ function exportCategoriesXlsx() {
     zipBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 }
 
+// ---- Match Info Lists: import from .xlsx (hand-rolled ZIP reader + DOM XML parsing) ----
+// Supports both "stored" (uncompressed) and "deflate" entries — the latter via the
+// browser's native DecompressionStream, so no hand-written inflate is needed. Sheets are
+// matched to a category by name; column A values become that category's list entries.
+
+function findZipEocd(bytes) {
+  var minPos = Math.max(0, bytes.length - 65557); // max comment length (65535) + EOCD record (22)
+  for (var i = bytes.length - 22; i >= minPos; i--) {
+    if (bytes[i] === 0x50 && bytes[i + 1] === 0x4b && bytes[i + 2] === 0x05 && bytes[i + 3] === 0x06) return i;
+  }
+  return -1;
+}
+
+// Reads the central directory into a { name: {method, compSize, localOffset} } map.
+function readZipEntries(bytes) {
+  var eocdPos = findZipEocd(bytes);
+  if (eocdPos === -1) throw new Error("Not a valid .xlsx (zip) file.");
+  var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  var entryCount = dv.getUint16(eocdPos + 10, true);
+  var pos = dv.getUint32(eocdPos + 16, true);
+
+  var entries = {};
+  for (var i = 0; i < entryCount; i++) {
+    if (dv.getUint32(pos, true) !== 0x02014b50) break;
+    var method = dv.getUint16(pos + 10, true);
+    var compSize = dv.getUint32(pos + 20, true);
+    var nameLen = dv.getUint16(pos + 28, true);
+    var extraLen = dv.getUint16(pos + 30, true);
+    var commentLen = dv.getUint16(pos + 32, true);
+    var localOffset = dv.getUint32(pos + 42, true);
+    var name = new TextDecoder().decode(bytes.subarray(pos + 46, pos + 46 + nameLen));
+    entries[name] = { method: method, compSize: compSize, localOffset: localOffset };
+    pos += 46 + nameLen + extraLen + commentLen;
+  }
+  return entries;
+}
+
+async function readZipEntryData(bytes, entry) {
+  var dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  var pos = entry.localOffset;
+  if (dv.getUint32(pos, true) !== 0x04034b50) throw new Error("Corrupt .xlsx (zip) entry.");
+  var nameLen = dv.getUint16(pos + 26, true);
+  var extraLen = dv.getUint16(pos + 28, true);
+  var dataStart = pos + 30 + nameLen + extraLen;
+  var raw = bytes.subarray(dataStart, dataStart + entry.compSize);
+  if (entry.method === 0) return raw;
+  if (entry.method === 8) {
+    if (typeof DecompressionStream === "undefined") {
+      throw new Error("This browser can't open Excel files that use compression. Try a newer browser, or import the JSON export instead.");
+    }
+    var stream = new Blob([raw]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+  }
+  throw new Error("Unsupported compression in .xlsx file.");
+}
+
+function xlsxPartPath(target) {
+  var t = target.replace(/^\.?\//, "");
+  return /^xl\//.test(t) ? t : "xl/" + t;
+}
+
+function xmlText(el) {
+  return el ? Array.prototype.map.call(el.getElementsByTagName("t"), function (t) { return t.textContent; }).join("") : "";
+}
+
+var CATEGORY_SHEET_NAMES = {
+  "team names": "masterTeamNames",
+  "locations": "masterLocations",
+  "age categories": "masterAgeCategories",
+  "leagues": "masterLeagues",
+};
+
+async function importCategoriesFromXlsx(arrayBuffer) {
+  var bytes = new Uint8Array(arrayBuffer);
+  var decoder = new TextDecoder();
+  var parser = new DOMParser();
+  var entries;
+
+  try {
+    entries = readZipEntries(bytes);
+  } catch (e) {
+    alert("Could not read that file as an Excel workbook.");
+    return;
+  }
+
+  async function readPart(name) {
+    var entry = entries[name];
+    if (!entry) return null;
+    var data = await readZipEntryData(bytes, entry);
+    return parser.parseFromString(decoder.decode(data), "application/xml");
+  }
+
+  var added = 0;
+  try {
+    var workbookXml = await readPart("xl/workbook.xml");
+    if (!workbookXml) throw new Error("Missing workbook.xml.");
+
+    var relsXml = await readPart("xl/_rels/workbook.xml.rels");
+    var relMap = {};
+    if (relsXml) {
+      Array.prototype.forEach.call(relsXml.getElementsByTagName("Relationship"), function (rel) {
+        relMap[rel.getAttribute("Id")] = rel.getAttribute("Target");
+      });
+    }
+
+    var sharedStrings = [];
+    var sstXml = await readPart("xl/sharedStrings.xml");
+    if (sstXml) {
+      Array.prototype.forEach.call(sstXml.getElementsByTagName("si"), function (si) {
+        sharedStrings.push(xmlText(si));
+      });
+    }
+
+    var sheetEls = workbookXml.getElementsByTagName("sheet");
+    for (var i = 0; i < sheetEls.length; i++) {
+      var sheetName = (sheetEls[i].getAttribute("name") || "").trim();
+      var listKey = CATEGORY_SHEET_NAMES[sheetName.toLowerCase()];
+      if (!listKey) continue;
+
+      var rId = sheetEls[i].getAttribute("r:id") ||
+        sheetEls[i].getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id");
+      var target = relMap[rId];
+      if (!target) continue;
+
+      var sheetXml = await readPart(xlsxPartPath(target));
+      if (!sheetXml) continue;
+
+      var values = [];
+      var rows = sheetXml.getElementsByTagName("row");
+      for (var r = 0; r < rows.length; r++) {
+        var cell = rows[r].getElementsByTagName("c")[0]; // column A only
+        if (!cell) continue;
+        var type = cell.getAttribute("t");
+        var text;
+        if (type === "inlineStr") {
+          text = xmlText(cell.getElementsByTagName("is")[0]);
+        } else if (type === "s") {
+          var vEl = cell.getElementsByTagName("v")[0];
+          text = sharedStrings[vEl ? parseInt(vEl.textContent, 10) : -1] || "";
+        } else {
+          var vEl2 = cell.getElementsByTagName("v")[0];
+          text = vEl2 ? vEl2.textContent : (cell.textContent || "");
+        }
+        text = (text || "").trim();
+        if (text) values.push(text);
+      }
+
+      // Drop the header row (our own export repeats the category name there)
+      if (values.length && values[0].toLowerCase() === sheetName.toLowerCase()) values.shift();
+      values.forEach(function (v) { if (addToMasterList(listKey, v)) added++; });
+    }
+  } catch (e) {
+    alert(e.message || "Could not import that Excel file.");
+    return;
+  }
+
+  renderMasterListEditors();
+  renderDefaultPickerOptions();
+  alert("Imported " + added + " new entr" + (added === 1 ? "y" : "ies") + " from Excel.");
+}
+
 // ---- UI Utilities ---------------------------------------
 
 function esc(str) {
@@ -3798,9 +3959,14 @@ function wireSetupPage() {
   $("importCategoriesFileInput").addEventListener("change", function (e) {
     var file = e.target.files[0];
     if (!file) return;
+    var isXlsx = /\.xlsx$/i.test(file.name);
     var reader = new FileReader();
-    reader.onload = function (ev) { importCategoriesFromJson(ev.target.result); };
-    reader.readAsText(file);
+    reader.onload = function (ev) {
+      if (isXlsx) void importCategoriesFromXlsx(ev.target.result);
+      else importCategoriesFromJson(ev.target.result);
+    };
+    if (isXlsx) reader.readAsArrayBuffer(file);
+    else reader.readAsText(file);
     e.target.value = "";
   });
 
