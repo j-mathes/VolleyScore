@@ -49,14 +49,14 @@
           <label class="setup-field">
             <span class="setup-field-label">Team A</span>
             <div class="setup-team-name-row">
-              <input id="cfgTeamA" type="text" value="Team A" placeholder="Team A" autocomplete="off" spellcheck="false">
+              <input id="cfgTeamA" type="text" value="Team A" placeholder="Team A" autocomplete="off" spellcheck="false" list="teamNamesDatalist">
               <input id="cfgTeamAColorOverride" type="color" value="#1d4ed8" class="color-picker color-picker-sm" title="Team A color (defaults to Setup \u2192 Appearance)">
             </div>
           </label>
           <label class="setup-field">
             <span class="setup-field-label">Team B</span>
             <div class="setup-team-name-row">
-              <input id="cfgTeamB" type="text" value="Team B" placeholder="Team B" autocomplete="off" spellcheck="false">
+              <input id="cfgTeamB" type="text" value="Team B" placeholder="Team B" autocomplete="off" spellcheck="false" list="teamNamesDatalist">
               <input id="cfgTeamBColorOverride" type="color" value="#b91c1c" class="color-picker color-picker-sm" title="Team B color (defaults to Setup \u2192 Appearance)">
             </div>
           </label>
@@ -65,13 +65,37 @@
         <div class="setup-optional-row">
           <label class="setup-field">
             <span class="setup-field-label">Location <span class="optional">(optional)</span></span>
-            <input id="cfgLocation" type="text" placeholder="e.g. Main Gym" autocomplete="off">
+            <input id="cfgLocation" type="text" placeholder="e.g. Main Gym" autocomplete="off" list="locationsDatalist">
           </label>
           <label class="setup-field">
             <span class="setup-field-label">Scheduled Start <span class="optional">(optional)</span></span>
             <input id="cfgScheduledAt" type="datetime-local">
           </label>
         </div>
+
+        <div class="setup-optional-row">
+          <label class="setup-field">
+            <span class="setup-field-label">Gender <span class="optional">(optional)</span></span>
+            <select id="cfgGender">
+              <option value="">Not specified</option>
+              <option value="Women's">Women's</option>
+              <option value="Men's">Men's</option>
+            </select>
+          </label>
+          <label class="setup-field">
+            <span class="setup-field-label">Age Category <span class="optional">(optional)</span></span>
+            <input id="cfgAgeCategory" type="text" placeholder="e.g. 16U" autocomplete="off" list="ageCategoriesDatalist">
+          </label>
+          <label class="setup-field">
+            <span class="setup-field-label">League <span class="optional">(optional)</span></span>
+            <input id="cfgLeague" type="text" placeholder="e.g. CSHSAA" autocomplete="off" list="leaguesDatalist">
+          </label>
+        </div>
+
+        <datalist id="teamNamesDatalist"></datalist>
+        <datalist id="locationsDatalist"></datalist>
+        <datalist id="ageCategoriesDatalist"></datalist>
+        <datalist id="leaguesDatalist"></datalist>
 
         <div class="setup-row-group setup-options-row">
           <fieldset class="radio-fieldset">
@@ -523,6 +547,26 @@
         <label class="setting-label" for="cfgDefLocation">Default Location</label>
         <input type="text" id="cfgDefLocation" placeholder="e.g. Main Gym" autocomplete="off" class="setting-text-input">
       </div>
+      <div class="setting-row">
+        <label class="setting-label" for="cfgDefGender">Default Gender</label>
+        <select id="cfgDefGender">
+          <option value="">Not specified</option>
+          <option value="Women's">Women's</option>
+          <option value="Men's">Men's</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label class="setting-label" for="cfgDefAgeCategory">Default Age Category</label>
+        <select id="cfgDefAgeCategory">
+          <option value="">None</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label class="setting-label" for="cfgDefLeague">Default League</label>
+        <select id="cfgDefLeague">
+          <option value="">None</option>
+        </select>
+      </div>
 
       <div class="setting-row">
         <label class="setting-label">Default Format</label>
@@ -689,6 +733,47 @@
     </div>
 
     <div class="setup-card">
+      <h2>Match Info Lists</h2>
+      <p class="setup-hint">These values back the pick-or-type fields on the New Game screen. Anything typed there that isn't in the list is added here automatically.</p>
+
+      <div class="ml-editor">
+        <h3 class="ml-editor-title">Team Names</h3>
+        <div class="ml-add-row">
+          <input id="cfgAddTeamName" type="text" placeholder="Add team name" autocomplete="off">
+          <button id="btnAddTeamName" class="ctrl-btn" type="button">Add</button>
+        </div>
+        <div id="mlListTeamNames" class="ml-chip-list"></div>
+      </div>
+
+      <div class="ml-editor">
+        <h3 class="ml-editor-title">Locations</h3>
+        <div class="ml-add-row">
+          <input id="cfgAddLocation" type="text" placeholder="Add location" autocomplete="off">
+          <button id="btnAddLocation" class="ctrl-btn" type="button">Add</button>
+        </div>
+        <div id="mlListLocations" class="ml-chip-list"></div>
+      </div>
+
+      <div class="ml-editor">
+        <h3 class="ml-editor-title">Age Categories</h3>
+        <div class="ml-add-row">
+          <input id="cfgAddAgeCategory" type="text" placeholder="Add age category" autocomplete="off">
+          <button id="btnAddAgeCategory" class="ctrl-btn" type="button">Add</button>
+        </div>
+        <div id="mlListAgeCategories" class="ml-chip-list"></div>
+      </div>
+
+      <div class="ml-editor">
+        <h3 class="ml-editor-title">Leagues</h3>
+        <div class="ml-add-row">
+          <input id="cfgAddLeague" type="text" placeholder="Add league" autocomplete="off">
+          <button id="btnAddLeague" class="ctrl-btn" type="button">Add</button>
+        </div>
+        <div id="mlListLeagues" class="ml-chip-list"></div>
+      </div>
+    </div>
+
+    <div class="setup-card">
       <h2>Data</h2>
       <p class="setup-hint">Export all saved games as a single JSON file, or import previously exported data.</p>
       <div class="data-actions">
@@ -697,6 +782,15 @@
         <input id="importSetupFileInput" type="file" accept=".json" hidden aria-hidden="true">
       </div>
       <button id="btnClearAllSetup" class="ctrl-btn danger-btn" style="margin-top:0.8rem">Clear All Data</button>
+
+      <hr class="setup-divider">
+      <p class="setup-hint">Export the Match Info Lists (Team Names, Locations, Age Categories, Leagues). Excel export is for viewing/sharing &mdash; only the JSON file can be re-imported.</p>
+      <div class="data-actions">
+        <button id="btnExportCategoriesJson" class="ctrl-btn">Export Lists (JSON)</button>
+        <button id="btnExportCategoriesXlsx" class="ctrl-btn">Export Lists (Excel)</button>
+        <button id="btnImportCategories" class="ctrl-btn">Import Lists</button>
+        <input id="importCategoriesFileInput" type="file" accept=".json" hidden aria-hidden="true">
+      </div>
     </div>
 
     <div class="setup-card">

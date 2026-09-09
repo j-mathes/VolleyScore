@@ -58,6 +58,7 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Undo / Redo** — available during play and immediately after End Game (with optional confirm)
 - **Side switching** — swap which panel each team appears on, or automatically switch sides between sets; Triple Ball arrows and the sets-won indicator update accordingly
 - **Scheduled vs. actual start time** — pre-configure a planned start time in Game Defaults, while the moment **Start Game** is tapped is always recorded as the actual start (see [Match Timing](#match-timing))
+- **Match Info** — track Gender, Age Category, and League per game, with pick-or-type fields backed by editable master lists (see [Match Info Lists](#match-info-lists))
 - **Score button layout** — choose &minus;/+ or +/&minus; order, or mirror the two team panels so the same symbol always sits toward the middle
 - **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable; team colors can also be overridden per game when starting a new match (see [New Game Team Colors](#new-game-team-colors))
 - **Keep Screen Awake** — optional Wake Lock (iOS 16.4+ PWA, Android, desktop Chrome)
@@ -228,16 +229,46 @@ The override only affects that one game and applies everywhere team color drives
 
 ---
 
+## Match Info Lists
+
+The New Game screen tracks four extra pieces of match info, each backed by a master list you can pick from or type a new value into:
+
+| Field | Type | Starts with |
+|-------|------|-------------|
+| Team Names | Grows from usage | Empty |
+| Locations | Grows from usage | Empty |
+| Gender | Fixed choice (Women's / Men's / not specified) | n/a — no list |
+| Age Category | Editable list | Senior, Junior, 18U, 17U, 16U, 15U, 14U, 13U, 12U |
+| League | Editable list | CSHSAA, ISAA, Foothills, Rockyview, Volleyball Alberta |
+
+Team Name, Location, Age Category, and League fields use native pick-or-type inputs — tap to choose an existing value from the dropdown, or type something new. Anything new you type is saved to that field's master list automatically, so it's available to pick next time.
+
+### Managing the Lists
+
+**Setup → Match Info Lists** shows every value in each list with a remove (&times;) button, plus an input to add a new value directly (without creating a game). This is also where you'd clean up a typo added by mistake.
+
+**Setup → Game Defaults** lets you set a default Gender, Age Category, and League (in addition to the existing default team names and location) that pre-fill the New Game form. Each can still be overridden per game.
+
+### Export / Import
+
+**Setup → Data** can export the four lists as:
+
+- **JSON** — the canonical round-trip format; re-importable via the same section. Import merges new values into your existing lists (duplicates are skipped).
+- **Excel (.xlsx)** — one tab per category (Team Names, Locations, Age Categories, Leagues), for viewing or sharing outside the app. Excel export is one-way — only the JSON file can be imported back in.
+
+---
+
 ## Setup
 
 | Section | Settings |
 |---------|----------|
 | Appearance | Dark mode, font size, team colors, sidebar border, Start Set button colors, score button layout (&minus;/+ order and mirroring), Keep Screen Awake, Confirm before Undo |
 | Mobile Display | Notch padding — side (left/right) and amount; useful in landscape when the phone notch covers the sidebar |
-| Game Defaults | Default team names, location, scheduled start (see [Match Timing](#match-timing)), format, variation, fair play rule, automatic side switching between sets, timeouts/set, subs/set |
+| Game Defaults | Default team names, location, gender, age category, league, scheduled start (see [Match Timing](#match-timing)), format, variation, fair play rule, automatic side switching between sets, timeouts/set, subs/set |
 | Scoring Defaults | Win at / Cap / Win by for regular and deciding sets; Win Alert glow and toast color/duration settings; Action Alert color and duration |
+| Match Info Lists | Add/remove Team Names, Locations, Age Categories, and Leagues (see [Match Info Lists](#match-info-lists)) |
 | Triple Ball | Phase box size, highlight color, scroll speed |
-| Data | Export all games (JSON), import, clear all data |
+| Data | Export/import all games (JSON); export/import Match Info Lists (JSON, plus Excel export) (see [Match Info Lists](#match-info-lists)); clear all data |
 | About | App version and cache name; update toast appears automatically when a new version is cached |
 
 ---

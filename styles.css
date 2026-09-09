@@ -2022,6 +2022,78 @@ details[open] .event-log-summary::before {
   margin-top: 0.5rem;
 }
 
+/* ---- Match Info Lists (Setup) ---- */
+.ml-editor {
+  margin-bottom: 1rem;
+}
+
+.ml-editor:last-child {
+  margin-bottom: 0;
+}
+
+.ml-editor-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.4rem;
+}
+
+.ml-add-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.ml-add-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.ml-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ml-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 999px;
+  padding: 0.25rem 0.3rem 0.25rem 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.ml-chip-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.12);
+  color: inherit;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.ml-chip-remove:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.25);
+}
+
+[data-theme="dark"] .ml-chip {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .ml-chip-remove {
+  background: rgba(255, 255, 255, 0.14);
+}
+
 /* ---- Sanction Modal ---- */
 .modal-overlay {
   position: fixed;

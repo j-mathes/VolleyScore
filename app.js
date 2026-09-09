@@ -71,6 +71,14 @@ var DEFAULT_SETTINGS = {
   defaultTeamA: "",
   defaultTeamB: "",
   defaultLocation: "",
+  defaultGender: "",
+  defaultAgeCategory: "",
+  defaultLeague: "",
+  // Master lists — Team Names/Locations grow from usage; Age Categories/Leagues start pre-seeded
+  masterTeamNames: [],
+  masterLocations: [],
+  masterAgeCategories: ["Senior", "Junior", "18U", "17U", "16U", "15U", "14U", "13U", "12U"],
+  masterLeagues: ["CSHSAA", "ISAA", "Foothills", "Rockyview", "Volleyball Alberta"],
   // Scoring defaults
   defaultSetWinScore: 25,
   defaultSetWinBy: 2,
@@ -104,6 +112,78 @@ function saveSettings() {
   try {
     localStorage.setItem(LS_SETTINGS, JSON.stringify(settings));
   } catch (e) { /* ignore */ }
+}
+
+// ---- Master lists (Team Names, Locations, Age Categories, Leagues) -------
+
+// Adds a trimmed value to the named master list (case-insensitive de-dupe); returns true if added.
+// Always reassigns a new array rather than mutating in place, so DEFAULT_SETTINGS'
+// shared array references are never modified (that literal is reused via Object.assign).
+function addToMasterList(listName, rawValue) {
+  var value = (rawValue || "").trim();
+  if (!value) return false;
+  var list = Array.isArray(settings[listName]) ? settings[listName] : [];
+  var exists = list.some(function (v) { return v.toLowerCase() === value.toLowerCase(); });
+  if (exists) return false;
+  settings[listName] = list.concat([value]).sort(function (a, b) { return a.localeCompare(b); });
+  saveSettings();
+  return true;
+}
+
+function removeFromMasterList(listName, value) {
+  if (!Array.isArray(settings[listName])) return;
+  settings[listName] = settings[listName].filter(function (v) { return v !== value; });
+  saveSettings();
+}
+
+function fillDatalist(id, values) {
+  var el = $(id);
+  if (!el) return;
+  el.innerHTML = (values || []).map(function (v) { return '<option value="' + esc(v) + '"></option>'; }).join("");
+}
+
+// Populates the New Game screen's pick-or-type datalists from the current master lists.
+function renderMasterDatalists() {
+  fillDatalist("teamNamesDatalist", settings.masterTeamNames);
+  fillDatalist("locationsDatalist", settings.masterLocations);
+  fillDatalist("ageCategoriesDatalist", settings.masterAgeCategories);
+  fillDatalist("leaguesDatalist", settings.masterLeagues);
+}
+
+function renderMasterListChips(containerId, listName) {
+  var container = $(containerId);
+  if (!container) return;
+  var values = settings[listName] || [];
+  if (!values.length) {
+    container.innerHTML = '<span class="no-data-msg">None yet</span>';
+    return;
+  }
+  container.innerHTML = values.map(function (v) {
+    return '<span class="ml-chip">' + esc(v) +
+      '<button type="button" class="ml-chip-remove" data-list="' + listName + '" data-value="' + esc(v) + '" aria-label="Remove ' + esc(v) + '">&times;</button></span>';
+  }).join("");
+}
+
+// Renders the Setup → Match Info Lists editors (add input + chip list) for all four master lists.
+function renderMasterListEditors() {
+  renderMasterListChips("mlListTeamNames", "masterTeamNames");
+  renderMasterListChips("mlListLocations", "masterLocations");
+  renderMasterListChips("mlListAgeCategories", "masterAgeCategories");
+  renderMasterListChips("mlListLeagues", "masterLeagues");
+}
+
+function fillSelectOptions(id, values, selected) {
+  var el = $(id);
+  if (!el) return;
+  el.innerHTML = '<option value="">None</option>' + (values || []).map(function (v) {
+    return '<option value="' + esc(v) + '"' + (v === selected ? " selected" : "") + '>' + esc(v) + '</option>';
+  }).join("");
+}
+
+// Refreshes the Setup → Game Defaults "Default Age Category"/"Default League" pickers from the master lists.
+function renderDefaultPickerOptions() {
+  fillSelectOptions("cfgDefAgeCategory", settings.masterAgeCategories, settings.defaultAgeCategory);
+  fillSelectOptions("cfgDefLeague", settings.masterLeagues, settings.defaultLeague);
 }
 
 // ---- IndexedDB fallback ---------------------------------
@@ -573,6 +653,9 @@ function deriveGameState(timeline) {
     teamAColor: startEv.teamAColor || null,
     teamBColor: startEv.teamBColor || null,
     location: startEv.location || "",
+    gender: startEv.gender || "",
+    ageCategory: startEv.ageCategory || "",
+    league: startEv.league || "",
     scheduledAt: startEv.scheduledAt || null,
     gameFormat: startEv.gameFormat || "best3",
     variation: startEv.variation || "standard",
@@ -812,6 +895,235 @@ async function importGamesFromJson(text) {
   await renderGamesList();
 }
 
+// ---- Match Info Lists: export / import (JSON) ------------
+
+function exportCategoriesJson() {
+  var payload = {
+    version: 1,
+    type: "volleyscore-categories",
+    exportedAt: new Date().toISOString(),
+    teamNames: settings.masterTeamNames || [],
+    locations: settings.masterLocations || [],
+    ageCategories: settings.masterAgeCategories || [],
+    leagues: settings.masterLeagues || [],
+  };
+  downloadFile("volleyscore_categories_" + new Date().toISOString().slice(0, 10) + ".json",
+    JSON.stringify(payload, null, 2), "application/json");
+}
+
+function importCategoriesFromJson(text) {
+  var payload;
+  try { payload = JSON.parse(text); } catch (e) { alert("Invalid JSON file."); return; }
+  if (payload.type !== "volleyscore-categories") { alert("Unrecognized file format."); return; }
+
+  var added = 0;
+  (payload.teamNames || []).forEach(function (v) { if (addToMasterList("masterTeamNames", v)) added++; });
+  (payload.locations || []).forEach(function (v) { if (addToMasterList("masterLocations", v)) added++; });
+  (payload.ageCategories || []).forEach(function (v) { if (addToMasterList("masterAgeCategories", v)) added++; });
+  (payload.leagues || []).forEach(function (v) { if (addToMasterList("masterLeagues", v)) added++; });
+
+  renderMasterListEditors();
+  renderMasterDatalists();
+  renderDefaultPickerOptions();
+  alert("Imported " + added + " new entr" + (added === 1 ? "y" : "ies") + ".");
+}
+
+// ---- Match Info Lists: export as .xlsx (hand-rolled, stored/uncompressed ZIP) ----
+// Each category gets its own sheet/tab. Import only supports JSON — .xlsx export
+// is meant for viewing/sharing in Excel, not as a round-trip import format.
+
+var CRC32_TABLE = (function () {
+  var table = new Uint32Array(256);
+  for (var n = 0; n < 256; n++) {
+    var c = n;
+    for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    table[n] = c >>> 0;
+  }
+  return table;
+})();
+
+function crc32(bytes) {
+  var crc = 0xFFFFFFFF;
+  for (var i = 0; i < bytes.length; i++) {
+    crc = CRC32_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function concatUint8(arrays) {
+  var total = arrays.reduce(function (s, a) { return s + a.length; }, 0);
+  var out = new Uint8Array(total);
+  var offset = 0;
+  arrays.forEach(function (a) { out.set(a, offset); offset += a.length; });
+  return out;
+}
+
+// Builds a ZIP archive (stored/no-compression entries) from [{ name, data: Uint8Array }].
+function buildZip(files) {
+  var localChunks = [];
+  var centralChunks = [];
+  var offset = 0;
+
+  files.forEach(function (f) {
+    var nameBytes = new TextEncoder().encode(f.name);
+    var crc = crc32(f.data);
+    var size = f.data.length;
+
+    var local = new Uint8Array(30 + nameBytes.length);
+    var lv = new DataView(local.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0, true);
+    lv.setUint16(8, 0, true);
+    lv.setUint16(10, 0, true);
+    lv.setUint16(12, 0x21, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, size, true);
+    lv.setUint32(22, size, true);
+    lv.setUint16(26, nameBytes.length, true);
+    lv.setUint16(28, 0, true);
+    local.set(nameBytes, 30);
+    localChunks.push(local, f.data);
+
+    var central = new Uint8Array(46 + nameBytes.length);
+    var cv = new DataView(central.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, 0, true);
+    cv.setUint16(14, 0x21, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, size, true);
+    cv.setUint32(24, size, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint16(30, 0, true);
+    cv.setUint16(32, 0, true);
+    cv.setUint16(34, 0, true);
+    cv.setUint16(36, 0, true);
+    cv.setUint32(38, 0, true);
+    cv.setUint32(42, offset, true);
+    central.set(nameBytes, 46);
+    centralChunks.push(central);
+
+    offset += local.length + f.data.length;
+  });
+
+  var centralStart = offset;
+  var centralBlock = concatUint8(centralChunks);
+
+  var eocd = new Uint8Array(22);
+  var ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, files.length, true);
+  ev.setUint16(10, files.length, true);
+  ev.setUint32(12, centralBlock.length, true);
+  ev.setUint32(16, centralStart, true);
+
+  return concatUint8(localChunks.concat([centralBlock, eocd]));
+}
+
+function xlsxColLetter(i) {
+  var s = "";
+  i++;
+  while (i > 0) {
+    var rem = (i - 1) % 26;
+    s = String.fromCharCode(65 + rem) + s;
+    i = Math.floor((i - 1) / 26);
+  }
+  return s;
+}
+
+function xlsxSheetXml(rows) {
+  var xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+  rows.forEach(function (row, ri) {
+    xml += '<row r="' + (ri + 1) + '">';
+    row.forEach(function (val, ci) {
+      var ref = xlsxColLetter(ci) + (ri + 1);
+      xml += '<c r="' + ref + '" t="inlineStr"><is><t xml:space="preserve">' + esc(String(val)) + '</t></is></c>';
+    });
+    xml += '</row>';
+  });
+  xml += '</sheetData></worksheet>';
+  return xml;
+}
+
+function xlsxWorkbookXml(sheetNames) {
+  var sheets = sheetNames.map(function (name, i) {
+    return '<sheet name="' + esc(name) + '" sheetId="' + (i + 1) + '" r:id="rId' + (i + 1) + '"/>';
+  }).join("");
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ' +
+    'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+    '<sheets>' + sheets + '</sheets></workbook>';
+}
+
+function xlsxWorkbookRelsXml(sheetCount) {
+  var rels = "";
+  for (var i = 0; i < sheetCount; i++) {
+    rels += '<Relationship Id="rId' + (i + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (i + 1) + '.xml"/>';
+  }
+  rels += '<Relationship Id="rId' + (sheetCount + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>';
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + rels + '</Relationships>';
+}
+
+function xlsxContentTypesXml(sheetCount) {
+  var overrides = '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>';
+  for (var i = 0; i < sheetCount; i++) {
+    overrides += '<Override PartName="/xl/worksheets/sheet' + (i + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+  }
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' + overrides + '</Types>';
+}
+
+var XLSX_ROOT_RELS =
+  '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+  '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+  '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+  '</Relationships>';
+
+var XLSX_STYLES_XML =
+  '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+  '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+  '<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>' +
+  '<fills count="1"><fill><patternFill patternType="none"/></fill></fills>' +
+  '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+  '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+  '<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>' +
+  '</styleSheet>';
+
+function exportCategoriesXlsx() {
+  var sheetsData = [
+    { name: "Team Names", values: settings.masterTeamNames || [] },
+    { name: "Locations", values: settings.masterLocations || [] },
+    { name: "Age Categories", values: settings.masterAgeCategories || [] },
+    { name: "Leagues", values: settings.masterLeagues || [] },
+  ];
+
+  var enc = new TextEncoder();
+  var files = [
+    { name: "[Content_Types].xml", data: enc.encode(xlsxContentTypesXml(sheetsData.length)) },
+    { name: "_rels/.rels", data: enc.encode(XLSX_ROOT_RELS) },
+    { name: "xl/workbook.xml", data: enc.encode(xlsxWorkbookXml(sheetsData.map(function (s) { return s.name; }))) },
+    { name: "xl/_rels/workbook.xml.rels", data: enc.encode(xlsxWorkbookRelsXml(sheetsData.length)) },
+    { name: "xl/styles.xml", data: enc.encode(XLSX_STYLES_XML) },
+  ];
+  sheetsData.forEach(function (sheet, i) {
+    var rows = [[sheet.name]].concat(sheet.values.map(function (v) { return [v]; }));
+    files.push({ name: "xl/worksheets/sheet" + (i + 1) + ".xml", data: enc.encode(xlsxSheetXml(rows)) });
+  });
+
+  var zipBytes = buildZip(files);
+  downloadFile("volleyscore_categories_" + new Date().toISOString().slice(0, 10) + ".xlsx",
+    zipBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+}
+
 // ---- UI Utilities ---------------------------------------
 
 function esc(str) {
@@ -916,6 +1228,10 @@ function initGameSetupForm() {
   $("cfgTeamA").value    = settings.defaultTeamA || "Team A";
   $("cfgTeamB").value    = settings.defaultTeamB || "Team B";
   $("cfgLocation").value = settings.defaultLocation || "";
+  $("cfgGender").value = settings.defaultGender || "";
+  $("cfgAgeCategory").value = settings.defaultAgeCategory || "";
+  $("cfgLeague").value = settings.defaultLeague || "";
+  renderMasterDatalists();
   // Per-game color override — reset to the current global defaults each time
   $("cfgTeamAColorOverride").value = settings.teamAColor;
   $("cfgTeamBColorOverride").value = settings.teamBColor;
@@ -1207,12 +1523,22 @@ async function startNewGame() {
   var teamAColor = $("cfgTeamAColorOverride").value || settings.teamAColor;
   var teamBColor = $("cfgTeamBColorOverride").value || settings.teamBColor;
   var location = $("cfgLocation").value.trim();
+  var gender = $("cfgGender").value;
+  var ageCategory = $("cfgAgeCategory").value.trim();
+  var league = $("cfgLeague").value.trim();
   var scheduledAt = $("cfgScheduledAt").value || toLocalDatetimeValue(new Date());
   var gameFormat = document.querySelector('input[name="gameFormat"]:checked').value;
   var variation  = document.querySelector('input[name="variation"]:checked').value;
   var fairPlay   = document.querySelector('input[name="fairPlay"]:checked').value;
   var gameId = crypto.randomUUID();
   var now = new Date().toISOString();
+
+  // Remember any newly typed values for next time
+  addToMasterList("masterTeamNames", teamA);
+  addToMasterList("masterTeamNames", teamB);
+  addToMasterList("masterLocations", location);
+  addToMasterList("masterAgeCategories", ageCategory);
+  addToMasterList("masterLeagues", league);
 
   controller.clear();
   controller.currentGameId = gameId;
@@ -1231,6 +1557,9 @@ async function startNewGame() {
     teamAColor: teamAColor,
     teamBColor: teamBColor,
     location: location,
+    gender: gender,
+    ageCategory: ageCategory,
+    league: league,
     scheduledAt: scheduledAt,
     gameFormat: gameFormat,
     variation: variation,
@@ -2613,6 +2942,9 @@ function renderLogPage() {
   if (meta && state) {
     var parts = [state.teamA + " vs " + state.teamB, formatLabel(state.gameFormat)];
     if (state.location) parts.push(state.location);
+    if (state.league) parts.push(state.league);
+    if (state.ageCategory) parts.push(state.ageCategory);
+    if (state.gender) parts.push(state.gender);
     // Only call out the scheduled time separately when it differs from the actual start
     if (state.scheduledAt && formatDate(state.scheduledAt) !== formatDate(state.startedAt)) {
       parts.push("Scheduled " + formatDate(state.scheduledAt));
@@ -2779,6 +3111,9 @@ async function selectDetailGame(gameId) {
   }
   metaParts.push(condStr);
   if (state.location) metaParts.push(state.location);
+  if (state.league) metaParts.push(state.league);
+  if (state.ageCategory) metaParts.push(state.ageCategory);
+  if (state.gender) metaParts.push(state.gender);
   // Only call out the scheduled time separately when it differs from the actual start
   var schedStr = state.scheduledAt ? formatDateTime(state.scheduledAt) : "";
   var startStr = state.startedAt ? formatDateTime(state.startedAt) : "";
@@ -2897,6 +3232,10 @@ function renderSetupPage() {
   $("cfgDefTeamA").value    = settings.defaultTeamA    || "";
   $("cfgDefTeamB").value    = settings.defaultTeamB    || "";
   $("cfgDefLocation").value = settings.defaultLocation || "";
+  $("cfgDefGender").value = settings.defaultGender || "";
+  renderMasterDatalists();
+  renderMasterListEditors();
+  renderDefaultPickerOptions();
   // Scoring defaults
   $("cfgDefSetWinScore").textContent    = settings.defaultSetWinScore    !== undefined ? settings.defaultSetWinScore    : 25;
   $("cfgDefSetWinBy").textContent       = settings.defaultSetWinBy       !== undefined ? settings.defaultSetWinBy       : 2;
@@ -3172,6 +3511,63 @@ function wireSetupPage() {
   });
   $("cfgDefLocation").addEventListener("input", function () {
     settings.defaultLocation = this.value; saveSettings();
+  });
+  $("cfgDefGender").addEventListener("change", function () {
+    settings.defaultGender = this.value; saveSettings();
+  });
+  $("cfgDefAgeCategory").addEventListener("change", function () {
+    settings.defaultAgeCategory = this.value; saveSettings();
+  });
+  $("cfgDefLeague").addEventListener("change", function () {
+    settings.defaultLeague = this.value; saveSettings();
+  });
+
+  // Match Info Lists — add new entries
+  function wireMasterListAdd(inputId, listName) {
+    var input = $(inputId);
+    function add() {
+      if (addToMasterList(listName, input.value)) {
+        input.value = "";
+        renderMasterListEditors();
+        renderMasterDatalists();
+        renderDefaultPickerOptions();
+      }
+    }
+    input.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); add(); } });
+    return add;
+  }
+  $("btnAddTeamName").addEventListener("click", wireMasterListAdd("cfgAddTeamName", "masterTeamNames"));
+  $("btnAddLocation").addEventListener("click", wireMasterListAdd("cfgAddLocation", "masterLocations"));
+  $("btnAddAgeCategory").addEventListener("click", wireMasterListAdd("cfgAddAgeCategory", "masterAgeCategories"));
+  $("btnAddLeague").addEventListener("click", wireMasterListAdd("cfgAddLeague", "masterLeagues"));
+
+  // Match Info Lists — remove an entry (delegated for the dynamically rendered chips)
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest(".ml-chip-remove");
+    if (!btn) return;
+    removeFromMasterList(btn.getAttribute("data-list"), btn.getAttribute("data-value"));
+    renderMasterListEditors();
+    renderMasterDatalists();
+    renderDefaultPickerOptions();
+  });
+
+  // Match Info Lists — export / import
+  $("btnExportCategoriesJson").addEventListener("click", function () {
+    exportCategoriesJson();
+  });
+  $("btnExportCategoriesXlsx").addEventListener("click", function () {
+    exportCategoriesXlsx();
+  });
+  $("btnImportCategories").addEventListener("click", function () {
+    $("importCategoriesFileInput").click();
+  });
+  $("importCategoriesFileInput").addEventListener("change", function (e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function (ev) { importCategoriesFromJson(ev.target.result); };
+    reader.readAsText(file);
+    e.target.value = "";
   });
 
   // Notch padding
