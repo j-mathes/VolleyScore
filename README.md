@@ -57,6 +57,8 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Set & match management** — End Set, between-sets serve picker, Start Next Set
 - **Undo / Redo** — available during play and immediately after End Game (with optional confirm)
 - **Side switching** — swap which panel each team appears on, or automatically switch sides between sets; Triple Ball arrows update accordingly
+- **Scheduled vs. actual start time** — pre-configure a planned start time in Game Defaults, while the moment **Start Game** is tapped is always recorded as the actual start (see [Match Timing](#match-timing))
+- **Score button layout** — choose &minus;/+ or +/&minus; order, or mirror the two team panels so the same symbol always sits toward the middle
 - **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable
 - **Keep Screen Awake** — optional Wake Lock (iOS 16.4+ PWA, Android, desktop Chrome)
 - **PWA / offline** — installs to home screen; auto-update toast when a new version is cached
@@ -206,13 +208,21 @@ A Red card or Delay Penalty awards a point and advances the sequence. A toast id
 
 ---
 
+## Match Timing
+
+The **Scheduled Start** field (Score page setup, optional) lets you pre-configure a match for a planned time — useful when setting up a game ahead of the actual first serve. It has no effect on match logic.
+
+Separately, the app always records the real-world moment **Start Game** is tapped as the match's actual start time. Wherever a single date/time is shown (Recent Games, Games list), the actual start time is used. In the **Game Detail** view and **Match Log** header, if the scheduled time and actual start differ, both are shown — e.g. `Scheduled Sep 9 7:00 PM · Started Sep 9 7:12 PM`.
+
+---
+
 ## Setup
 
 | Section | Settings |
 |---------|----------|
-| Appearance | Dark mode, font size, team colors, sidebar border, Start Set button colors, Keep Screen Awake, Confirm before Undo |
+| Appearance | Dark mode, font size, team colors, sidebar border, Start Set button colors, score button layout (&minus;/+ order and mirroring), Keep Screen Awake, Confirm before Undo |
 | Mobile Display | Notch padding — side (left/right) and amount; useful in landscape when the phone notch covers the sidebar |
-| Game Defaults | Default team names, location, format, variation, fair play rule, automatic side switching between sets, timeouts/set, subs/set |
+| Game Defaults | Default team names, location, scheduled start (see [Match Timing](#match-timing)), format, variation, fair play rule, automatic side switching between sets, timeouts/set, subs/set |
 | Scoring Defaults | Win at / Cap / Win by for regular and deciding sets; Win Alert glow and toast color/duration settings; Action Alert color and duration |
 | Triple Ball | Phase box size, highlight color, scroll speed |
 | Data | Export all games (JSON), import, clear all data |

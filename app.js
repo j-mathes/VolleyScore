@@ -65,6 +65,7 @@ var DEFAULT_SETTINGS = {
   notchEnabled: false,
   notchSide: "left",
   notchPad: 50,
+  scoreBtnLayout: "minusPlus", // minusPlus | plusMinus | mirrorPlus | mirrorMinus
   keepScreenAwake: false,
   confirmUndo: false,
   defaultTeamA: "",
@@ -2816,6 +2817,7 @@ function renderSetupPage() {
   var notchSideRadio = document.querySelector('input[name="cfgNotchSide"][value="' + (settings.notchSide || "left") + '"]');
   if (notchSideRadio) notchSideRadio.checked = true;
   $("cfgNotchPad").textContent = settings.notchPad !== undefined ? settings.notchPad : 50;
+  $("cfgScoreBtnLayout").value = settings.scoreBtnLayout || "minusPlus";
   $("cfgKeepAwake").checked   = !!settings.keepScreenAwake;
   $("cfgConfirmUndo").checked = !!settings.confirmUndo;
   $("cfgDefTeamA").value    = settings.defaultTeamA    || "";
@@ -2864,6 +2866,12 @@ function wireSetupPage() {
   $("cfgFontSize").addEventListener("change", function () {
     settings.fontSize = this.value;
     applyFontSize();
+    saveSettings();
+  });
+
+  $("cfgScoreBtnLayout").addEventListener("change", function () {
+    settings.scoreBtnLayout = this.value;
+    applyScoreBtnLayout();
     saveSettings();
   });
 
@@ -3148,6 +3156,7 @@ function wireSetupPage() {
       applyTheme();
       applyFontSize();
       updateTeamColors();
+      applyScoreBtnLayout();
       renderSetupPage();
     })();
   });
@@ -3167,6 +3176,12 @@ function applyTheme() {
 function applyFontSize() {
   document.documentElement.classList.remove("fs-small", "fs-medium", "fs-large");
   document.documentElement.classList.add("fs-" + (settings.fontSize || "medium"));
+}
+
+function applyScoreBtnLayout() {
+  document.documentElement.classList.remove("score-layout-plusMinus", "score-layout-mirrorPlus", "score-layout-mirrorMinus");
+  var layout = settings.scoreBtnLayout || "minusPlus";
+  if (layout !== "minusPlus") document.documentElement.classList.add("score-layout-" + layout);
 }
 
 // ---- Navigation wiring ----------------------------------
@@ -3204,6 +3219,7 @@ async function init() {
   applyFontSize();
   updateTeamColors();
   applyNotchPadding();
+  applyScoreBtnLayout();
 
   // Wire up all UI
   wireNavigation();

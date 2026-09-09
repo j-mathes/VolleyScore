@@ -1153,6 +1153,16 @@ details summary::-webkit-details-marker { display: none; }
   color: var(--ink-soft);
 }
 
+/* Score button layout options (default DOM order is minus, plus) */
+.score-layout-plusMinus .score-btn.btn-score-minus { order: 2; }
+.score-layout-plusMinus .score-btn.btn-score-plus  { order: 1; }
+
+.score-layout-mirrorPlus .team-panel-b .score-btn.btn-score-minus { order: 2; }
+.score-layout-mirrorPlus .team-panel-b .score-btn.btn-score-plus  { order: 1; }
+
+.score-layout-mirrorMinus .team-panel-a .score-btn.btn-score-minus { order: 2; }
+.score-layout-mirrorMinus .team-panel-a .score-btn.btn-score-plus  { order: 1; }
+
 /* Team stats row */
 .team-stats-row {
   display: flex;
