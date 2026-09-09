@@ -41,7 +41,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "12";
+var APP_VERSION = "13";
 
 // Default settings
 var DEFAULT_SETTINGS = {
@@ -1981,6 +1981,10 @@ function enhanceComboInput(inputId, listKey) {
   input.setAttribute("aria-autocomplete", "list");
 
   input.addEventListener("focus", function () { openComboDropdown(input, listKey); });
+  // Dismissing the dropdown (e.g. tapping a non-focusable area) doesn't always blur
+  // the input, so a second tap on an already-focused field wouldn't refire "focus" —
+  // "click" fires every tap regardless, so it reliably reopens the dropdown.
+  input.addEventListener("click", function () { openComboDropdown(input, listKey); });
   input.addEventListener("input", function () { openComboDropdown(input, listKey); });
   input.addEventListener("keydown", function (e) { handleComboKeydown(e, input); });
   // mousedown on an option calls preventDefault (see below), so blur only fires
