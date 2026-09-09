@@ -23,6 +23,11 @@
   --team-b: #b91c1c;
   --team-b-light: rgba(185, 28, 28, 0.12);
 
+  /* Brand accent — intentionally independent of --team-a so per-game color
+     overrides on the New Game screen don't affect chrome like Start Game */
+  --brand-color: #1d4ed8;
+  --brand-color-light: rgba(29, 78, 216, 0.12);
+
   /* Action colors */
   --serve-color: #15803d;
   --pulse-rgb: 21, 128, 61;   /* legacy alias */
@@ -85,6 +90,8 @@
   --team-a-light: rgba(59, 130, 246, 0.15);
   --team-b: #f87171;
   --team-b-light: rgba(248, 113, 113, 0.15);
+  --brand-color: #3b82f6;
+  --brand-color-light: rgba(59, 130, 246, 0.15);
   --serve-color: #4ade80;
   --pulse-rgb: 74, 222, 128;  /* legacy alias */
   --start-set-color: #4ade80;
@@ -134,7 +141,7 @@ h4 { font-size: 0.875rem; color: var(--ink-soft); }
 
 p { margin: 0 0 0.4rem; }
 
-a { color: var(--team-a); }
+a { color: var(--brand-color); }
 
 button {
   cursor: pointer;
@@ -184,7 +191,7 @@ select {
 }
 
 input:focus, select:focus {
-  outline: 2px solid var(--team-a);
+  outline: 2px solid var(--brand-color);
   outline-offset: 1px;
 }
 
@@ -451,7 +458,7 @@ input.color-picker-sm {
 }
 
 .setting-radio-row input[type="radio"] {
-  accent-color: var(--team-a);
+  accent-color: var(--brand-color);
   cursor: pointer;
 }
 
@@ -474,7 +481,7 @@ input.color-picker-sm {
 }
 
 .radio-fieldset input[type="radio"] {
-  accent-color: var(--team-a);
+  accent-color: var(--brand-color);
   cursor: pointer;
 }
 
@@ -503,8 +510,8 @@ input.color-picker-sm {
 }
 
 .info-icon-btn[aria-expanded="true"] {
-  color: var(--team-a);
-  background: var(--team-a-light);
+  color: var(--brand-color);
+  background: var(--brand-color-light);
 }
 
 /* Tooltip shown when info icon is clicked — full width, between columns and steppers */
@@ -610,7 +617,7 @@ input.color-picker-sm {
 
 .start-game-btn {
   width: 100%;
-  background: var(--team-a);
+  background: var(--brand-color);
   color: #fff;
   font-size: 1rem;
   font-weight: 700;
@@ -621,7 +628,7 @@ input.color-picker-sm {
 }
 
 .start-game-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--team-a) 85%, #000 15%);
+  background: color-mix(in srgb, var(--brand-color) 85%, #000 15%);
   transform: none;
 }
 
@@ -1791,8 +1798,8 @@ details[open] .event-log-summary::before {
 }
 
 .game-list-item.selected {
-  background: var(--team-a-light);
-  box-shadow: 0 0 0 2px var(--team-a);
+  background: var(--brand-color-light);
+  box-shadow: 0 0 0 2px var(--brand-color);
 }
 
 .gli-name {
@@ -2291,7 +2298,7 @@ details[open] .event-log-summary::before {
 
 .role-btn.active,
 .role-btn.active:hover:not(:disabled) {
-  background: var(--team-a);
+  background: var(--brand-color);
   color: #fff;
   border-color: transparent;
 }
@@ -2375,7 +2382,7 @@ details[open] .event-log-summary::before {
   font-size: 1.1rem;
   font-weight: 800;
   min-width: 2.2ch;
-  color: var(--team-a);
+  color: var(--brand-color);
   letter-spacing: 0.05em;
 }
 
@@ -2725,7 +2732,7 @@ input.player-num-input {
 }
 
 .set-filter-pill.active {
-  background: var(--team-a);
+  background: var(--brand-color);
   color: #fff;
 }
 
@@ -2829,7 +2836,7 @@ input.player-num-input {
 }
 [data-theme="dark"] .role-btn.active,
 [data-theme="dark"] .role-btn.active:hover:not(:disabled) {
-  background: var(--team-a);
+  background: var(--brand-color);
   color: #fff;
 }
 [data-theme="dark"] .role-btn:hover:not(:disabled) {

@@ -1553,6 +1553,15 @@ function wireGameSetupForm() {
   $("cfgTeamA").addEventListener("input", updateFirstServeBtnLabels);
   $("cfgTeamB").addEventListener("input", updateFirstServeBtnLabels);
 
+  // Live-preview the per-game color override on the First Serve buttons (and
+  // anything else on this screen driven by --team-a/--team-b) as it's picked.
+  $("cfgTeamAColorOverride").addEventListener("input", function () {
+    updateTeamColors(this.value, $("cfgTeamBColorOverride").value);
+  });
+  $("cfgTeamBColorOverride").addEventListener("input", function () {
+    updateTeamColors($("cfgTeamAColorOverride").value, this.value);
+  });
+
   $("btnFirstServeA").addEventListener("click", function () {
     setupFirstServer = "A";
     updateFirstServeBtnLabels();
