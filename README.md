@@ -24,7 +24,7 @@ After installing, the app opens full-screen without browser chrome and works off
 ## Quickstart
 
 1. **Score page** — enter team names, pick a format, fair play rule, and first server → **Start Game**. The generic `Team A` and `Team B` values clear when focused; saved custom defaults remain available. Each team name has a color swatch to override that team's color for this match only (see [New Game Team Colors](#new-game-team-colors))
-2. Tap **+** to score a point; the serve indicator updates automatically. Picked the wrong first server? A "Set 1 serve" chip stays available in the game bar until the first point is scored — tap it to correct via popup (see [Match Timing](#match-timing))
+2. Tap **+** to score a point; the serve indicator updates automatically. Picked the wrong first server? A "Set 1 serve" chip stays in the game bar until the first point is scored — tap it to correct the server (see [Match Timing](#match-timing))
 3. Sidebar buttons: **TO** (timeout), **Sub** (substitution), card icon (sanctions)
 4. **End Set** → choose who serves → **Start Set 2** (pulses green when ready)
 5. Repeat until done → **End Game** → **Done** to return to setup
@@ -60,7 +60,7 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Scheduled vs. actual start time** — pre-configure a planned start time in Game Defaults, while the moment **Start Game** is tapped is always recorded as the actual start (see [Match Timing](#match-timing))
 - **Match Info** — track Gender, Age Category, and League per game, with pick-or-type fields backed by editable master lists (see [Match Info Lists](#match-info-lists))
 - **Score button layout** — choose &minus;/+ or +/&minus; order, or mirror the two team panels so the same symbol always sits toward the middle
-- **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable; team colors can also be overridden per game when starting a new match (see [New Game Team Colors](#new-game-team-colors))
+- **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable; every color picker opens a quick preset grid (with a "Custom…" option for the full picker) — see [New Game Team Colors](#new-game-team-colors) for per-game overrides
 - **Keep Screen Awake** — optional Wake Lock (iOS 16.4+ PWA, Android, desktop Chrome)
 - **PWA / offline** — installs to home screen; auto-update toast when a new version is cached
 
@@ -112,7 +112,7 @@ When a team's score meets the set-win condition:
 
 - **End Set** button glows persistently until the set is ended
 - Winning team **name** and **score** flash a one-shot glow (fades out)
-- Toast: `🥅 Team A at set win! (25–22 in Set 1)`
+- Toast: `🏅 Team A at set win! (25–22 in Set 1)`
 - If it also clinches the match: `🏆 Team A wins the MATCH! (25–22 in Set 2 · Sets 2–0)`
 - After **End Set** reveals a match winner: `🏆 Team A wins the match! (2–0 sets)`
 - **End Game** button glows between sets when a match winner is determined
@@ -223,9 +223,9 @@ If the wrong team is picked to serve, a compact "Set N serve: Team X" chip stays
 
 ## New Game Team Colors
 
-Each team name field on the **New Game** form has an inline color swatch, pre-filled with the global default colors (Setup → Appearance → Team A/B Color — blue and red out of the box). Tap a swatch to pick a different color just for that match; leave it untouched to use the current defaults.
+Each team name field on the **New Game** form has a color swatch, pre-filled with the global default colors (Setup → Appearance → Team A/B Color — blue and red out of the box). Tap a swatch to open a preset color grid, or choose "Custom…" for the full color picker. This only affects that one game; leave it untouched to use the current defaults.
 
-The override only affects that one game and applies everywhere team color drives the UI — score panels, serve dot, sanctions bar, event log, Match Log tables, and so on. It doesn't change your saved global defaults, and returning to the New Game form always resets the swatches back to those defaults.
+The override applies everywhere team color drives the UI — score panels, serve dot, sanctions bar, event log, Match Log tables, and so on. It doesn't change your saved global defaults, and returning to the New Game form always resets the swatches back to those defaults.
 
 ---
 
@@ -241,7 +241,7 @@ The New Game screen tracks four extra pieces of match info, each backed by a mas
 | Age Category | Editable list | Senior, Junior, 18U, 17U, 16U, 15U, 14U, 13U, 12U |
 | League | Editable list | CSHSAA, ISAA, Foothills, Rockyview, Volleyball Alberta |
 
-Team Name, Location, Age Category, and League fields use native pick-or-type inputs — tap to choose an existing value from the dropdown, or type something new. Anything new you type is saved to that field's master list automatically, so it's available to pick next time.
+Team Name, Location, Age Category, and League fields are pick-or-type: tap the field to see a dropdown of existing values, keep typing to filter it, or type something new. Anything new you type is saved to that field's master list automatically, so it's available to pick next time.
 
 ### Managing the Lists
 
