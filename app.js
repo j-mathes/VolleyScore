@@ -2042,28 +2042,33 @@ function closeComboDropdown() {
   _comboActiveIndex = -1;
 }
 
-// Opens below the field by default; flips above only when there's too little room
-// below (e.g. a lower field like League sitting near the bottom of the visible
-// area, covered by the on-screen keyboard) — otherwise it wouldn't be visible at all.
+// Opens below the field by default; flips above when that side has more room
+// (e.g. a lower field like League sitting near the bottom of the visible area,
+// covered by the on-screen keyboard). Always finishes with a hard clamp so the
+// panel can never end up rendered partly or fully off-screen either way.
 function positionComboDropdown(panel, input) {
+  var margin = 8;
   var r = input.getBoundingClientRect();
   // visualViewport reflects the space actually visible above an on-screen keyboard;
   // window.innerHeight doesn't shrink for the keyboard on iOS Safari.
   var visibleBottom = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  var spaceBelow = visibleBottom - r.bottom - 8;
-  var spaceAbove = r.top - 8;
+  var spaceBelow = visibleBottom - r.bottom - margin;
+  var spaceAbove = r.top - margin;
 
   panel.style.left = r.left + "px";
   panel.style.width = r.width + "px";
 
-  if (spaceBelow < 80 && spaceAbove > spaceBelow) {
-    var height = Math.min(panel.scrollHeight, spaceAbove);
-    panel.style.top = Math.max(8, r.top - height - 4) + "px";
-    panel.style.maxHeight = Math.max(80, spaceAbove) + "px";
-  } else {
-    panel.style.top = (r.bottom + 4) + "px";
-    panel.style.maxHeight = Math.max(80, spaceBelow) + "px";
-  }
+  var openBelow = spaceBelow >= 80 || spaceBelow >= spaceAbove;
+  var available = Math.max(40, openBelow ? spaceBelow : spaceAbove);
+  var height = Math.min(panel.scrollHeight, available);
+  var top = openBelow ? (r.bottom + 4) : (r.top - height - 4);
+
+  // Hard clamp: never let the panel extend above or below the visible area,
+  // regardless of how the field itself is currently positioned/scrolled.
+  top = Math.max(margin, Math.min(top, visibleBottom - height - margin));
+
+  panel.style.top = top + "px";
+  panel.style.maxHeight = height + "px";
 }
 
 function handleComboKeydown(e, input) {
