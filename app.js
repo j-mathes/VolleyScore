@@ -1945,8 +1945,14 @@ function wireColorPresetPopover() {
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && !$("colorPresetPopover").hidden) closeColorPresetPopover();
   });
+  // Reposition (don't close) on scroll — avoids the popover vanishing if the page
+  // scrolls for any reason (e.g. a nearby field's keyboard-driven scroll-into-view).
   window.addEventListener("scroll", function () {
-    if (!$("colorPresetPopover").hidden) closeColorPresetPopover();
+    var pop = $("colorPresetPopover");
+    if (!pop.hidden && _colorPopoverInput) {
+      var btn = _colorPopoverInput.previousElementSibling;
+      if (btn) positionColorPopover(pop, btn);
+    }
   }, true);
 }
 
@@ -2008,6 +2014,10 @@ function openComboDropdown(input, listKey) {
   panel.hidden = false;
   input.setAttribute("aria-expanded", "true");
   positionComboDropdown(panel, input);
+  // Mobile browsers often auto-scroll a lower field above the on-screen keyboard
+  // shortly *after* focus fires — re-check position once that settles.
+  requestAnimationFrame(function () { if (_comboInput === input) positionComboDropdown(panel, input); });
+  setTimeout(function () { if (_comboInput === input) positionComboDropdown(panel, input); }, 350);
 }
 
 function selectComboOption(index) {
@@ -2030,10 +2040,13 @@ function closeComboDropdown() {
 function positionComboDropdown(panel, input) {
   var r = input.getBoundingClientRect();
   var top = r.bottom + 4;
+  // visualViewport reflects the space actually visible above an on-screen keyboard;
+  // window.innerHeight doesn't shrink for the keyboard on iOS Safari.
+  var visibleBottom = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   panel.style.left = r.left + "px";
   panel.style.width = r.width + "px";
   panel.style.top = top + "px";
-  panel.style.maxHeight = Math.max(80, window.innerHeight - top - 8) + "px";
+  panel.style.maxHeight = Math.max(80, visibleBottom - top - 8) + "px";
 }
 
 function handleComboKeydown(e, input) {
@@ -2072,9 +2085,20 @@ function wireComboInputs() {
       closeComboDropdown();
     }
   });
+  // Reposition (don't close) on scroll/resize — mobile browsers scroll the
+  // focused field into view above the keyboard, which shouldn't dismiss it.
   window.addEventListener("scroll", function () {
-    if (!$("comboDropdown").hidden) closeComboDropdown();
+    if (_comboInput) positionComboDropdown($("comboDropdown"), _comboInput);
   }, true);
+  window.addEventListener("resize", function () {
+    if (_comboInput) positionComboDropdown($("comboDropdown"), _comboInput);
+  });
+  // visualViewport catches on-screen keyboard show/hide more reliably than window resize
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", function () {
+      if (_comboInput) positionComboDropdown($("comboDropdown"), _comboInput);
+    });
+  }
 }
 
 // Update the team-panels flex order and side indicator to reflect sidesSwapped
