@@ -1233,11 +1233,25 @@ input.color-picker-sm {
 .score-layout-plusMinus .score-btn.btn-score-minus { order: 3; }
 .score-layout-plusMinus .score-btn.btn-score-plus  { order: 1; }
 
-.score-layout-mirrorPlus .team-panel-b .score-btn.btn-score-minus { order: 3; }
-.score-layout-mirrorPlus .team-panel-b .score-btn.btn-score-plus  { order: 1; }
+/* Mirrored layouts target whichever panel is currently on that physical side —
+   not a fixed team — so the mirroring stays correct after a side switch. */
+.score-layout-mirrorPlus .team-panels:not(.sides-swapped) .team-panel-b .score-btn.btn-score-minus,
+.score-layout-mirrorPlus .team-panels.sides-swapped .team-panel-a .score-btn.btn-score-minus {
+  order: 3;
+}
+.score-layout-mirrorPlus .team-panels:not(.sides-swapped) .team-panel-b .score-btn.btn-score-plus,
+.score-layout-mirrorPlus .team-panels.sides-swapped .team-panel-a .score-btn.btn-score-plus {
+  order: 1;
+}
 
-.score-layout-mirrorMinus .team-panel-a .score-btn.btn-score-minus { order: 3; }
-.score-layout-mirrorMinus .team-panel-a .score-btn.btn-score-plus  { order: 1; }
+.score-layout-mirrorMinus .team-panels:not(.sides-swapped) .team-panel-a .score-btn.btn-score-minus,
+.score-layout-mirrorMinus .team-panels.sides-swapped .team-panel-b .score-btn.btn-score-minus {
+  order: 3;
+}
+.score-layout-mirrorMinus .team-panels:not(.sides-swapped) .team-panel-a .score-btn.btn-score-plus,
+.score-layout-mirrorMinus .team-panels.sides-swapped .team-panel-b .score-btn.btn-score-plus {
+  order: 1;
+}
 
 /* Team stats row */
 .team-stats-row {
