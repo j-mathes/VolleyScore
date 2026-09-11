@@ -24,11 +24,12 @@ After installing, the app opens full-screen without browser chrome and works off
 ## Quickstart
 
 1. **Score page** — enter team names, pick a format, fair play rule, and first server → **Start Game**. The generic `Team A` and `Team B` values clear when focused; saved custom defaults remain available. Each team name has a color swatch to override that team's color for this match only (see [New Game Team Colors](#new-game-team-colors))
-2. Tap **+** to score a point; the serve indicator updates automatically. Picked the wrong first server? A "Set 1 serve" chip stays in the game bar until the first point is scored — tap it to correct the server (see [Match Timing](#match-timing))
-3. Sidebar buttons: **TO** (timeout), **Sub** (substitution), card icon (sanctions)
-4. **End Set** → choose who serves → **Start Set 2** (pulses green when ready)
-5. Repeat until done → **End Game** → **Done** to return to setup
-6. **Match Log** (nav bar) — full event log; tap a set number pill to filter by set
+2. Confirm (or change) who serves → **Start Set 1** — the same serve picker used before every set, not just Set 1
+3. Tap **+** to score a point; the serve indicator updates automatically. Picked the wrong server? A "Set N serve" chip stays in the game bar until the first point of that set is scored — tap it to correct (see [Match Timing](#match-timing))
+4. Sidebar buttons: **TO** (timeout), **Sub** (substitution), card icon (sanctions)
+5. **End Set** → choose who serves → **Start Set 2** (pulses green when ready)
+6. Repeat until done → **End Game** → **Done** to return to setup
+7. **Match Log** (nav bar) — full event log; tap a set number pill to filter by set
 
 ---
 

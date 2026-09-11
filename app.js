@@ -1755,13 +1755,9 @@ async function startNewGame() {
   };
   controller.dispatch(startEvent);
 
-  // Auto-start set 1
-  controller.dispatch({
-    type: "SET_STARTED",
-    setNumber: 1,
-    firstServer: setupFirstServer,
-    timestamp: now,
-  });
+  // Don't auto-start Set 1 — prompt for it via the between-sets serve picker,
+  // same as Set 2 onward. Pre-suggest whatever was chosen on the New Game screen.
+  pendingServePickTeam = setupFirstServer;
 
   await persistGame();
   showScoreboard();
@@ -2743,7 +2739,7 @@ function wireScoreboardControls() {
       var lastSet = prevSets.length ? prevSets[prevSets.length - 1] : null;
       server = lastSet ? (lastSet.firstServer === "A" ? "B" : "A") : "A";
     }
-    if (settings.autoSwitchSidesBetweenSets) {
+    if (state.nextSetNum > 1 && settings.autoSwitchSidesBetweenSets) {
       sidesSwapped = !sidesSwapped;
       updateSidesDisplay(state);
     }
