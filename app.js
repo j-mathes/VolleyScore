@@ -83,6 +83,7 @@ var DEFAULT_SETTINGS = {
   masterLocations: [],
   masterAgeCategories: ["Senior", "Junior", "18U", "17U", "16U", "15U", "14U", "13U", "12U"],
   masterLeagues: ["CSHSAA", "ISAA", "Foothills", "Rockyview", "Volleyball Alberta"],
+  showMasterListEditIcons: true,
   // Scoring defaults
   defaultSetWinScore: 25,
   defaultSetWinBy: 2,
@@ -140,6 +141,27 @@ function removeFromMasterList(listName, value) {
   saveSettings();
 }
 
+// Renames an existing entry in place (case-insensitive de-dupe against other entries).
+// Returns true if renamed; alerts and returns false on an empty/duplicate/unchanged name.
+function renameInMasterList(listName, oldValue, rawNewValue) {
+  var newValue = (rawNewValue || "").trim();
+  if (!newValue || newValue === oldValue) return false;
+  var list = Array.isArray(settings[listName]) ? settings[listName] : [];
+  var duplicate = list.some(function (v) { return v !== oldValue && v.toLowerCase() === newValue.toLowerCase(); });
+  if (duplicate) {
+    alert('"' + newValue + '" already exists in this list.');
+    return false;
+  }
+  settings[listName] = list.map(function (v) { return v === oldValue ? newValue : v; })
+    .sort(function (a, b) { return a.localeCompare(b); });
+  saveSettings();
+  return true;
+}
+
+// Tracks the single chip currently in inline-rename mode, e.g. { listName, value }.
+// window.prompt() is unusable here since standalone iOS PWAs silently no-op it.
+var _mlEditing = null;
+
 function renderMasterListChips(containerId, listName) {
   var container = $(containerId);
   if (!container) return;
@@ -149,9 +171,18 @@ function renderMasterListChips(containerId, listName) {
     return;
   }
   container.innerHTML = values.map(function (v) {
+    if (_mlEditing && _mlEditing.listName === listName && _mlEditing.value === v) {
+      return '<span class="ml-chip ml-chip-editing">' +
+        '<input type="text" class="ml-chip-input" data-list="' + listName + '" data-value="' + esc(v) + '" value="' + esc(v) + '"></span>';
+    }
     return '<span class="ml-chip">' + esc(v) +
+      (settings.showMasterListEditIcons ? '<button type="button" class="ml-chip-edit" data-list="' + listName + '" data-value="' + esc(v) + '" aria-label="Rename ' + esc(v) + '">&#9998;</button>' : "") +
       '<button type="button" class="ml-chip-remove" data-list="' + listName + '" data-value="' + esc(v) + '" aria-label="Remove ' + esc(v) + '">&times;</button></span>';
   }).join("");
+  if (_mlEditing && _mlEditing.listName === listName) {
+    var input = container.querySelector(".ml-chip-input");
+    if (input) { input.focus(); input.select(); }
+  }
 }
 
 // Renders the Setup → Match Info Lists editors (add input + chip list) for all four master lists.
@@ -3704,6 +3735,7 @@ function renderSetupPage() {
   $("cfgScoreBtnLayout").value = settings.scoreBtnLayout || "mirrorPlus";
   $("cfgKeepAwake").checked   = !!settings.keepScreenAwake;
   $("cfgConfirmUndo").checked = !!settings.confirmUndo;
+  $("cfgShowMlEditIcons").checked = !!settings.showMasterListEditIcons;
   $("cfgPersistNewGameData").checked = !!settings.persistNewGameData;
   $("cfgDefTeamA").value    = settings.defaultTeamA    || "";
   $("cfgDefTeamB").value    = settings.defaultTeamB    || "";
@@ -3977,6 +4009,11 @@ function wireSetupPage() {
     settings.confirmUndo = this.checked;
     saveSettings();
   });
+  $("cfgShowMlEditIcons").addEventListener("change", function () {
+    settings.showMasterListEditIcons = this.checked;
+    saveSettings();
+    renderMasterListEditors();
+  });
   $("cfgPersistNewGameData").addEventListener("change", function () {
     settings.persistNewGameData = this.checked;
     saveSettings();
@@ -4025,6 +4062,32 @@ function wireSetupPage() {
     var btn = e.target.closest(".ml-chip-remove");
     if (!btn) return;
     removeFromMasterList(btn.getAttribute("data-list"), btn.getAttribute("data-value"));
+    renderMasterListEditors();
+    renderDefaultPickerOptions();
+  });
+
+  // Match Info Lists — rename an entry inline (delegated for the dynamically rendered chips)
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest(".ml-chip-edit");
+    if (!btn) return;
+    _mlEditing = { listName: btn.getAttribute("data-list"), value: btn.getAttribute("data-value") };
+    renderMasterListEditors();
+  });
+
+  document.addEventListener("keydown", function (e) {
+    var input = e.target.closest(".ml-chip-input");
+    if (!input) return;
+    if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+    else if (e.key === "Escape") { e.preventDefault(); _mlEditing = null; renderMasterListEditors(); }
+  });
+
+  document.addEventListener("focusout", function (e) {
+    var input = e.target.closest(".ml-chip-input");
+    if (!input || !_mlEditing) return;
+    var listName = input.getAttribute("data-list");
+    var oldValue = input.getAttribute("data-value");
+    _mlEditing = null;
+    renameInMasterList(listName, oldValue, input.value);
     renderMasterListEditors();
     renderDefaultPickerOptions();
   });

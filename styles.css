@@ -2236,8 +2236,28 @@ details[open] .event-log-summary::before {
   background: rgba(220, 38, 38, 0.25);
 }
 
+.ml-chip-editing {
+  padding: 0.15rem;
+}
+
+.ml-chip-input {
+  font: inherit;
+  font-weight: 600;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  min-width: 8ch;
+  background: #fff;
+  color: inherit;
+}
+
 [data-theme="dark"] .ml-chip {
   background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .ml-chip-input {
+  background: rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 [data-theme="dark"] .ml-chip-remove {
