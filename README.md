@@ -39,7 +39,7 @@ After installing, the app opens full-screen without browser chrome and works off
 | Score | Live scorekeeping |
 | Match Log | Event log + set summary (active games only) |
 | Games | Browse, resume, export, or delete saved games (date and time shown for each) |
-| Setup | Appearance, scoring defaults, data management |
+| Setup | Appearance, game defaults, scoring defaults, Match Info Lists, data management |
 
 ---
 
@@ -59,6 +59,7 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Side switching** — swap which panel each team appears on, or automatically switch sides between sets; Triple Ball arrows and the sets-won indicator update accordingly
 - **Scheduled vs. actual start time** — pre-configure a planned start time in Game Defaults, while the moment **Start Game** is tapped is always recorded as the actual start (see [Match Timing](#match-timing))
 - **Match Info** — track Gender, Age Category, and League per game, with pick-or-type fields backed by editable master lists (see [Match Info Lists](#match-info-lists))
+- **Persist New Game Data** — optionally carry every New Game field forward from your last match instead of resetting to defaults (see [Persisting New Game Data](#persisting-new-game-data))
 - **Score button layout** — choose &minus;/+ or +/&minus; order, or mirror the two team panels so the same symbol always sits toward the middle
 - **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable; every color picker opens a quick preset grid (with a "Custom…" option for the full picker) — see [New Game Team Colors](#new-game-team-colors) for per-game overrides
 - **Keep Screen Awake** — optional Wake Lock (iOS 16.4+ PWA, Android, desktop Chrome)
@@ -260,13 +261,21 @@ Either format merges new values into your existing lists (duplicates are skipped
 
 ---
 
+## Persisting New Game Data
+
+By default, the New Game form always resets to your configured defaults (Setup → Game Defaults) for a fresh match. Turning on **Setup → Game Defaults → Persist New Game Data Between Matches** changes this: instead of the defaults, the form pre-fills everything from the *last game you actually started* — team names, team colors, location, gender, age category, league, format, variation, fair play rule, timeouts/subs, scoring rules, and first server.
+
+It's all-or-nothing — there's no way to persist only some fields. Scheduled Start is the one exception and always resets to the current time regardless of this setting, since carrying forward a stale timestamp wouldn't make sense. Turning the toggle off reverts to the original default-based behavior immediately.
+
+---
+
 ## Setup
 
 | Section | Settings |
 |---------|----------|
 | Appearance | Dark mode, font size, team colors, sidebar border, Start Set button colors, score button layout (&minus;/+ order and mirroring), Keep Screen Awake, Confirm before Undo |
 | Mobile Display | Notch padding — side (left/right) and amount; useful in landscape when the phone notch covers the sidebar |
-| Game Defaults | Default team names, location, gender, age category, league, scheduled start (see [Match Timing](#match-timing)), format, variation, fair play rule, automatic side switching between sets, timeouts/set, subs/set |
+| Game Defaults | Persist New Game Data toggle (see below); default team names, location, gender, age category, league, scheduled start (see [Match Timing](#match-timing)), format, variation, fair play rule, automatic side switching between sets, timeouts/set, subs/set |
 | Scoring Defaults | Win at / Cap / Win by for regular and deciding sets; Win Alert glow and toast color/duration settings; Action Alert color and duration |
 | Match Info Lists | Add/remove Team Names, Locations, Age Categories, and Leagues (see [Match Info Lists](#match-info-lists)) |
 | Triple Ball | Phase box size, highlight color, scroll speed |

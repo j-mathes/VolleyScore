@@ -74,6 +74,10 @@ var DEFAULT_SETTINGS = {
   defaultGender: "",
   defaultAgeCategory: "",
   defaultLeague: "",
+  // When true, the New Game form pre-fills from the last game's actual entries
+  // instead of the configured defaults above; when false (default), behaves as before.
+  persistNewGameData: false,
+  lastGameSetup: null,
   // Master lists — Team Names/Locations grow from usage; Age Categories/Leagues start pre-seeded
   masterTeamNames: [],
   masterLocations: [],
@@ -1370,34 +1374,40 @@ var setupTimeouts = 2;
 var setupSubs = 6;
 
 function initGameSetupForm() {
+  // When persistence is on and a previous game exists, prefill from that game's
+  // actual entries instead of the configured defaults; otherwise, unchanged behavior.
+  var last = (settings.persistNewGameData && settings.lastGameSetup) ? settings.lastGameSetup : null;
+
   // Pre-fill team names and location from saved defaults
-  $("cfgTeamA").value    = settings.defaultTeamA || "Team A";
-  $("cfgTeamB").value    = settings.defaultTeamB || "Team B";
-  $("cfgLocation").value = settings.defaultLocation || "";
-  $("cfgGender").value = settings.defaultGender || "";
-  $("cfgAgeCategory").value = settings.defaultAgeCategory || "";
-  $("cfgLeague").value = settings.defaultLeague || "";
-  // Per-game color override — reset to the current global defaults each time
-  $("cfgTeamAColorOverride").value = settings.teamAColor;
-  $("cfgTeamBColorOverride").value = settings.teamBColor;
+  $("cfgTeamA").value    = last ? last.teamA : (settings.defaultTeamA || "Team A");
+  $("cfgTeamB").value    = last ? last.teamB : (settings.defaultTeamB || "Team B");
+  $("cfgLocation").value = last ? last.location : (settings.defaultLocation || "");
+  $("cfgGender").value = last ? last.gender : (settings.defaultGender || "");
+  $("cfgAgeCategory").value = last ? last.ageCategory : (settings.defaultAgeCategory || "");
+  $("cfgLeague").value = last ? last.league : (settings.defaultLeague || "");
+  // Per-game color override — reset to the current global defaults each time,
+  // unless persisting, in which case reuse the last game's override colors.
+  $("cfgTeamAColorOverride").value = last ? last.teamAColor : settings.teamAColor;
+  $("cfgTeamBColorOverride").value = last ? last.teamBColor : settings.teamBColor;
   syncColorSwatchButtons();
   // Prefill defaults from settings
-  document.querySelector('input[name="gameFormat"][value="' + settings.defaultFormat + '"]').checked = true;
-  document.querySelector('input[name="variation"][value="' + (settings.defaultVariation || "standard") + '"]').checked = true;
-  document.querySelector('input[name="fairPlay"][value="' + (settings.defaultFairPlay || "none") + '"]').checked = true;
-  setupTimeouts = settings.defaultTimeouts;
-  setupSubs = settings.defaultSubs;
+  document.querySelector('input[name="gameFormat"][value="' + (last ? last.gameFormat : settings.defaultFormat) + '"]').checked = true;
+  document.querySelector('input[name="variation"][value="' + (last ? last.variation : (settings.defaultVariation || "standard")) + '"]').checked = true;
+  document.querySelector('input[name="fairPlay"][value="' + (last ? last.fairPlay : (settings.defaultFairPlay || "none")) + '"]').checked = true;
+  setupTimeouts = last ? last.timeoutsPerSet : settings.defaultTimeouts;
+  setupSubs = last ? last.subsPerSet : settings.defaultSubs;
   $("cfgTimeouts").textContent = setupTimeouts;
   $("cfgSubs").textContent = setupSubs;
   $("cfgScheduledAt").value = toLocalDatetimeValue(new Date());
+  if (last) setupFirstServer = last.firstServer || "A";
 
   // Pre-fill scoring rules from settings defaults
-  setupSetWinScore = settings.defaultSetWinScore !== undefined ? settings.defaultSetWinScore : 25;
-  setupSetWinBy = settings.defaultSetWinBy !== undefined ? settings.defaultSetWinBy : 2;
-  setupSetWinCap = settings.defaultSetWinCap !== undefined ? settings.defaultSetWinCap : 0;
-  setupDeciderWinScore = settings.defaultDeciderWinScore !== undefined ? settings.defaultDeciderWinScore : 15;
-  setupDeciderWinBy = settings.defaultDeciderWinBy !== undefined ? settings.defaultDeciderWinBy : 2;
-  setupDeciderWinCap = settings.defaultDeciderWinCap !== undefined ? settings.defaultDeciderWinCap : 0;
+  setupSetWinScore = last ? last.setWinScore : (settings.defaultSetWinScore !== undefined ? settings.defaultSetWinScore : 25);
+  setupSetWinBy = last ? last.setWinBy : (settings.defaultSetWinBy !== undefined ? settings.defaultSetWinBy : 2);
+  setupSetWinCap = last ? last.setWinCap : (settings.defaultSetWinCap !== undefined ? settings.defaultSetWinCap : 0);
+  setupDeciderWinScore = last ? last.deciderWinScore : (settings.defaultDeciderWinScore !== undefined ? settings.defaultDeciderWinScore : 15);
+  setupDeciderWinBy = last ? last.deciderWinBy : (settings.defaultDeciderWinBy !== undefined ? settings.defaultDeciderWinBy : 2);
+  setupDeciderWinCap = last ? last.deciderWinCap : (settings.defaultDeciderWinCap !== undefined ? settings.defaultDeciderWinCap : 0);
   $("cfgSetWinScore").textContent = setupSetWinScore;
   $("cfgSetWinBy").textContent = setupSetWinBy;
   $("chkSetWinCap").checked = setupSetWinCap > 0;
@@ -1694,6 +1704,19 @@ async function startNewGame() {
   addToMasterList("masterLocations", location);
   addToMasterList("masterAgeCategories", ageCategory);
   addToMasterList("masterLeagues", league);
+
+  // Snapshot this game's New Game form entries, used next time if "persist New
+  // Game data" is on. Captured unconditionally so turning the setting on later
+  // immediately has this game's data available rather than nothing at all.
+  settings.lastGameSetup = {
+    teamA: teamA, teamB: teamB, teamAColor: teamAColor, teamBColor: teamBColor,
+    location: location, gender: gender, ageCategory: ageCategory, league: league,
+    gameFormat: gameFormat, variation: variation, fairPlay: fairPlay,
+    timeoutsPerSet: setupTimeouts, subsPerSet: setupSubs, firstServer: setupFirstServer,
+    setWinScore: setupSetWinScore, setWinBy: setupSetWinBy, setWinCap: setupSetWinCap,
+    deciderWinScore: setupDeciderWinScore, deciderWinBy: setupDeciderWinBy, deciderWinCap: setupDeciderWinCap,
+  };
+  saveSettings();
 
   controller.clear();
   controller.currentGameId = gameId;
@@ -3685,6 +3708,7 @@ function renderSetupPage() {
   $("cfgScoreBtnLayout").value = settings.scoreBtnLayout || "mirrorPlus";
   $("cfgKeepAwake").checked   = !!settings.keepScreenAwake;
   $("cfgConfirmUndo").checked = !!settings.confirmUndo;
+  $("cfgPersistNewGameData").checked = !!settings.persistNewGameData;
   $("cfgDefTeamA").value    = settings.defaultTeamA    || "";
   $("cfgDefTeamB").value    = settings.defaultTeamB    || "";
   $("cfgDefLocation").value = settings.defaultLocation || "";
@@ -3955,6 +3979,10 @@ function wireSetupPage() {
   // Confirm before Undo
   $("cfgConfirmUndo").addEventListener("change", function () {
     settings.confirmUndo = this.checked;
+    saveSettings();
+  });
+  $("cfgPersistNewGameData").addEventListener("change", function () {
+    settings.persistNewGameData = this.checked;
     saveSettings();
   });
 

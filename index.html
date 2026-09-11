@@ -531,6 +531,15 @@
       <h2>Game Defaults</h2>
 
       <div class="setting-row">
+        <label class="setting-label" for="cfgPersistNewGameData">Persist New Game Data Between Matches</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="cfgPersistNewGameData">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <p class="setup-hint">When on, the New Game form pre-fills everything (teams, colors, location, gender, age category, league, format, fair play, timeouts/subs, scoring rules, first server) from your last game instead of the defaults below. Applies to all of it, not individual fields.</p>
+
+      <div class="setting-row">
         <label class="setting-label" for="cfgDefTeamA">Default Team A</label>
         <input type="text" id="cfgDefTeamA" placeholder="Team A" autocomplete="off" spellcheck="false" class="setting-text-input">
       </div>
