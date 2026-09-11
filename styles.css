@@ -1912,6 +1912,12 @@ details[open] .event-log-summary::before {
   flex-wrap: wrap;
 }
 
+.edit-match-info-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
 .detail-event-log-card {
   background: var(--bg-card);
   border-radius: var(--radius);

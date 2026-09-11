@@ -2016,6 +2016,11 @@ var COMBO_FIELDS = [
   { inputId: "cfgLocation", listKey: "masterLocations" },
   { inputId: "cfgAgeCategory", listKey: "masterAgeCategories" },
   { inputId: "cfgLeague", listKey: "masterLeagues" },
+  { inputId: "emiTeamA", listKey: "masterTeamNames" },
+  { inputId: "emiTeamB", listKey: "masterTeamNames" },
+  { inputId: "emiLocation", listKey: "masterLocations" },
+  { inputId: "emiAgeCategory", listKey: "masterAgeCategories" },
+  { inputId: "emiLeague", listKey: "masterLeagues" },
 ];
 
 var _comboInput = null;   // input currently showing the dropdown
@@ -3668,6 +3673,82 @@ function clearGameDetail() {
   $("gameDetailContent").hidden = true;
 }
 
+// ---- Edit Match Info (post-hoc correction for finished/in-progress games) --
+
+var _emiGameId = null; // gameId currently open in the Edit Match Info modal
+
+function openEditMatchInfoModal(gameId) {
+  var state = (gameId === controller.currentGameId) ? controller.getState() : _detailState;
+  if (!state) return;
+  _emiGameId = gameId;
+  $("emiTeamA").value = state.teamA || "";
+  $("emiTeamB").value = state.teamB || "";
+  $("emiLocation").value = state.location || "";
+  $("emiGender").value = state.gender || "";
+  $("emiAgeCategory").value = state.ageCategory || "";
+  $("emiLeague").value = state.league || "";
+  $("editMatchInfoModal").removeAttribute("hidden");
+}
+
+function closeEditMatchInfoModal() {
+  _emiGameId = null;
+  $("editMatchInfoModal").hidden = true;
+}
+
+async function saveMatchInfoEdits() {
+  var gameId = _emiGameId;
+  if (!gameId) return;
+
+  var teamA = $("emiTeamA").value.trim() || "Team A";
+  var teamB = $("emiTeamB").value.trim() || "Team B";
+  var location = $("emiLocation").value.trim();
+  var gender = $("emiGender").value;
+  var ageCategory = $("emiAgeCategory").value.trim();
+  var league = $("emiLeague").value.trim();
+  var gameName = teamA + " vs " + teamB;
+
+  addToMasterList("masterTeamNames", teamA);
+  addToMasterList("masterTeamNames", teamB);
+  addToMasterList("masterLocations", location);
+  addToMasterList("masterAgeCategories", ageCategory);
+  addToMasterList("masterLeagues", league);
+  renderMasterListEditors();
+  renderDefaultPickerOptions();
+
+  function applyToStartEvent(events) {
+    var startEv = events.find(function (e) { return e.type === "GAME_STARTED"; });
+    if (!startEv) return;
+    startEv.gameName = gameName;
+    startEv.teamA = teamA;
+    startEv.teamB = teamB;
+    startEv.location = location;
+    startEv.gender = gender;
+    startEv.ageCategory = ageCategory;
+    startEv.league = league;
+  }
+
+  if (gameId === controller.currentGameId) {
+    applyToStartEvent(controller.timeline.events);
+    controller._state = deriveGameState(controller.timeline);
+    await persistGame();
+    renderScoreboard();
+  } else {
+    var record = await dbLoadGame(gameId);
+    if (record) {
+      applyToStartEvent(record.events || []);
+      record.gameName = gameName;
+      record.teamA = teamA;
+      record.teamB = teamB;
+      record.location = location;
+      await dbSaveGame(record);
+    }
+  }
+
+  closeEditMatchInfoModal();
+  if (selectedDetailGameId === gameId) await selectDetailGame(gameId);
+  await renderGamesList();
+}
+
 function wireGamesPage() {
   // Set filter pills — delegated click on the detail set table
   $("detailSetTable").addEventListener("click", function (e) {
@@ -3678,6 +3759,21 @@ function wireGamesPage() {
     renderDetailSetTable(_detailState);
     var logBody = $("detailEventLogBody");
     if (logBody) logBody.innerHTML = buildEventLogHtml(_detailState, _detailTimeline, selectedDetailSetFilter);
+  });
+
+  // Edit Match Info modal
+  $("btnEditMatchInfo").addEventListener("click", function () {
+    if (selectedDetailGameId) openEditMatchInfoModal(selectedDetailGameId);
+  });
+  $("btnSaveMatchInfo").addEventListener("click", function () {
+    void saveMatchInfoEdits();
+  });
+  $("btnCloseEditMatchInfoModal").addEventListener("click", closeEditMatchInfoModal);
+  $("editMatchInfoModal").addEventListener("click", function (e) {
+    if (e.target === $("editMatchInfoModal")) closeEditMatchInfoModal();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !$("editMatchInfoModal").hidden) closeEditMatchInfoModal();
   });
 
   // Import button

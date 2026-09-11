@@ -404,6 +404,7 @@
         <p id="detailFilterHint" class="log-filter-hint" hidden>Showing filtered set &mdash; tap the set number again to clear.</p>
         <div class="detail-actions" id="detailActions">
           <button id="btnResumeGame" class="ctrl-btn">Resume Game</button>
+          <button id="btnEditMatchInfo" class="ctrl-btn">Edit Info</button>
           <button id="btnExportGame" class="ctrl-btn">Export JSON</button>
           <button id="btnDeleteGame" class="ctrl-btn danger-btn">Delete</button>
         </div>
@@ -985,6 +986,51 @@
       </div>
 
       <button id="btnCloseSanctionModal" class="modal-close-btn">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ===== Edit Match Info Modal ===== -->
+  <div id="editMatchInfoModal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="editMatchInfoModalTitle">
+    <div class="modal-card">
+      <h3 id="editMatchInfoModalTitle">Edit Match Info</h3>
+      <div class="setup-team-row">
+        <label class="setup-field">
+          <span class="setup-field-label">Team A</span>
+          <input id="emiTeamA" type="text" autocomplete="off" spellcheck="false">
+        </label>
+        <label class="setup-field">
+          <span class="setup-field-label">Team B</span>
+          <input id="emiTeamB" type="text" autocomplete="off" spellcheck="false">
+        </label>
+      </div>
+      <div class="setup-optional-row">
+        <label class="setup-field">
+          <span class="setup-field-label">Location</span>
+          <input id="emiLocation" type="text" autocomplete="off" spellcheck="false">
+        </label>
+      </div>
+      <div class="setup-optional-row">
+        <label class="setup-field">
+          <span class="setup-field-label">Gender</span>
+          <select id="emiGender">
+            <option value="">Not specified</option>
+            <option value="Women's">Women's</option>
+            <option value="Men's">Men's</option>
+          </select>
+        </label>
+        <label class="setup-field">
+          <span class="setup-field-label">Age Category</span>
+          <input id="emiAgeCategory" type="text" autocomplete="off" spellcheck="false">
+        </label>
+        <label class="setup-field">
+          <span class="setup-field-label">League</span>
+          <input id="emiLeague" type="text" autocomplete="off" spellcheck="false">
+        </label>
+      </div>
+      <div class="edit-match-info-actions">
+        <button id="btnSaveMatchInfo" class="ctrl-btn">Save</button>
+        <button id="btnCloseEditMatchInfoModal" class="modal-close-btn">Cancel</button>
+      </div>
     </div>
   </div>
 
