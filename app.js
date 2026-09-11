@@ -41,7 +41,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "15";
+var APP_VERSION = "16";
 
 // Default settings
 var DEFAULT_SETTINGS = {
@@ -368,10 +368,12 @@ async function dbLoadGame(gameId) {
 }
 
 // List all games (uses index)
+// Sorted by when the game actually happened (createdAt), not when its record was
+// last saved — otherwise editing a completed game's info would bump it to the top.
 function dbListGames() {
   return loadIndex().sort(function (a, b) {
-    var da = new Date(a.updatedAt || a.createdAt).getTime();
-    var db2 = new Date(b.updatedAt || b.createdAt).getTime();
+    var da = new Date(a.createdAt || a.scheduledAt || a.updatedAt).getTime();
+    var db2 = new Date(b.createdAt || b.scheduledAt || b.updatedAt).getTime();
     return db2 - da; // newest first
   });
 }
