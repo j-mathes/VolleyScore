@@ -540,6 +540,14 @@
       <p class="setup-hint">When on, the New Game form pre-fills everything (teams, colors, location, gender, age category, league, format, fair play, timeouts/subs, scoring rules, first server) from your last game instead of the defaults below. Applies to all of it, not individual fields.</p>
 
       <div class="setting-row">
+        <label class="setting-label" for="cfgAutoSwitchSidesBetweenSets">Auto-switch sides between sets</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="cfgAutoSwitchSidesBetweenSets">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+
+      <div class="setting-row">
         <label class="setting-label" for="cfgDefTeamA">Default Team A</label>
         <input type="text" id="cfgDefTeamA" placeholder="Team A" autocomplete="off" spellcheck="false" class="setting-text-input">
       </div>
@@ -598,14 +606,6 @@
           <option value="standard-full">Full</option>
           <option value="standard-partial">Partial</option>
         </select>
-      </div>
-
-      <div class="setting-row">
-        <label class="setting-label" for="cfgAutoSwitchSidesBetweenSets">Auto-switch sides between sets</label>
-        <label class="toggle-switch">
-          <input type="checkbox" id="cfgAutoSwitchSidesBetweenSets">
-          <span class="toggle-slider"></span>
-        </label>
       </div>
 
       <div class="setting-row">
