@@ -65,7 +65,7 @@ var DEFAULT_SETTINGS = {
   notchEnabled: false,
   notchSide: "left",
   notchPad: 50,
-  scoreBtnLayout: "minusPlus", // minusPlus | plusMinus | mirrorPlus | mirrorMinus
+  scoreBtnLayout: "mirrorPlus", // minusPlus | plusMinus | mirrorPlus | mirrorMinus
   keepScreenAwake: false,
   confirmUndo: false,
   defaultTeamA: "",
@@ -3682,7 +3682,7 @@ function renderSetupPage() {
   var notchSideRadio = document.querySelector('input[name="cfgNotchSide"][value="' + (settings.notchSide || "left") + '"]');
   if (notchSideRadio) notchSideRadio.checked = true;
   $("cfgNotchPad").textContent = settings.notchPad !== undefined ? settings.notchPad : 50;
-  $("cfgScoreBtnLayout").value = settings.scoreBtnLayout || "minusPlus";
+  $("cfgScoreBtnLayout").value = settings.scoreBtnLayout || "mirrorPlus";
   $("cfgKeepAwake").checked   = !!settings.keepScreenAwake;
   $("cfgConfirmUndo").checked = !!settings.confirmUndo;
   $("cfgDefTeamA").value    = settings.defaultTeamA    || "";
@@ -4109,7 +4109,7 @@ function applyFontSize() {
 
 function applyScoreBtnLayout() {
   document.documentElement.classList.remove("score-layout-plusMinus", "score-layout-mirrorPlus", "score-layout-mirrorMinus");
-  var layout = settings.scoreBtnLayout || "minusPlus";
+  var layout = settings.scoreBtnLayout || "mirrorPlus";
   if (layout !== "minusPlus") document.documentElement.classList.add("score-layout-" + layout);
 }
 
