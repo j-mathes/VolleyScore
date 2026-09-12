@@ -41,7 +41,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "17";
+var APP_VERSION = "18";
 
 // Default settings
 var DEFAULT_SETTINGS = {
@@ -911,7 +911,22 @@ window.addEventListener("beforeunload", function () {
 
 // ---- Export / Import ------------------------------------
 
-function downloadFile(filename, content, mimeType) {
+async function downloadFile(filename, content, mimeType) {
+  // Prefer the native Share Sheet when the browser can share files — this is what
+  // actually lets the user save/send the file on mobile. iOS Safari ignores
+  // <a download> entirely, and opening the blob in a new tab (the old fallback)
+  // just displays the raw JSON as text instead of offering any way to save it.
+  try {
+    var file = new File([content], filename, { type: mimeType });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file] });
+      return;
+    }
+  } catch (e) {
+    if (e && e.name === "AbortError") return; // user cancelled the share sheet
+    // otherwise fall through to the blob download/tab fallback below
+  }
+
   var blob = new Blob([content], { type: mimeType });
   var url = URL.createObjectURL(blob);
   if (_isIOS) {
