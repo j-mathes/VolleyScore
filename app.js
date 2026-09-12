@@ -1190,18 +1190,31 @@ function xlsxColLetter(i) {
 
 // footerText, if given, becomes the printed page footer (Excel's own page-footer
 // feature — shows when the sheet itself is printed, independent of our HTML report footer).
-function xlsxSheetXml(rows, footerText) {
+// footerText, if given, becomes the printed page footer (Excel's own page-footer
+// feature — shows when the sheet itself is printed, independent of our HTML report footer).
+// merges is an optional array of "A1:B1"-style ranges to merge (e.g. a team name
+// spanning that team's columns). boldCenterRows is an optional array of 0-based
+// row indices whose cells should render bold + centered (style index 1).
+function xlsxSheetXml(rows, footerText, merges, boldCenterRows) {
+  var boldCenterSet = {};
+  (boldCenterRows || []).forEach(function (ri) { boldCenterSet[ri] = true; });
   var xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
   rows.forEach(function (row, ri) {
     xml += '<row r="' + (ri + 1) + '">';
+    var styleAttr = boldCenterSet[ri] ? ' s="1"' : '';
     row.forEach(function (val, ci) {
       var ref = xlsxColLetter(ci) + (ri + 1);
-      xml += '<c r="' + ref + '" t="inlineStr"><is><t xml:space="preserve">' + esc(String(val)) + '</t></is></c>';
+      xml += '<c r="' + ref + '"' + styleAttr + ' t="inlineStr"><is><t xml:space="preserve">' + esc(String(val)) + '</t></is></c>';
     });
     xml += '</row>';
   });
   xml += '</sheetData>';
+  if (merges && merges.length) {
+    xml += '<mergeCells count="' + merges.length + '">' +
+      merges.map(function (m) { return '<mergeCell ref="' + m + '"/>'; }).join("") +
+      '</mergeCells>';
+  }
   if (footerText) {
     xml += '<headerFooter><oddFooter>&amp;C&amp;"Calibri"' + esc(footerText) + '</oddFooter></headerFooter>';
   }
@@ -1250,11 +1263,14 @@ var XLSX_ROOT_RELS =
 var XLSX_STYLES_XML =
   '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
   '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
-  '<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>' +
+  '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>' +
   '<fills count="1"><fill><patternFill patternType="none"/></fill></fills>' +
   '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
   '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-  '<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>' +
+  '<cellXfs count="2">' +
+  '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+  '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center"/></xf>' +
+  '</cellXfs>' +
   '</styleSheet>';
 
 function exportCategoriesXlsx() {
@@ -3945,6 +3961,8 @@ var selectedReportTab = "matchLog";
 function renderReportsPage() {
   renderMatchLogGamePicker();
   void renderMatchLogOutput();
+  renderGameReportGamePicker();
+  void renderGameReportOutput();
 }
 
 function wireReportsPage() {
@@ -3970,12 +3988,33 @@ function wireReportsPage() {
     void renderMatchLogOutput();
   });
   $("btnMatchLogPreview").addEventListener("click", function () {
-    openReportPreviewModal(buildMatchLogReportContentHtml(_matchLogRows));
+    openReportPreviewModal(buildMatchLogReportContentHtml(_matchLogRows), "Match Log");
   });
   $("btnMatchLogExportXlsx").addEventListener("click", exportMatchLogXlsx);
   $("btnMatchLogPrint").addEventListener("click", printMatchLog);
 
+  $("btnGameReportSelectAll").addEventListener("click", function () {
+    _gameReportSelectedIds = new Set(dbListGames().map(function (g) { return g.gameId; }));
+    renderGameReportGamePicker();
+    void renderGameReportOutput();
+  });
+  $("btnGameReportSelectNone").addEventListener("click", function () {
+    _gameReportSelectedIds.clear();
+    renderGameReportGamePicker();
+    void renderGameReportOutput();
+  });
+  $("btnGameReportPreview").addEventListener("click", function () {
+    if (!_gameReportEntries.length) return;
+    var html = _gameReportEntries.map(function (e) { return buildGameReportPageHtml(e.record, e.state); }).join("");
+    openReportPreviewModal(html, "Game Report");
+  });
+  $("btnGameReportExportXlsx").addEventListener("click", exportGameReportXlsx);
+  $("btnGameReportPrint").addEventListener("click", printGameReport);
+
   $("btnReportPreviewPrint").addEventListener("click", function () {
+    // Close first so the modal overlay itself doesn't end up in the printout —
+    // the underlying live report (already in the DOM) is what actually prints.
+    closeReportPreviewModal();
     window.print();
   });
   $("btnCloseReportPreviewModal").addEventListener("click", closeReportPreviewModal);
@@ -3990,7 +4029,12 @@ function wireReportsPage() {
 // Shows an on-screen approximation of the printed report — same header/table/footer
 // markup rendered on a simulated letter-size page, since real pagination can only
 // be seen once the browser actually lays out the print job.
-function openReportPreviewModal(contentHtml) {
+var _reportPreviewHtml = "";
+var _reportPreviewTitle = "";
+
+function openReportPreviewModal(contentHtml, title) {
+  _reportPreviewHtml = contentHtml;
+  _reportPreviewTitle = title || "Report";
   $("reportPreviewPaper").innerHTML = contentHtml;
   $("reportPreviewModal").hidden = false;
 }
@@ -3999,11 +4043,19 @@ function closeReportPreviewModal() {
   $("reportPreviewModal").hidden = true;
 }
 
+// Printing/PDF relies on the @media print rules in styles.css, which hide the
+// nav/toolbar/game-picker/preview-modal chrome and show only .print-area. A
+// dedicated iframe/window was tried here previously (to sidestep hiding the
+// live app chrome) but proved less reliable for real print pagination —
+// break-after page breaks and the repeating position:fixed footer didn't
+// reliably carry over into an iframe's own print job. Printing the main
+// document directly is the best-supported browser scenario for both.
+
 // ---- Match Log Report -------------------------------------
 
 var _matchLogSelectedIds = new Set(); // gameIds checked in the Match Log game picker
 var _matchLogRows = [];               // last-built report rows, cached for export/print
-var MATCH_LOG_COLUMNS = ["Date", "Time", "Location", "Teams", "League", "Age", "Gender", "Set Score", "Set Scores"];
+var MATCH_LOG_COLUMNS = ["Date", "Time", "Location", "Teams", "League", "Age", "Gender", "Set Score", "Set Points"];
 
 function renderMatchLogGamePicker() {
   var container = $("matchLogGamePicker");
@@ -4089,8 +4141,11 @@ function buildMatchLogRow(record) {
     age: state.ageCategory || "N/A",
     gender: state.gender || "N/A",
     setScore: state.setsWonA + "-" + state.setsWonB,
+    // Non-breaking hyphen (\u2011) keeps each "25-18" pair from splitting across
+    // two lines when this column wraps — only the comma+space between entries
+    // (a normal breakable space) should ever become a line break.
     setScores: completedSets.length
-      ? completedSets.map(function (s) { return s.scoreA + "-" + s.scoreB; }).join(", ")
+      ? completedSets.map(function (s) { return s.scoreA + "\u2011" + s.scoreB; }).join(", ")
       : "N/A",
   };
 }
@@ -4180,6 +4235,14 @@ async function renderMatchLogOutput() {
     buildMatchLogReportContentHtml(rows) + "</div>";
 }
 
+// yyyy-mm-dd_HH-MM-SS (24-hour, filesystem-safe) — used to timestamp exported report files.
+function reportFilenameTimestamp() {
+  var d = new Date();
+  var pad = function (n) { return String(n).padStart(2, "0"); };
+  return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) +
+    "_" + pad(d.getHours()) + "-" + pad(d.getMinutes()) + "-" + pad(d.getSeconds());
+}
+
 // Reuses the hand-rolled XLSX writer built for Match Info Lists export (see below).
 function exportMatchLogXlsx() {
   if (!_matchLogRows.length) return;
@@ -4199,14 +4262,416 @@ function exportMatchLogXlsx() {
     { name: "xl/worksheets/sheet1.xml", data: enc.encode(xlsxSheetXml(rows, GITHUB_URL)) },
   ];
   var zipBytes = buildZip(files);
-  downloadFile("volleyscore_match_log_" + new Date().toISOString().slice(0, 10) + ".xlsx",
+  downloadFile("volleyscore_match_log_" + reportFilenameTimestamp() + ".xlsx",
     zipBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 }
 
-// Printing/PDF relies on the @media print rules in styles.css, which show only
-// the #matchLogPrintArea element (see ".print-area") on the printed page.
+// Printing/PDF relies on the @media print rules in styles.css, which hide all
+// app chrome and show only .print-area (already rendered live in the DOM).
 function printMatchLog() {
   if (!_matchLogRows.length) return;
+  window.print();
+}
+
+// ---- Game Report (FIVB score-sheet style) -----------------
+
+var _gameReportSelectedIds = new Set(); // gameIds checked in the Game Report game picker
+var _gameReportEntries = [];            // [{ record, state }] for the last-built report, cached for export/print
+
+// Sanction "recipient" abbreviations for non-player roles (Setup → sanction modal role picker).
+var GR_ROLE_ABBR = { head_coach: "C", asst_coach: "AC", trainer: "T", medical: "M" };
+
+function renderGameReportGamePicker() {
+  var container = $("gameReportGamePicker");
+  if (!container) return;
+  var games = dbListGames();
+  if (!games.length) {
+    container.innerHTML = '<p class="no-data-msg">No saved games yet.</p>';
+    updateGameReportToolbar();
+    return;
+  }
+
+  container.innerHTML = "";
+  games.forEach(function (g) {
+    var meta = (g.teamA || "?") + " vs " + (g.teamB || "?");
+    var dateStr = formatDateTimeShort(g.scheduledAt || g.createdAt || g.updatedAt);
+
+    var row = document.createElement("label");
+    row.className = "report-game-row";
+
+    var chk = document.createElement("input");
+    chk.type = "checkbox";
+    chk.checked = _gameReportSelectedIds.has(g.gameId);
+    chk.addEventListener("change", function () {
+      if (chk.checked) _gameReportSelectedIds.add(g.gameId);
+      else _gameReportSelectedIds.delete(g.gameId);
+      updateGameReportToolbar();
+      void renderGameReportOutput();
+    });
+
+    var span = document.createElement("span");
+    span.className = "report-game-row-label";
+    span.textContent = (g.gameName || meta) + " \u00B7 " + dateStr;
+
+    row.appendChild(chk);
+    row.appendChild(span);
+    container.appendChild(row);
+  });
+
+  updateGameReportToolbar();
+}
+
+function updateGameReportToolbar() {
+  var countEl = $("gameReportSelectedCount");
+  if (countEl) countEl.textContent = _gameReportSelectedIds.size + " selected";
+  var has = _gameReportSelectedIds.size > 0;
+  $("btnGameReportPreview").disabled = !has;
+  $("btnGameReportExportXlsx").disabled = !has;
+  $("btnGameReportPrint").disabled = !has;
+}
+
+// Drops seconds/ms — the report shows whole minutes only (floor, never rounded up).
+function floorToMinute(iso) {
+  var d = new Date(iso);
+  d.setSeconds(0, 0);
+  return d;
+}
+
+function diffMinutes(laterDate, earlierDate) {
+  return Math.round((laterDate.getTime() - earlierDate.getTime()) / 60000);
+}
+
+function formatTime24FromDate(d) {
+  var pad = function (n) { return String(n).padStart(2, "0"); };
+  return pad(d.getHours()) + ":" + pad(d.getMinutes());
+}
+
+function formatDurationMin(mins) {
+  if (mins == null || isNaN(mins)) return "N/A";
+  var h = Math.floor(mins / 60), m = mins % 60;
+  return h > 0 ? (h + "h " + m + "mn") : (m + "mn");
+}
+
+// Replays a game's raw event log to capture the score at the moment of each
+// sanction — deriveGameState only keeps each set's final score, not a running one.
+function buildGameReportSanctionRows(record) {
+  var events = (record.events || []).slice(0, record.cursor);
+  var setScore = {};
+  function score(n) {
+    if (!setScore[n]) setScore[n] = { A: 0, B: 0 };
+    return setScore[n];
+  }
+
+  var rows = [];
+  for (var i = 0; i < events.length; i++) {
+    var ev = events[i];
+    if (ev.type === "POINT_SCORED") {
+      var sc = score(ev.setNumber);
+      if (ev.team === "A") sc.A = Math.max(0, sc.A + ev.delta);
+      else sc.B = Math.max(0, sc.B + ev.delta);
+    } else if (ev.type === "SANCTION") {
+      var sc2 = score(ev.setNumber);
+      var col = { yellow: "W", red: "P", expulsion: "E", disqualification: "D" }[ev.sanctionType] || "W";
+      var recipient = (ev.role && ev.role !== "player") ? (GR_ROLE_ABBR[ev.role] || "?") : ("#" + (ev.playerNumber || "?"));
+      rows.push({
+        col: col, value: recipient, team: ev.team, setNumber: ev.setNumber,
+        scoreStr: ev.team === "A" ? (sc2.A + ":" + sc2.B) : (sc2.B + ":" + sc2.A),
+      });
+    } else if (ev.type === "DELAY_SANCTION") {
+      var sc3 = score(ev.setNumber);
+      rows.push({
+        col: ev.sanctionType === "penalty" ? "P" : "W", value: "D", team: ev.team, setNumber: ev.setNumber,
+        scoreStr: ev.team === "A" ? (sc3.A + ":" + sc3.B) : (sc3.B + ":" + sc3.A),
+      });
+    }
+  }
+  return rows;
+}
+
+// Builds the Results box's per-set rows plus match timing, per the report's fixed
+// 3-minute-between-sets rule (see repo notes for the full algorithm/rationale):
+// - Set 1's reported start = the match's actual (floored) start time.
+// - Each other set's real play duration is kept as-is; gaps between sets are
+//   always reported as exactly 3 minutes, regardless of the real gap.
+// - The final played set's duration is back-solved from the actual (floored)
+//   match end time, so the reported timeline always reconciles exactly with it.
+function buildGameReportResults(state) {
+  var totalSets = state.totalSets;
+  var completed = state.sets.filter(function (s) { return !!s.endedAt; });
+  var matchStart = state.startedAt ? floorToMinute(state.startedAt) : null;
+  var matchEnd = state.endedAt ? floorToMinute(state.endedAt) : null;
+
+  var rawDur = completed.map(function (s) {
+    return diffMinutes(floorToMinute(s.endedAt), floorToMinute(s.startedAt));
+  });
+
+  var reportedStart = [];
+  var reportedDur = [];
+  if (completed.length && matchStart) {
+    reportedStart[0] = matchStart;
+    for (var i = 0; i < completed.length; i++) {
+      var isLast = (i === completed.length - 1);
+      reportedDur[i] = (isLast && matchEnd) ? diffMinutes(matchEnd, reportedStart[i]) : rawDur[i];
+      if (i + 1 < completed.length) {
+        reportedStart[i + 1] = new Date(reportedStart[i].getTime() + (reportedDur[i] + 3) * 60000);
+      }
+    }
+  }
+
+  var rows = [];
+  for (var n = 1; n <= totalSets; n++) {
+    var idx = completed.findIndex(function (s) { return s.setNumber === n; });
+    if (idx === -1) {
+      rows.push({ setNumber: n, tA: "", sA: "", wA: "", pA: "", tB: "", sB: "", wB: "", pB: "", duration: "", startTime: "" });
+      continue;
+    }
+    var s = completed[idx];
+    rows.push({
+      setNumber: n,
+      tA: s.timeoutsA, sA: s.subsA, wA: s.scoreA > s.scoreB ? 1 : 0, pA: s.scoreA,
+      tB: s.timeoutsB, sB: s.subsB, wB: s.scoreB > s.scoreA ? 1 : 0, pB: s.scoreB,
+      duration: reportedDur[idx], startTime: formatTime24FromDate(reportedStart[idx]),
+    });
+  }
+
+  function sumField(key) { return rows.reduce(function (a, r) { return a + (typeof r[key] === "number" ? r[key] : 0); }, 0); }
+  var totals = {
+    tA: sumField("tA"), sA: sumField("sA"), wA: state.setsWonA, pA: sumField("pA"),
+    tB: sumField("tB"), sB: sumField("sB"), wB: state.setsWonB, pB: sumField("pB"),
+    setDuration: reportedDur.reduce(function (a, b) { return a + b; }, 0),
+  };
+
+  var winnerName = null, winnerScore = null;
+  if (state.endedAt) {
+    winnerName = state.setsWonA > state.setsWonB ? state.teamA : state.teamB;
+    winnerScore = Math.max(state.setsWonA, state.setsWonB) + ":" + Math.min(state.setsWonA, state.setsWonB);
+  }
+
+  return {
+    rows: rows, totals: totals, matchStart: matchStart, matchEnd: matchEnd,
+    totalMatchDuration: (matchStart && matchEnd) ? diffMinutes(matchEnd, matchStart) : null,
+    winnerName: winnerName, winnerScore: winnerScore,
+  };
+}
+
+function buildGrInfoBoxHtml(state) {
+  var dtSource = state.scheduledAt || state.startedAt || null;
+  function cell(label, value) {
+    return '<div class="gr-info-cell"><span class="gr-label">' + esc(label) + '</span><span class="gr-value">' + esc(value || "N/A") + '</span></div>';
+  }
+  return '<div class="gr-info-box">' +
+    '<div class="gr-info-grid">' +
+    cell("Date", dtSource ? formatDateYMD(dtSource) : null) +
+    cell("Time", dtSource ? formatTime24(dtSource) : null) +
+    cell("Location", state.location) + cell("League", state.league) +
+    cell("Gender", state.gender) + cell("Age", state.ageCategory) +
+    '</div>' +
+    '<div class="gr-teams-row">' +
+    '<span class="gr-team-badge">A</span><span class="gr-team-name">' + esc(state.teamA) + '</span>' +
+    '<span class="gr-vs">vs</span>' +
+    '<span class="gr-team-name">' + esc(state.teamB) + '</span><span class="gr-team-badge">B</span>' +
+    '</div></div>';
+}
+
+function buildGrSanctionsBoxHtml(rows, state) {
+  var bodyHtml;
+  if (!rows.length) {
+    bodyHtml = '<tr class="gr-empty-row"><td colspan="7">None</td></tr>';
+  } else {
+    bodyHtml = rows.map(function (r) {
+      return "<tr>" +
+        "<td>" + (r.col === "W" ? esc(r.value) : "") + "</td>" +
+        "<td>" + (r.col === "P" ? esc(r.value) : "") + "</td>" +
+        "<td>" + (r.col === "E" ? esc(r.value) : "") + "</td>" +
+        "<td>" + (r.col === "D" ? esc(r.value) : "") + "</td>" +
+        "<td>" + esc(r.team) + "</td>" +
+        "<td>" + esc(r.setNumber) + "</td>" +
+        "<td>" + esc(r.scoreStr) + "</td>" +
+        "</tr>";
+    }).join("");
+  }
+  // Each team's badge gets a bold X overlaid once their one free improper request is used.
+  function irBadge(letter, used) {
+    return '<span class="gr-ir-badge-wrap"><span class="gr-ir-badge">' + letter + '</span>' +
+      (used ? '<span class="gr-ir-x">X</span>' : '') + '</span>';
+  }
+  return '<div class="gr-sanctions-box">' +
+    '<div class="gr-box-header"><span class="gr-box-title">Sanctions</span>' +
+    '<span class="gr-ir-box">Improper Request ' + irBadge("A", state.improperRequestA) + irBadge("B", state.improperRequestB) + '</span></div>' +
+    '<table class="gr-sanctions-table"><thead><tr><th>W</th><th>P</th><th>E</th><th>D</th><th>A/B</th><th>Set</th><th>Score</th></tr></thead>' +
+    "<tbody>" + bodyHtml + "</tbody></table>" +
+    '<div class="gr-legend"># = player number &nbsp;&nbsp; C = Head Coach &nbsp;&nbsp; AC = Assistant Coach &nbsp;&nbsp; T = Trainer &nbsp;&nbsp; M = Medical &nbsp;&nbsp; D = Delay</div>' +
+    "</div>";
+}
+
+function buildGrResultsBoxHtml(results, state) {
+  var rowsHtml = results.rows.map(function (r) {
+    var durCell = (r.duration !== "" && r.duration != null)
+      ? ('<div class="gr-set-dur">' + esc(r.duration) + " mn</div><div class=\"gr-set-start\">" + esc(r.startTime) + "</div>")
+      : "";
+    return "<tr>" +
+      "<td>" + esc(r.tA) + "</td><td>" + esc(r.sA) + "</td><td>" + esc(r.wA) + "</td><td>" + esc(r.pA) + "</td>" +
+      '<td class="gr-set-cell"><div class="gr-set-num">' + r.setNumber + "</div>" + durCell + "</td>" +
+      "<td>" + esc(r.pB) + "</td><td>" + esc(r.wB) + "</td><td>" + esc(r.sB) + "</td><td>" + esc(r.tB) + "</td>" +
+      "</tr>";
+  }).join("");
+
+  var t = results.totals;
+  var totalsRow = '<tr class="gr-totals-row">' +
+    "<td>" + t.tA + "</td><td>" + t.sA + "</td><td>" + t.wA + "</td><td>" + t.pA + "</td>" +
+    '<td class="gr-set-cell"><div class="gr-set-num">Total</div><div class="gr-set-dur">' + t.setDuration + " mn</div></td>" +
+    "<td>" + t.pB + "</td><td>" + t.wB + "</td><td>" + t.sB + "</td><td>" + t.tB + "</td></tr>";
+
+  return '<div class="gr-results-box">' +
+    '<div class="gr-box-header"><span class="gr-box-title">Results</span></div>' +
+    '<div class="gr-teams-row">' +
+    '<span class="gr-team-badge">A</span><span class="gr-team-name">' + esc(state.teamA) + '</span>' +
+    '<span class="gr-vs">vs</span>' +
+    '<span class="gr-team-name">' + esc(state.teamB) + '</span><span class="gr-team-badge">B</span></div>' +
+    '<table class="gr-results-table"><thead><tr><th>T</th><th>S</th><th>W</th><th>P</th><th>Set</th><th>P</th><th>W</th><th>S</th><th>T</th></tr></thead>' +
+    "<tbody>" + rowsHtml + totalsRow + "</tbody></table>" +
+    '<div class="gr-results-summary">' +
+    '<div><span class="gr-label">Match Starting Time</span><span class="gr-value">' + esc(results.matchStart ? formatTime24FromDate(results.matchStart) : "N/A") + "</span></div>" +
+    '<div><span class="gr-label">Match Ending Time</span><span class="gr-value">' + esc(results.matchEnd ? formatTime24FromDate(results.matchEnd) : "N/A") + "</span></div>" +
+    '<div><span class="gr-label">Total Match Duration</span><span class="gr-value">' + esc(results.totalMatchDuration != null ? formatDurationMin(results.totalMatchDuration) : "N/A") + "</span></div>" +
+    "</div>" +
+    '<div class="gr-winner-row"><span class="gr-box-title">Winner</span>' +
+    '<span class="gr-winner-name">' + esc(results.winnerName || "N/A") + "</span>" +
+    '<span class="gr-winner-score">' + esc(results.winnerScore || "") + "</span></div>" +
+    "</div>";
+}
+
+function buildGameReportPageHtml(record, state) {
+  return '<div class="gr-page">' +
+    buildReportPrintHeaderHtml("Game Report") +
+    buildGrInfoBoxHtml(state) +
+    buildGrSanctionsBoxHtml(buildGameReportSanctionRows(record), state) +
+    buildGrResultsBoxHtml(buildGameReportResults(state), state) +
+    buildReportPrintFooterHtml() +
+    "</div>";
+}
+
+async function renderGameReportOutput() {
+  var container = $("gameReportOutput");
+  if (!container) return;
+
+  if (!_gameReportSelectedIds.size) {
+    container.innerHTML = '<p class="no-data-msg">Select one or more games above to build the Game Report.</p>';
+    _gameReportEntries = [];
+    return;
+  }
+
+  var ids = Array.from(_gameReportSelectedIds);
+  var entries = [];
+  for (var i = 0; i < ids.length; i++) {
+    var record = await dbLoadGame(ids[i]);
+    if (!record) continue;
+    var state = deriveGameState({ events: record.events, cursor: record.cursor });
+    if (!state) continue;
+    var dtSource = state.scheduledAt || state.startedAt;
+    entries.push({ record: record, state: state, sortKey: dtSource ? new Date(dtSource).getTime() : Number.MAX_SAFE_INTEGER });
+  }
+  entries.sort(function (a, b) { return a.sortKey - b.sortKey; }); // oldest first
+  _gameReportEntries = entries;
+
+  if (!entries.length) {
+    container.innerHTML = '<p class="no-data-msg">No data available for the selected games.</p>';
+    return;
+  }
+
+  var pagesHtml = entries.map(function (e) { return buildGameReportPageHtml(e.record, e.state); }).join("");
+  container.innerHTML = '<div id="gameReportPrintArea" class="print-area">' + pagesHtml + "</div>";
+}
+
+// One sheet per selected game (same multi-sheet workbook technique as the Match
+// Info Lists Excel export), since each game gets its own full score-sheet page.
+function exportGameReportXlsx() {
+  if (!_gameReportEntries.length) return;
+  var enc = new TextEncoder();
+  var sheetNames = [];
+  var sheetXmls = [];
+
+  _gameReportEntries.forEach(function (entry) {
+    var state = entry.state;
+    var sanctionRows = buildGameReportSanctionRows(entry.record);
+    var results = buildGameReportResults(state);
+    var dtSource = state.scheduledAt || state.startedAt;
+
+    var base = ((state.teamA || "A") + " vs " + (state.teamB || "B")).replace(/[\\/?*[\]:]/g, "_").slice(0, 31);
+    var name = base, n = 2;
+    while (sheetNames.indexOf(name) !== -1) { name = base.slice(0, 28) + "-" + n; n++; }
+    sheetNames.push(name);
+
+    var rows = buildReportXlsxHeaderRows("Game Report");
+    rows.push(["Match Info"]);
+    rows.push(["Date", dtSource ? formatDateYMD(dtSource) : "N/A"]);
+    rows.push(["Time", dtSource ? formatTime24(dtSource) : "N/A"]);
+    rows.push(["Location", state.location || "N/A"]);
+    rows.push(["League", state.league || "N/A"]);
+    rows.push(["Gender", state.gender || "N/A"]);
+    rows.push(["Age", state.ageCategory || "N/A"]);
+    rows.push(["Team A", state.teamA]);
+    rows.push(["Team B", state.teamB]);
+    rows.push([]);
+    rows.push(["Sanctions"]);
+    rows.push(["W", "P", "E", "D", "A/B", "Set", "Score"]);
+    if (!sanctionRows.length) {
+      rows.push(["None"]);
+    } else {
+      sanctionRows.forEach(function (r) {
+        rows.push([
+          r.col === "W" ? r.value : "", r.col === "P" ? r.value : "",
+          r.col === "E" ? r.value : "", r.col === "D" ? r.value : "",
+          r.team, r.setNumber, r.scoreStr,
+        ]);
+      });
+    }
+    rows.push([]);
+    rows.push(["Results"]);
+
+    // Team names centered above their column group (bold + merged); "Set",
+    // "Duration", and "Start Time" columns are shared, not team-specific, so blank here.
+    var merges = [];
+    var teamHeaderRow = ["", state.teamA + " (A)", "", "", "", "", state.teamB + " (B)", "", "", "", "", ""];
+    rows.push(teamHeaderRow);
+    var teamHeaderRowIdx = rows.length - 1; // 0-based, for boldCenterRows
+    var teamHeaderRowNum = rows.length;     // 1-based, for the merge range
+    merges.push(xlsxColLetter(1) + teamHeaderRowNum + ":" + xlsxColLetter(4) + teamHeaderRowNum);
+    merges.push(xlsxColLetter(6) + teamHeaderRowNum + ":" + xlsxColLetter(9) + teamHeaderRowNum);
+
+    rows.push(["Set", "T", "S", "W", "P", "Duration (mn)", "P", "W", "S", "T", "", "Start Time"]);
+    results.rows.forEach(function (r) {
+      rows.push([r.setNumber, r.tA, r.sA, r.wA, r.pA, r.duration, r.pB, r.wB, r.sB, r.tB, "", r.startTime]);
+    });
+    var t = results.totals;
+    rows.push(["Total", t.tA, t.sA, t.wA, t.pA, t.setDuration, t.pB, t.wB, t.sB, t.tB, "", ""]);
+    rows.push([]);
+    rows.push(["Match Starting Time", results.matchStart ? formatTime24FromDate(results.matchStart) : "N/A"]);
+    rows.push(["Match Ending Time", results.matchEnd ? formatTime24FromDate(results.matchEnd) : "N/A"]);
+    rows.push(["Total Match Duration", results.totalMatchDuration != null ? formatDurationMin(results.totalMatchDuration) : "N/A"]);
+    rows.push(["Winner", results.winnerName || "N/A", results.winnerScore || ""]);
+
+    sheetXmls.push(xlsxSheetXml(rows, GITHUB_URL, merges, [teamHeaderRowIdx]));
+  });
+
+  var files = [
+    { name: "[Content_Types].xml", data: enc.encode(xlsxContentTypesXml(sheetNames.length)) },
+    { name: "_rels/.rels", data: enc.encode(XLSX_ROOT_RELS) },
+    { name: "xl/workbook.xml", data: enc.encode(xlsxWorkbookXml(sheetNames)) },
+    { name: "xl/_rels/workbook.xml.rels", data: enc.encode(xlsxWorkbookRelsXml(sheetNames.length)) },
+    { name: "xl/styles.xml", data: enc.encode(XLSX_STYLES_XML) },
+  ];
+  sheetXmls.forEach(function (xml, i) {
+    files.push({ name: "xl/worksheets/sheet" + (i + 1) + ".xml", data: enc.encode(xml) });
+  });
+
+  var zipBytes = buildZip(files);
+  downloadFile("volleyscore_game_report_" + reportFilenameTimestamp() + ".xlsx",
+    zipBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+}
+
+function printGameReport() {
+  if (!_gameReportEntries.length) return;
   window.print();
 }
 

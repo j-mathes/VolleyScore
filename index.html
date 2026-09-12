@@ -453,7 +453,23 @@
       </div>
     </div>
     <div id="reportGameReport" class="report-panel" hidden>
-      <p class="no-data-msg">Game Report coming soon.</p>
+      <div class="report-toolbar">
+        <button id="btnGameReportSelectAll" class="icon-btn" type="button">Select All</button>
+        <button id="btnGameReportSelectNone" class="icon-btn" type="button">Select None</button>
+        <span id="gameReportSelectedCount" class="ml-count">0 selected</span>
+        <span class="report-toolbar-spacer"></span>
+        <button id="btnGameReportPreview" class="ctrl-btn" type="button" disabled>Preview</button>
+        <button id="btnGameReportExportXlsx" class="ctrl-btn" type="button" disabled>Export Excel</button>
+        <button id="btnGameReportPrint" class="ctrl-btn" type="button" disabled>Print / PDF</button>
+      </div>
+
+      <div id="gameReportGamePicker" class="report-game-picker">
+        <p class="no-data-msg">No saved games yet.</p>
+      </div>
+
+      <div id="gameReportOutput" class="report-output">
+        <p class="no-data-msg">Select one or more games above to build the Game Report.</p>
+      </div>
     </div>
   </div><!-- end reportsPage -->
 

@@ -2991,6 +2991,10 @@ input.player-num-input {
   display: none;
 }
 
+.report-output {
+  overflow-x: auto;
+}
+
 .report-table {
   width: 100%;
   border-collapse: collapse;
@@ -3023,23 +3027,270 @@ input.player-num-input {
   break-inside: avoid;
 }
 
-/* Print only the generated report table — fit to a letter page, flowing to
-   further pages automatically when the row count exceeds one page. */
+/* Print only the generated report — hide all normal app chrome explicitly
+   (display:none is reliable regardless of fixed positioning, unlike the
+   visibility-hiding trick, which some print engines don't fully honor for
+   position:fixed elements like the nav bar). This must come AFTER the .gr-*
+   base rules below in source order — @media blocks don't win ties by being
+   a media query, only by appearing later, so placing it earlier let the
+   plain .gr-page rule silently override these print-only paddings/sizes. */
+
+.gr-page {
+  background: #fff;
+  color: #111;
+  border: 2px solid #000;
+  padding: 0.9rem;
+  margin-bottom: 1.2rem;
+  font-size: 0.82rem;
+}
+
+.gr-box-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: #000;
+  color: #fff;
+  padding: 0.25rem 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.85rem;
+}
+
+.gr-ir-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.gr-ir-badge-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gr-ir-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  font-size: 0.66rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.gr-ir-x {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.gr-info-box,
+.gr-sanctions-box,
+.gr-results-box {
+  border: 2px solid #000;
+  margin-bottom: 0.7rem;
+}
+
+.gr-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.gr-info-cell {
+  border: 1px solid #000;
+  padding: 0.3rem 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.gr-label {
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #333;
+}
+
+.gr-value {
+  font-weight: 600;
+}
+
+.gr-teams-row {
+  border-top: 2px solid #000;
+  padding: 0.5rem;
+  text-align: center;
+  font-weight: 800;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.gr-team-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #000;
+  border-radius: 50%;
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+
+.gr-vs {
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: #444;
+}
+
+.gr-sanctions-table,
+.gr-results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.gr-sanctions-table th,
+.gr-sanctions-table td,
+.gr-results-table th,
+.gr-results-table td {
+  border: 1px solid #000;
+  padding: 0.3rem 0.4rem;
+  text-align: center;
+}
+
+.gr-sanctions-table th,
+.gr-results-table th {
+  background: #eee;
+  font-weight: 800;
+}
+
+.gr-empty-row td {
+  height: 1.6rem;
+  font-weight: 800;
+}
+
+.gr-legend {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.68rem;
+  color: #333;
+  border-top: 1px solid #000;
+}
+
+.gr-set-cell {
+  min-width: 4.2rem;
+}
+
+.gr-set-num {
+  font-weight: 800;
+}
+
+.gr-set-dur {
+  font-size: 0.78rem;
+}
+
+.gr-set-start {
+  font-size: 0.68rem;
+  color: #444;
+}
+
+.gr-totals-row {
+  font-weight: 800;
+  background: #f5f5f5;
+}
+
+.gr-results-summary {
+  display: flex;
+  border-top: 1px solid #000;
+}
+
+.gr-results-summary > div {
+  flex: 1;
+  padding: 0.35rem 0.6rem;
+  border-right: 1px solid #000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.gr-results-summary > div:last-child {
+  border-right: none;
+}
+
+.gr-winner-row {
+  border-top: 2px solid #000;
+  padding: 0.4rem 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.gr-winner-name {
+  flex: 1;
+}
+
+/* In the on-screen preview modal, hint at the page break between games since
+   there's no real pagination outside of an actual print/PDF. */
+.report-preview-paper .gr-page + .gr-page {
+  margin-top: 1.4rem;
+  padding-top: 1rem;
+  border-top: 3px dashed #999;
+}
+
+/* Print only the generated report — hide all normal app chrome explicitly
+   (display:none is reliable regardless of fixed positioning, unlike the
+   visibility-hiding trick, which some print engines don't fully honor for
+   position:fixed elements like the nav bar). Placed after the .gr-* base
+   rules above so these overrides win the cascade (a later plain rule with
+   equal specificity beats an earlier @media block, regardless of media type). */
 @media print {
-  body * {
-    visibility: hidden;
+  .top-nav,
+  .storage-banner,
+  .reports-tabs,
+  .report-toolbar,
+  .report-game-picker,
+  .modal-overlay {
+    display: none !important;
   }
 
-  .print-area,
-  .print-area * {
-    visibility: visible;
+  .page-reports {
+    padding-top: 0 !important;
   }
 
-  .print-area {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
+  .report-panel {
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: none !important;
+  }
+
+  /* The on-screen horizontal-scroll fallback (.report-output overflow-x: auto)
+     confuses print pagination — a scrollable overflow container stops the
+     browser from flowing/breaking content across multiple physical pages and
+     can clip the position:fixed footer. Not needed for print anyway, since
+     content is sized to the page width instead of a fixed on-screen panel. */
+  .report-output {
+    overflow: visible !important;
   }
 
   @page {
@@ -3057,6 +3308,15 @@ input.player-num-input {
     white-space: normal;
   }
 
+  /* Date/Time are short, fixed-format values — never worth wrapping mid-value
+     (e.g. "2026-09-11" splitting after the last hyphen). */
+  .report-table th:nth-child(1),
+  .report-table td:nth-child(1),
+  .report-table th:nth-child(2),
+  .report-table td:nth-child(2) {
+    white-space: nowrap;
+  }
+
   .report-print-title {
     font-size: 14pt;
   }
@@ -3072,6 +3332,76 @@ input.player-num-input {
     text-align: center;
     font-size: 8pt;
     color: #555;
+  }
+
+  /* Each selected game gets its own Game Report page. Paddings/margins are
+     tightened with absolute pt units (rather than the on-screen rem values,
+     which don't shrink with .gr-page's own font-size) so a maximal report —
+     5 sets, several sanctions — still fits a single letter page. */
+  .gr-page {
+    break-after: page;
+    page-break-after: always;
+    border: none;
+    margin-bottom: 0;
+    font-size: 8pt;
+    padding: 6pt;
+  }
+
+  .gr-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .gr-box-header {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    padding: 2pt 5pt;
+  }
+
+  .report-print-header {
+    margin-bottom: 5pt;
+    padding-bottom: 4pt;
+  }
+
+  .gr-info-box,
+  .gr-sanctions-box,
+  .gr-results-box {
+    margin-bottom: 5pt;
+  }
+
+  .gr-info-cell {
+    padding: 2pt 5pt;
+  }
+
+  .gr-teams-row {
+    padding: 3pt 5pt;
+    font-size: 10pt;
+  }
+
+  .gr-sanctions-table,
+  .gr-results-table {
+    font-size: 7.5pt;
+  }
+
+  .gr-sanctions-table th,
+  .gr-sanctions-table td,
+  .gr-results-table th,
+  .gr-results-table td {
+    padding: 1.5pt 3pt;
+  }
+
+  .gr-legend {
+    padding: 2pt 5pt;
+    font-size: 6.5pt;
+  }
+
+  .gr-results-summary > div {
+    padding: 2pt 5pt;
+  }
+
+  .gr-winner-row {
+    padding: 2pt 5pt;
+    font-size: 9pt;
   }
 }
 

@@ -63,7 +63,7 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Match Info** — track Gender, Age Category, and League per game, with pick-or-type fields backed by editable master lists (see [Match Info Lists](#match-info-lists))
 - **Edit match info after the fact** — correct Team A/B names, Location, Gender, Age Category, or League on any saved game — in progress or finished — from the Games page (see [Editing a Game's Match Info](#editing-a-games-match-info))
 - **Multi-game export & import** — select any subset (or all) of your saved games from the Games page and export them as a single JSON file; importing populates the Team Names, Locations, Age Categories, and League master lists with any new values found, in addition to restoring the games themselves (see [Selecting Games to Export](#selecting-games-to-export))
-- **Reports** — build a Match Log across any subset of saved games, sorted oldest to newest, with an in-app preview, Excel export, and print/PDF output formatted to fit a letter-size page (see [Reports](#reports))
+- **Reports** — build a Match Log (a multi-game summary table) or a Game Report (an FIVB-style score sheet, one page per game) across any subset of saved games, with an in-app preview, Excel export, and print/PDF output formatted to fit letter-size pages (see [Reports](#reports))
 - **Persist New Game Data** — optionally carry every New Game field forward from your last match instead of resetting to defaults (see [Persisting New Game Data](#persisting-new-game-data))
 - **Score button layout** — choose &minus;/+ or +/&minus; order, or mirror the two team panels so the same symbol always sits toward the middle
 - **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable; every color picker opens a quick preset grid (with a "Custom…" option for the full picker) — see [New Game Team Colors](#new-game-team-colors) for per-game overrides
@@ -253,6 +253,8 @@ Team Name, Location, Age Category, and League fields are pick-or-type: tap the f
 
 **Setup → Match Info Lists** shows every value in each list with a rename (&#9998;) button and a remove (&times;) button, plus an input to add a new value directly (without creating a game). Rename edits the chip in place (Enter or tap away to save, Esc to cancel) and re-sorts the list; it's also how you'd clean up a typo added by mistake without losing games that already reference the old value. The rename button can be hidden via **Setup → Match Info Lists → Show Edit (Pencil) Icons** if you don't want it cluttering the chip list.
 
+Each list also has a filter box (type to narrow down a long list instead of scrolling) and a **Remove Unused** button that deletes any entries not referenced by a saved game — safe to run any time, since games store their own copy of these fields directly and don't depend on the master list.
+
 **Setup → Game Defaults** lets you set a default Gender, Age Category, and League (in addition to the existing default team names and location) that pre-fill the New Game form. Each can still be overridden per game.
 
 ### Editing a Game's Match Info
@@ -309,21 +311,24 @@ Importing any game file (single game, a multi-select export, or a full export) a
 
 ## Reports
 
-The **Reports** page builds printable/exportable reports across any subset of your saved games.
+The **Reports** page builds printable/exportable reports across any subset of your saved games. Every report shares the same header (VolleyScore, the report title, and when it was generated) and a footer with the project's GitHub URL that repeats on every printed page. If you've set **Setup → Game Defaults → Referee Name**, the header also shows "Referee: [name]" — leave it blank if you're not a referee, since it's entirely optional and simply omitted when unset.
 
 ### Match Log
 
 1. Check the games you want in the list at the top (or **Select All** / **Select None**) — the count updates live.
-2. The report table below builds automatically, sorted **oldest to newest**, with columns: Date (`YYYY-MM-DD`), Time (24-hour, prefers each game's scheduled start and falls back to its actual start), Location, Teams, League, Age, Gender, Set Score (e.g. `3-2`), and Set Scores (e.g. `25-22, 14-25`). Any field a game doesn't have shows `N/A`.
-3. **Preview** opens an in-app, on-screen approximation of the printed report — a simulated letter-size page with the same header/footer that printing or exporting produces, so you can check it before committing to a file or a printer.
-4. **Export Excel** downloads a single-sheet `.xlsx` with the same rows (plus a matching page footer if printed from Excel).
+2. The report table below builds automatically, sorted **oldest to newest**, with columns: Date (`YYYY-MM-DD`), Time (24-hour, prefers each game's scheduled start and falls back to its actual start), Location, Teams, League, Age, Gender, Set Score (e.g. `3-2`), and Set Points (e.g. `25-22, 14-25`). Any field a game doesn't have shows `N/A`.
+3. **Preview** opens an in-app, on-screen approximation of the printed report — a simulated letter-size page so you can check it before committing to a file or a printer.
+4. **Export Excel** downloads a single-sheet `.xlsx` with the same rows.
 5. **Print / PDF** opens the browser's print dialog, formatted to fit a letter-size page and flow across multiple pages automatically if the row count doesn't fit on one.
-
-Every report includes a header (VolleyScore, report title, and the date/time it was generated) and a footer with the project's GitHub URL, which repeats on every printed page. If you've set **Setup → Game Defaults → Referee Name**, the header also shows "Referee: [name]" — leave it blank if you're not a referee, since it's entirely optional and simply omitted when unset.
 
 ### Game Report
 
-Coming soon.
+A detailed, printable score sheet modeled on the official FIVB score sheet, adapted to the fields VolleyScore actually records. Unlike Match Log's single summary table, **each selected game gets its own full page** in the preview, Excel export, and print/PDF.
+
+- **Match Info** — Date, Time, Location, League, Gender, Age, and both team names next to A/B circles.
+- **Sanctions** — one row per sanction, in the order it happened: which of W (Warning) / P (Penalty) / E (Expulsion) / D (Disqualification) applies, who received it (`#12` for a player, or `C` / `AC` / `T` / `M` for Head Coach / Assistant Coach / Trainer / Medical — delay sanctions show `D`), the team and set, and the score at that moment (the sanctioned team's score listed first). A legend explains the abbreviations; the box just reads **None** if there weren't any. Two circle badges next to "Improper Request" mark whether either team has used their one free request, with a bold **X** once it has.
+- **Results** — one row per set the format allows (even sets never played, shown blank), with each team's Timeouts, Subs, Won (1/0), and Points, plus the set number, its duration in minutes, and its start time. Sets are always treated as having exactly a 3-minute break between them, regardless of how long the real gap was, matching the official rule; the final set's duration is adjusted so the whole timeline lines up exactly with the game's real end time. A totals row, Match Starting/Ending Time, Total Match Duration, and the Winner (full team name + sets score) finish the box.
+- **Preview**, **Export Excel** (one workbook sheet per game, with team names as merged headers over their columns), and **Print / PDF** work the same way as Match Log, just paginated one game per page.
 
 ---
 
