@@ -371,10 +371,18 @@
       <div class="games-list-header">
         <h2>Saved Games</h2>
         <div class="games-list-actions">
+          <button id="btnSelectGames" class="icon-btn" title="Select games to export">Select</button>
           <button id="btnImportGame" class="icon-btn" title="Import game from JSON">Import</button>
           <input id="importFileInput" type="file" accept=".json" hidden aria-hidden="true">
           <button id="btnClearAllGames" class="icon-btn danger-btn" title="Delete all saved games">Delete All</button>
         </div>
+      </div>
+      <div id="gamesSelectBar" class="games-select-bar" hidden>
+        <label class="games-select-all">
+          <input type="checkbox" id="chkSelectAllGames"> All
+        </label>
+        <span id="gamesSelectedCount" class="games-selected-count">0 selected</span>
+        <button id="btnExportSelectedGames" class="ctrl-btn" disabled>Export Selected</button>
       </div>
       <div id="gamesList" class="games-list">
         <p class="no-data-msg">No saved games yet.</p>

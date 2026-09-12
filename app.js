@@ -890,6 +890,39 @@ async function exportAllGames() {
     JSON.stringify(payload, null, 2), "application/json");
 }
 
+// Exports the given gameIds (2+ selected from the Games page) as a single multi-game file.
+async function exportSelectedGames(gameIds) {
+  var games = [];
+  for (var i = 0; i < gameIds.length; i++) {
+    var r = await dbLoadGame(gameIds[i]);
+    if (r) games.push(r);
+  }
+  if (!games.length) { alert("No games selected."); return; }
+  var payload = {
+    version: 1,
+    type: "volleyscore-export",
+    exportedAt: new Date().toISOString(),
+    games: games,
+  };
+  var suffix = games.length + (games.length === 1 ? "game" : "games");
+  downloadFile("volleyscore_export_" + suffix + "_" + new Date().toISOString().slice(0, 10) + ".json",
+    JSON.stringify(payload, null, 2), "application/json");
+}
+
+// Adds a game's teamA/teamB/location/ageCategory/league to the master lists if not already present.
+// Returns the number of new entries added.
+function populateMasterListsFromGame(record) {
+  var startEv = (record.events || []).find(function (e) { return e.type === "GAME_STARTED"; });
+  if (!startEv) return 0;
+  var added = 0;
+  if (addToMasterList("masterTeamNames", startEv.teamA)) added++;
+  if (addToMasterList("masterTeamNames", startEv.teamB)) added++;
+  if (addToMasterList("masterLocations", startEv.location)) added++;
+  if (addToMasterList("masterAgeCategories", startEv.ageCategory)) added++;
+  if (addToMasterList("masterLeagues", startEv.league)) added++;
+  return added;
+}
+
 async function importGamesFromJson(text) {
   var payload;
   try { payload = JSON.parse(text); } catch (e) { alert("Invalid JSON file."); return; }
@@ -908,13 +941,21 @@ async function importGamesFromJson(text) {
   }
 
   var imported = 0;
+  var listEntriesAdded = 0;
   for (var i = 0; i < games.length; i++) {
     var g = games[i];
     if (!g.gameId || !Array.isArray(g.events)) continue;
     await dbSaveGame(g);
+    listEntriesAdded += populateMasterListsFromGame(g);
     imported++;
   }
-  alert("Imported " + imported + " game" + (imported === 1 ? "" : "s") + ".");
+  if (listEntriesAdded) {
+    renderMasterListEditors();
+    renderDefaultPickerOptions();
+  }
+  var msg = "Imported " + imported + " game" + (imported === 1 ? "" : "s") + ".";
+  if (listEntriesAdded) msg += " Added " + listEntriesAdded + " new match info entr" + (listEntriesAdded === 1 ? "y" : "ies") + ".";
+  alert(msg);
   await renderGamesList();
 }
 
@@ -3530,6 +3571,9 @@ var selectedDetailSetFilter = null; // null = all sets; number = filter to that 
 var _detailState = null;            // cached for filter re-renders
 var _detailTimeline = null;
 
+var gamesSelectMode = false;
+var selectedGameIds = new Set(); // gameIds checked for bulk export, only used while gamesSelectMode is true
+
 async function renderGamesList() {
   var container = $("gamesList");
   if (!container) return;
@@ -3537,6 +3581,8 @@ async function renderGamesList() {
   if (!games.length) {
     container.innerHTML = '<p class="no-data-msg">No saved games yet.</p>';
     clearGameDetail();
+    selectedGameIds.clear();
+    if (gamesSelectMode) updateGamesSelectBar();
     return;
   }
 
@@ -3544,6 +3590,18 @@ async function renderGamesList() {
   games.forEach(function (g) {
     var wrapper = document.createElement("div");
     wrapper.className = "game-list-item-wrapper";
+
+    if (gamesSelectMode) {
+      var chk = document.createElement("input");
+      chk.type = "checkbox";
+      chk.className = "game-list-checkbox";
+      chk.checked = selectedGameIds.has(g.gameId);
+      chk.addEventListener("change", function () {
+        if (chk.checked) selectedGameIds.add(g.gameId); else selectedGameIds.delete(g.gameId);
+        updateGamesSelectBar();
+      });
+      wrapper.appendChild(chk);
+    }
 
     var btn = document.createElement("button");
     btn.className = "game-list-item" + (g.gameId === selectedDetailGameId ? " selected" : "");
@@ -3562,32 +3620,63 @@ async function renderGamesList() {
       '</span>';
 
     btn.addEventListener("click", function () {
+      if (gamesSelectMode) {
+        if (selectedGameIds.has(g.gameId)) selectedGameIds.delete(g.gameId);
+        else selectedGameIds.add(g.gameId);
+        void renderGamesList();
+        return;
+      }
       void selectDetailGame(g.gameId);
     });
 
-    var delBtn = document.createElement("button");
-    delBtn.className = "game-list-del-btn";
-    delBtn.title = "Delete game";
-    delBtn.textContent = "×";
-    delBtn.addEventListener("click", function (e) {
-      e.stopPropagation();
-      if (!confirm('Delete "' + (g.gameName || meta) + '"? This cannot be undone.')) return;
-      void (async function () {
-        await dbDeleteGame(g.gameId);
-        if (selectedDetailGameId === g.gameId) clearGameDetail();
-        if (controller.currentGameId === g.gameId) {
-          controller.clear();
-          // If the score page is showing the now-deleted game's scoreboard, reset it
-          if (currentPage === "score" && !$("scoreboard").hidden) showSetupPanel();
-        }
-        await renderGamesList();
-      })();
-    });
-
     wrapper.appendChild(btn);
-    wrapper.appendChild(delBtn);
+
+    if (!gamesSelectMode) {
+      var delBtn = document.createElement("button");
+      delBtn.className = "game-list-del-btn";
+      delBtn.title = "Delete game";
+      delBtn.textContent = "×";
+      delBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (!confirm('Delete "' + (g.gameName || meta) + '"? This cannot be undone.')) return;
+        void (async function () {
+          await dbDeleteGame(g.gameId);
+          if (selectedDetailGameId === g.gameId) clearGameDetail();
+          if (controller.currentGameId === g.gameId) {
+            controller.clear();
+            // If the score page is showing the now-deleted game's scoreboard, reset it
+            if (currentPage === "score" && !$("scoreboard").hidden) showSetupPanel();
+          }
+          await renderGamesList();
+        })();
+      });
+      wrapper.appendChild(delBtn);
+    }
+
     container.appendChild(wrapper);
   });
+
+  if (gamesSelectMode) updateGamesSelectBar();
+}
+
+function setGamesSelectMode(on) {
+  gamesSelectMode = on;
+  if (!on) selectedGameIds.clear();
+  var bar = $("gamesSelectBar");
+  if (bar) bar.hidden = !on;
+  var btn = $("btnSelectGames");
+  if (btn) btn.textContent = on ? "Done" : "Select";
+  void renderGamesList();
+}
+
+function updateGamesSelectBar() {
+  var countEl = $("gamesSelectedCount");
+  var exportBtn = $("btnExportSelectedGames");
+  var allChk = $("chkSelectAllGames");
+  var games = dbListGames();
+  if (countEl) countEl.textContent = selectedGameIds.size + " selected";
+  if (exportBtn) exportBtn.disabled = selectedGameIds.size === 0;
+  if (allChk) allChk.checked = games.length > 0 && selectedGameIds.size === games.length;
 }
 
 async function selectDetailGame(gameId) {
@@ -3791,6 +3880,24 @@ function wireGamesPage() {
     };
     reader.readAsText(file);
     e.target.value = "";
+  });
+
+  // Select mode — choose multiple (or all) games to export as one file
+  $("btnSelectGames").addEventListener("click", function () {
+    setGamesSelectMode(!gamesSelectMode);
+  });
+  $("chkSelectAllGames").addEventListener("change", function (e) {
+    var games = dbListGames();
+    if (e.target.checked) {
+      selectedGameIds = new Set(games.map(function (g) { return g.gameId; }));
+    } else {
+      selectedGameIds.clear();
+    }
+    void renderGamesList();
+  });
+  $("btnExportSelectedGames").addEventListener("click", function () {
+    if (!selectedGameIds.size) return;
+    void exportSelectedGames(Array.from(selectedGameIds));
   });
 
   // Clear all

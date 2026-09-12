@@ -39,7 +39,7 @@ After installing, the app opens full-screen without browser chrome and works off
 |------|---------|
 | Score | Live scorekeeping |
 | Match Log | Event log + set summary (active games only) |
-| Games | Browse, resume, export, edit match info, or delete saved games (date and time shown for each) |
+| Games | Browse, resume, export (one, several, or all at once), edit match info, or delete saved games (date and time shown for each) |
 | Setup | Appearance, game defaults, scoring defaults, Match Info Lists, data management |
 
 ---
@@ -61,6 +61,7 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Scheduled vs. actual start time** — pre-configure a planned start time in Game Defaults, while the moment **Start Game** is tapped is always recorded as the actual start (see [Match Timing](#match-timing))
 - **Match Info** — track Gender, Age Category, and League per game, with pick-or-type fields backed by editable master lists (see [Match Info Lists](#match-info-lists))
 - **Edit match info after the fact** — correct Team A/B names, Location, Gender, Age Category, or League on any saved game — in progress or finished — from the Games page (see [Editing a Game's Match Info](#editing-a-games-match-info))
+- **Multi-game export & import** — select any subset (or all) of your saved games from the Games page and export them as a single JSON file; importing populates the Team Names, Locations, Age Categories, and League master lists with any new values found, in addition to restoring the games themselves (see [Selecting Games to Export](#selecting-games-to-export))
 - **Persist New Game Data** — optionally carry every New Game field forward from your last match instead of resetting to defaults (see [Persisting New Game Data](#persisting-new-game-data))
 - **Score button layout** — choose &minus;/+ or +/&minus; order, or mirror the two team panels so the same symbol always sits toward the middle
 - **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable; every color picker opens a quick preset grid (with a "Custom…" option for the full picker) — see [New Game Team Colors](#new-game-team-colors) for per-game overrides
@@ -286,13 +287,23 @@ It's all-or-nothing — there's no way to persist only some fields. Scheduled St
 | Match Info Lists | Add/rename/remove Team Names, Locations, Age Categories, and Leagues; toggle to show/hide the rename (pencil) icons (see [Match Info Lists](#match-info-lists)) |
 | Triple Ball | Phase box size, highlight color, scroll speed |
 | Data | Export/import all games (JSON); export/import Match Info Lists (JSON or Excel) (see [Match Info Lists](#match-info-lists)); clear all data |
+
+Games can also be exported in smaller batches — see [Selecting Games to Export](#selecting-games-to-export).
 | About | App version and cache name; update toast appears automatically when a new version is cached |
 
 ---
 
 ## Data & Storage
 
-Games save automatically to `localStorage` with an IndexedDB fallback when storage is nearly full. Export and import via JSON — one game at a time or the full collection. Transfer between devices by exporting on one and importing on the other.
+Games save automatically to `localStorage` with an IndexedDB fallback when storage is nearly full. Export and import via JSON — one game, a chosen subset, or the full collection. Transfer between devices by exporting on one and importing on the other.
+
+### Selecting Games to Export
+
+On the **Games** page, tap **Select** to enter selection mode: a checkbox appears next to each saved game, along with a select-all checkbox and a running count. Check as many games as you want (or **All**) and tap **Export Selected** to download them all as one JSON file — the same round-trip format used by the single-game and export-all options, so it imports back in exactly the same way. Tap **Done** to leave selection mode.
+
+### Import & Match Info Lists
+
+Importing any game file (single game, a multi-select export, or a full export) also scans each game's Team A/B names, Location, Age Category, and League and adds any values not already present to the corresponding master list — the same lists used by the New Game form's pick-or-type fields (see [Match Info Lists](#match-info-lists)). Existing entries are left untouched; the import summary reports how many new list entries were added alongside the game count.
 
 ---
 

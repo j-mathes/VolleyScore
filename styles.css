@@ -1762,6 +1762,29 @@ details[open] .event-log-summary::before {
   flex-shrink: 0;
 }
 
+.games-select-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1.5px solid var(--border);
+  flex-shrink: 0;
+  font-size: 0.82rem;
+}
+
+.games-select-all {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.games-selected-count {
+  color: var(--ink-muted);
+  flex: 1;
+}
+
 .icon-btn {
   font-size: 0.8rem;
   padding: 0.3rem 0.55rem;
@@ -1792,6 +1815,13 @@ details[open] .event-log-summary::before {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+.game-list-checkbox {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .game-list-item {
