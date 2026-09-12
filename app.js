@@ -41,7 +41,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "19";
+var APP_VERSION = "20";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -3987,6 +3987,12 @@ function wireReportsPage() {
     renderMatchLogGamePicker();
     void renderMatchLogOutput();
   });
+  $("btnMatchLogSortToggle").addEventListener("click", function () {
+    _matchLogSortAsc = !_matchLogSortAsc;
+    $("btnMatchLogSortToggle").textContent = "Date: " + (_matchLogSortAsc ? "Oldest first" : "Newest first");
+    renderMatchLogGamePicker();
+    void renderMatchLogOutput();
+  });
   $("btnMatchLogPreview").addEventListener("click", function () {
     openReportPreviewModal(buildMatchLogReportContentHtml(_matchLogRows), "Match Log");
   });
@@ -4000,6 +4006,12 @@ function wireReportsPage() {
   });
   $("btnGameReportSelectNone").addEventListener("click", function () {
     _gameReportSelectedIds.clear();
+    renderGameReportGamePicker();
+    void renderGameReportOutput();
+  });
+  $("btnGameReportSortToggle").addEventListener("click", function () {
+    _gameReportSortAsc = !_gameReportSortAsc;
+    $("btnGameReportSortToggle").textContent = "Date: " + (_gameReportSortAsc ? "Oldest first" : "Newest first");
     renderGameReportGamePicker();
     void renderGameReportOutput();
   });
@@ -4055,12 +4067,23 @@ function closeReportPreviewModal() {
 
 var _matchLogSelectedIds = new Set(); // gameIds checked in the Match Log game picker
 var _matchLogRows = [];               // last-built report rows, cached for export/print
+var _matchLogSortAsc = false;          // false = newest first (default), true = oldest first
 var MATCH_LOG_COLUMNS = ["Date", "Time", "Location", "Teams", "League", "Age", "Gender", "Set Score", "Set Points"];
+
+// Same date priority the report rows use (scheduledAt, else the game's actual
+// start/creation time) so the picker list order always matches the report order.
+function gameIndexSortKey(g) {
+  var dt = g.scheduledAt || g.createdAt || g.updatedAt;
+  return dt ? new Date(dt).getTime() : Number.MAX_SAFE_INTEGER;
+}
 
 function renderMatchLogGamePicker() {
   var container = $("matchLogGamePicker");
   if (!container) return;
-  var games = dbListGames();
+  var games = dbListGames().sort(function (a, b) {
+    var d = gameIndexSortKey(a) - gameIndexSortKey(b);
+    return _matchLogSortAsc ? d : -d;
+  });
   if (!games.length) {
     container.innerHTML = '<p class="no-data-msg">No saved games yet.</p>';
     updateMatchLogToolbar();
@@ -4070,7 +4093,7 @@ function renderMatchLogGamePicker() {
   container.innerHTML = "";
   games.forEach(function (g) {
     var meta = (g.teamA || "?") + " vs " + (g.teamB || "?");
-    var dateStr = formatDateTimeShort(g.scheduledAt || g.createdAt || g.updatedAt);
+    var dtIso = g.scheduledAt || g.createdAt || g.updatedAt;
 
     var row = document.createElement("label");
     row.className = "report-game-row";
@@ -4087,7 +4110,8 @@ function renderMatchLogGamePicker() {
 
     var span = document.createElement("span");
     span.className = "report-game-row-label";
-    span.textContent = (g.gameName || meta) + " \u00B7 " + dateStr;
+    var dotHtml = '<span class="report-dot">\u00B7</span>';
+    span.innerHTML = (dtIso ? esc(formatDateYMD(dtIso)) + dotHtml + esc(formatTime24(dtIso)) + dotHtml : "") + esc(g.gameName || meta);
 
     row.appendChild(chk);
     row.appendChild(span);
@@ -4223,7 +4247,7 @@ async function renderMatchLogOutput() {
     var row = buildMatchLogRow(record);
     if (row) rows.push(row);
   }
-  rows.sort(function (a, b) { return a.sortKey - b.sortKey; }); // oldest first
+  rows.sort(function (a, b) { return _matchLogSortAsc ? a.sortKey - b.sortKey : b.sortKey - a.sortKey; });
   _matchLogRows = rows;
 
   if (!rows.length) {
@@ -4277,6 +4301,7 @@ function printMatchLog() {
 
 var _gameReportSelectedIds = new Set(); // gameIds checked in the Game Report game picker
 var _gameReportEntries = [];            // [{ record, state }] for the last-built report, cached for export/print
+var _gameReportSortAsc = false;         // false = newest first (default), true = oldest first
 
 // Sanction "recipient" abbreviations for non-player roles (Setup → sanction modal role picker).
 var GR_ROLE_ABBR = { head_coach: "C", asst_coach: "AC", trainer: "T", medical: "M" };
@@ -4284,7 +4309,10 @@ var GR_ROLE_ABBR = { head_coach: "C", asst_coach: "AC", trainer: "T", medical: "
 function renderGameReportGamePicker() {
   var container = $("gameReportGamePicker");
   if (!container) return;
-  var games = dbListGames();
+  var games = dbListGames().sort(function (a, b) {
+    var d = gameIndexSortKey(a) - gameIndexSortKey(b);
+    return _gameReportSortAsc ? d : -d;
+  });
   if (!games.length) {
     container.innerHTML = '<p class="no-data-msg">No saved games yet.</p>';
     updateGameReportToolbar();
@@ -4294,7 +4322,7 @@ function renderGameReportGamePicker() {
   container.innerHTML = "";
   games.forEach(function (g) {
     var meta = (g.teamA || "?") + " vs " + (g.teamB || "?");
-    var dateStr = formatDateTimeShort(g.scheduledAt || g.createdAt || g.updatedAt);
+    var dtIso = g.scheduledAt || g.createdAt || g.updatedAt;
 
     var row = document.createElement("label");
     row.className = "report-game-row";
@@ -4311,7 +4339,8 @@ function renderGameReportGamePicker() {
 
     var span = document.createElement("span");
     span.className = "report-game-row-label";
-    span.textContent = (g.gameName || meta) + " \u00B7 " + dateStr;
+    var dotHtml = '<span class="report-dot">\u00B7</span>';
+    span.innerHTML = (dtIso ? esc(formatDateYMD(dtIso)) + dotHtml + esc(formatTime24(dtIso)) + dotHtml : "") + esc(g.gameName || meta);
 
     row.appendChild(chk);
     row.appendChild(span);
@@ -4571,7 +4600,7 @@ async function renderGameReportOutput() {
     var dtSource = state.scheduledAt || state.startedAt;
     entries.push({ record: record, state: state, sortKey: dtSource ? new Date(dtSource).getTime() : Number.MAX_SAFE_INTEGER });
   }
-  entries.sort(function (a, b) { return a.sortKey - b.sortKey; }); // oldest first
+  entries.sort(function (a, b) { return _gameReportSortAsc ? a.sortKey - b.sortKey : b.sortKey - a.sortKey; });
   _gameReportEntries = entries;
 
   if (!entries.length) {

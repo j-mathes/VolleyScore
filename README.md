@@ -315,15 +315,15 @@ The **Reports** page builds printable/exportable reports across any subset of yo
 
 ### Match Log
 
-1. Check the games you want in the list at the top (or **Select All** / **Select None**) — the count updates live.
-2. The report table below builds automatically, sorted **oldest to newest**, with columns: Date (`YYYY-MM-DD`), Time (24-hour, prefers each game's scheduled start and falls back to its actual start), Location, Teams, League, Age, Gender, Set Score (e.g. `3-2`), and Set Points (e.g. `25-22, 14-25`). Any field a game doesn't have shows `N/A`.
+1. Check the games you want in the list at the top (or **Select All** / **Select None**) — the count updates live. The list is sorted by date/time (newest first by default); tap the **Date: Newest/Oldest first** button to flip the order.
+2. The report table below builds automatically in the same order as the list above, with columns: Date (`YYYY-MM-DD`), Time (24-hour, prefers each game's scheduled start and falls back to its actual start), Location, Teams, League, Age, Gender, Set Score (e.g. `3-2`), and Set Points (e.g. `25-22, 14-25`). Any field a game doesn't have shows `N/A`.
 3. **Preview** opens an in-app, on-screen approximation of the printed report — a simulated letter-size page so you can check it before committing to a file or a printer.
 4. **Export Excel** downloads a single-sheet `.xlsx` with the same rows.
 5. **Print / PDF** opens the browser's print dialog, formatted to fit a letter-size page and flow across multiple pages automatically if the row count doesn't fit on one.
 
 ### Game Report
 
-A detailed, printable score sheet modeled on the official FIVB score sheet, adapted to the fields VolleyScore actually records. Unlike Match Log's single summary table, **each selected game gets its own full page** in the preview, Excel export, and print/PDF.
+A detailed, printable score sheet modeled on the official FIVB score sheet, adapted to the fields VolleyScore actually records. Unlike Match Log's single summary table, **each selected game gets its own full page** in the preview, Excel export, and print/PDF, in the same order as the game list above (same **Date: Newest/Oldest first** toggle as Match Log).
 
 - **Match Info** — Date, Time, Location, League, Gender, Age, and both team names next to A/B circles.
 - **Sanctions** — one row per sanction, in the order it happened: which of W (Warning) / P (Penalty) / E (Expulsion) / D (Disqualification) applies, who received it (`#12` for a player, or `C` / `AC` / `T` / `M` for Head Coach / Assistant Coach / Trainer / Medical — delay sanctions show `D`), the team and set, and the score at that moment (the sanctioned team's score listed first). A legend explains the abbreviations; the box just reads **None** if there weren't any. Two circle badges next to "Improper Request" mark whether either team has used their one free request, with a bold **X** once it has.
