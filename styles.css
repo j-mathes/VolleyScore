@@ -2366,6 +2366,89 @@ details[open] .event-log-summary::before {
   margin-bottom: 0.8rem;
 }
 
+/* ---- Report preview modal ---- */
+.report-preview-card {
+  max-width: 900px;
+}
+
+.report-preview-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+
+.report-preview-header-bar h3 {
+  margin-bottom: 0;
+}
+
+.report-preview-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.report-preview-actions button {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.report-preview-close-btn {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.report-preview-scroll {
+  background: #5b6472;
+  border-radius: var(--radius-sm);
+  padding: 1.2rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Simulated letter-page "paper" — always light, like real paper, regardless of dark mode */
+.report-preview-paper {
+  background: #fff;
+  color: #1a1a1a;
+  max-width: 8.5in;
+  min-height: 11in;
+  margin: 0 auto;
+  padding: 0.5in;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  box-sizing: border-box;
+}
+
+.report-preview-paper .report-print-header {
+  border-bottom-color: #ddd;
+}
+
+.report-preview-paper .report-print-meta {
+  color: #555;
+}
+
+.report-preview-paper .report-table th,
+.report-preview-paper .report-table td {
+  border-color: #ccc;
+}
+
+.report-preview-paper .report-table th {
+  background: #f0f0f0;
+}
+
+/* No real page breaks on screen — show the footer once at the end of the
+   content instead of pinned per-page, since that only applies when printed. */
+.report-preview-paper .report-print-footer {
+  display: block;
+  position: static;
+  margin-top: 1.2rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid #ddd;
+  text-align: center;
+  font-size: 0.72rem;
+  color: #666;
+}
+
 .modal-section {
   margin-bottom: 0.9rem;
 }
@@ -2829,6 +2912,167 @@ input.player-num-input {
   border-radius: var(--radius-lg);
   padding: 1rem 1.1rem;
   box-shadow: var(--shadow-sm);
+}
+
+.report-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.report-toolbar-spacer {
+  flex: 1;
+}
+
+.report-game-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem;
+  margin-bottom: 0.9rem;
+}
+
+.report-game-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.report-game-row:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.report-game-row input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.report-game-row-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-print-header {
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.report-print-brand {
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+}
+
+.report-print-title {
+  font-size: 1.3rem;
+  margin: 0.15rem 0 0.35rem;
+}
+
+.report-print-meta {
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+}
+
+.report-print-footer {
+  display: none;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.report-table th,
+.report-table td {
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.report-table th {
+  background: rgba(0, 0, 0, 0.06);
+  font-weight: 700;
+}
+
+.report-table tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.025);
+}
+
+.report-table thead {
+  display: table-header-group;
+}
+
+.report-table tr {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* Print only the generated report table — fit to a letter page, flowing to
+   further pages automatically when the row count exceeds one page. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+
+  .print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+  }
+
+  @page {
+    size: letter;
+    margin: 0.5in;
+  }
+
+  .report-table {
+    font-size: 9pt;
+  }
+
+  .report-table th,
+  .report-table td {
+    padding: 3pt 5pt;
+    white-space: normal;
+  }
+
+  .report-print-title {
+    font-size: 14pt;
+  }
+
+  /* position:fixed elements repeat on every printed page in Chrome/Firefox —
+     this is what makes the GitHub URL show up as a footer on each page. */
+  .report-print-footer {
+    display: block;
+    position: fixed;
+    bottom: 0.3in;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 8pt;
+    color: #555;
+  }
 }
 
 .log-header {

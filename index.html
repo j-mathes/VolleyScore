@@ -434,7 +434,23 @@
     </div>
 
     <div id="reportMatchLog" class="report-panel">
-      <p class="no-data-msg">Match Log report coming soon.</p>
+      <div class="report-toolbar">
+        <button id="btnMatchLogSelectAll" class="icon-btn" type="button">Select All</button>
+        <button id="btnMatchLogSelectNone" class="icon-btn" type="button">Select None</button>
+        <span id="matchLogSelectedCount" class="ml-count">0 selected</span>
+        <span class="report-toolbar-spacer"></span>
+        <button id="btnMatchLogPreview" class="ctrl-btn" type="button" disabled>Preview</button>
+        <button id="btnMatchLogExportXlsx" class="ctrl-btn" type="button" disabled>Export Excel</button>
+        <button id="btnMatchLogPrint" class="ctrl-btn" type="button" disabled>Print / PDF</button>
+      </div>
+
+      <div id="matchLogGamePicker" class="report-game-picker">
+        <p class="no-data-msg">No saved games yet.</p>
+      </div>
+
+      <div id="matchLogOutput" class="report-output">
+        <p class="no-data-msg">Select one or more games above to build the Match Log.</p>
+      </div>
     </div>
     <div id="reportGameReport" class="report-panel" hidden>
       <p class="no-data-msg">Game Report coming soon.</p>
@@ -571,6 +587,12 @@
           <span class="toggle-slider"></span>
         </label>
       </div>
+
+      <div class="setting-row">
+        <label class="setting-label" for="cfgRefereeName">Referee Name</label>
+        <input type="text" id="cfgRefereeName" placeholder="Optional" autocomplete="off" class="setting-text-input">
+      </div>
+      <p class="setup-hint">When set, reports include a "Referee: [name]" line. Leave blank if you're not a referee — it's entirely optional.</p>
 
       <div class="setting-row">
         <label class="setting-label" for="cfgDefTeamA">Default Team A</label>
@@ -1082,6 +1104,22 @@
       <div class="edit-match-info-actions">
         <button id="btnSaveMatchInfo" class="ctrl-btn">Save</button>
         <button id="btnCloseEditMatchInfoModal" class="modal-close-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Report Preview Modal ===== -->
+  <div id="reportPreviewModal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="reportPreviewTitle">
+    <div class="modal-card report-preview-card">
+      <div class="report-preview-header-bar">
+        <h3 id="reportPreviewTitle">Report Preview</h3>
+        <div class="report-preview-actions">
+          <button id="btnReportPreviewPrint" class="ctrl-btn">Print / PDF</button>
+          <button id="btnCloseReportPreviewModal" class="ctrl-btn report-preview-close-btn">Close</button>
+        </div>
+      </div>
+      <div class="report-preview-scroll">
+        <div id="reportPreviewPaper" class="report-preview-paper"></div>
       </div>
     </div>
   </div>

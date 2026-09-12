@@ -40,6 +40,7 @@ After installing, the app opens full-screen without browser chrome and works off
 | Score | Live scorekeeping |
 | Match Log | Event log + set summary (active games only) |
 | Games | Browse, resume, export (one, several, or all at once), edit match info, or delete saved games (date and time shown for each) |
+| Reports | Build printable/exportable reports across multiple saved games at once (see [Reports](#reports)) |
 | Setup | Appearance, game defaults, scoring defaults, Match Info Lists, data management |
 
 ---
@@ -62,6 +63,7 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Match Info** — track Gender, Age Category, and League per game, with pick-or-type fields backed by editable master lists (see [Match Info Lists](#match-info-lists))
 - **Edit match info after the fact** — correct Team A/B names, Location, Gender, Age Category, or League on any saved game — in progress or finished — from the Games page (see [Editing a Game's Match Info](#editing-a-games-match-info))
 - **Multi-game export & import** — select any subset (or all) of your saved games from the Games page and export them as a single JSON file; importing populates the Team Names, Locations, Age Categories, and League master lists with any new values found, in addition to restoring the games themselves (see [Selecting Games to Export](#selecting-games-to-export))
+- **Reports** — build a Match Log across any subset of saved games, sorted oldest to newest, with an in-app preview, Excel export, and print/PDF output formatted to fit a letter-size page (see [Reports](#reports))
 - **Persist New Game Data** — optionally carry every New Game field forward from your last match instead of resetting to defaults (see [Persisting New Game Data](#persisting-new-game-data))
 - **Score button layout** — choose &minus;/+ or +/&minus; order, or mirror the two team panels so the same symbol always sits toward the middle
 - **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable; every color picker opens a quick preset grid (with a "Custom…" option for the full picker) — see [New Game Team Colors](#new-game-team-colors) for per-game overrides
@@ -282,13 +284,11 @@ It's all-or-nothing — there's no way to persist only some fields. Scheduled St
 |---------|----------|
 | Appearance | Dark mode, font size, team colors, sidebar border, Start Set button colors, score button layout (&minus;/+ order and mirroring), Keep Screen Awake, Confirm before Undo |
 | Mobile Display | Notch padding — side (left/right) and amount; useful in landscape when the phone notch covers the sidebar |
-| Game Defaults | Persist New Game Data toggle (see below); default team names, location, gender, age category, league, scheduled start (see [Match Timing](#match-timing)), format, variation, fair play rule, automatic side switching between sets, timeouts/set, subs/set |
+| Game Defaults | Persist New Game Data toggle (see below); Referee Name (optional — used on reports, see [Reports](#reports)); default team names, location, gender, age category, league, scheduled start (see [Match Timing](#match-timing)), format, variation, fair play rule, automatic side switching between sets, timeouts/set, subs/set |
 | Scoring Defaults | Win at / Cap / Win by for regular and deciding sets; Win Alert glow and toast color/duration settings; Action Alert color and duration |
 | Match Info Lists | Add/rename/remove Team Names, Locations, Age Categories, and Leagues; toggle to show/hide the rename (pencil) icons (see [Match Info Lists](#match-info-lists)) |
 | Triple Ball | Phase box size, highlight color, scroll speed |
-| Data | Export/import all games (JSON); export/import Match Info Lists (JSON or Excel) (see [Match Info Lists](#match-info-lists)); clear all data |
-
-Games can also be exported in smaller batches — see [Selecting Games to Export](#selecting-games-to-export).
+| Data | Export/import all games (JSON, one/several/all — see [Selecting Games to Export](#selecting-games-to-export)); export/import Match Info Lists (JSON or Excel) (see [Match Info Lists](#match-info-lists)); clear all data |
 | About | App version and cache name; update toast appears automatically when a new version is cached |
 
 ---
@@ -304,6 +304,26 @@ On the **Games** page, tap **Select** to enter selection mode: a checkbox appear
 ### Import & Match Info Lists
 
 Importing any game file (single game, a multi-select export, or a full export) also scans each game's Team A/B names, Location, Age Category, and League and adds any values not already present to the corresponding master list — the same lists used by the New Game form's pick-or-type fields (see [Match Info Lists](#match-info-lists)). Existing entries are left untouched; the import summary reports how many new list entries were added alongside the game count.
+
+---
+
+## Reports
+
+The **Reports** page builds printable/exportable reports across any subset of your saved games.
+
+### Match Log
+
+1. Check the games you want in the list at the top (or **Select All** / **Select None**) — the count updates live.
+2. The report table below builds automatically, sorted **oldest to newest**, with columns: Date (`YYYY-MM-DD`), Time (24-hour, prefers each game's scheduled start and falls back to its actual start), Location, Teams, League, Age, Gender, Set Score (e.g. `3-2`), and Set Scores (e.g. `25-22, 14-25`). Any field a game doesn't have shows `N/A`.
+3. **Preview** opens an in-app, on-screen approximation of the printed report — a simulated letter-size page with the same header/footer that printing or exporting produces, so you can check it before committing to a file or a printer.
+4. **Export Excel** downloads a single-sheet `.xlsx` with the same rows (plus a matching page footer if printed from Excel).
+5. **Print / PDF** opens the browser's print dialog, formatted to fit a letter-size page and flow across multiple pages automatically if the row count doesn't fit on one.
+
+Every report includes a header (VolleyScore, report title, and the date/time it was generated) and a footer with the project's GitHub URL, which repeats on every printed page. If you've set **Setup → Game Defaults → Referee Name**, the header also shows "Referee: [name]" — leave it blank if you're not a referee, since it's entirely optional and simply omitted when unset.
+
+### Game Report
+
+Coming soon.
 
 ---
 

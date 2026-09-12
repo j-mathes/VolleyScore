@@ -43,6 +43,8 @@ var LS_SETTINGS = "vs_settings";  // user settings
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
 var APP_VERSION = "18";
 
+var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
+
 // Default settings
 var DEFAULT_SETTINGS = {
   darkMode: false,
@@ -68,6 +70,7 @@ var DEFAULT_SETTINGS = {
   scoreBtnLayout: "mirrorPlus", // minusPlus | plusMinus | mirrorPlus | mirrorMinus
   keepScreenAwake: false,
   confirmUndo: false,
+  refereeName: "",
   defaultTeamA: "",
   defaultTeamB: "",
   defaultLocation: "",
@@ -1185,7 +1188,9 @@ function xlsxColLetter(i) {
   return s;
 }
 
-function xlsxSheetXml(rows) {
+// footerText, if given, becomes the printed page footer (Excel's own page-footer
+// feature — shows when the sheet itself is printed, independent of our HTML report footer).
+function xlsxSheetXml(rows, footerText) {
   var xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
   rows.forEach(function (row, ri) {
@@ -1196,7 +1201,11 @@ function xlsxSheetXml(rows) {
     });
     xml += '</row>';
   });
-  xml += '</sheetData></worksheet>';
+  xml += '</sheetData>';
+  if (footerText) {
+    xml += '<headerFooter><oddFooter>&amp;C&amp;"Calibri"' + esc(footerText) + '</oddFooter></headerFooter>';
+  }
+  xml += '</worksheet>';
   return xml;
 }
 
@@ -3930,12 +3939,12 @@ async function saveMatchInfoEdits() {
 }
 
 // ---- Reports Page ----------------------------------------
-// Placeholder scaffold — Match Log and Game Report content/data TBD.
 
 var selectedReportTab = "matchLog";
 
 function renderReportsPage() {
-  // Nothing dynamic to compute yet — panel visibility is handled by the tab click wiring.
+  renderMatchLogGamePicker();
+  void renderMatchLogOutput();
 }
 
 function wireReportsPage() {
@@ -3949,6 +3958,256 @@ function wireReportsPage() {
       $("reportGameReport").hidden = selectedReportTab !== "gameReport";
     });
   });
+
+  $("btnMatchLogSelectAll").addEventListener("click", function () {
+    _matchLogSelectedIds = new Set(dbListGames().map(function (g) { return g.gameId; }));
+    renderMatchLogGamePicker();
+    void renderMatchLogOutput();
+  });
+  $("btnMatchLogSelectNone").addEventListener("click", function () {
+    _matchLogSelectedIds.clear();
+    renderMatchLogGamePicker();
+    void renderMatchLogOutput();
+  });
+  $("btnMatchLogPreview").addEventListener("click", function () {
+    openReportPreviewModal(buildMatchLogReportContentHtml(_matchLogRows));
+  });
+  $("btnMatchLogExportXlsx").addEventListener("click", exportMatchLogXlsx);
+  $("btnMatchLogPrint").addEventListener("click", printMatchLog);
+
+  $("btnReportPreviewPrint").addEventListener("click", function () {
+    window.print();
+  });
+  $("btnCloseReportPreviewModal").addEventListener("click", closeReportPreviewModal);
+  $("reportPreviewModal").addEventListener("click", function (e) {
+    if (e.target === $("reportPreviewModal")) closeReportPreviewModal();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !$("reportPreviewModal").hidden) closeReportPreviewModal();
+  });
+}
+
+// Shows an on-screen approximation of the printed report — same header/table/footer
+// markup rendered on a simulated letter-size page, since real pagination can only
+// be seen once the browser actually lays out the print job.
+function openReportPreviewModal(contentHtml) {
+  $("reportPreviewPaper").innerHTML = contentHtml;
+  $("reportPreviewModal").hidden = false;
+}
+
+function closeReportPreviewModal() {
+  $("reportPreviewModal").hidden = true;
+}
+
+// ---- Match Log Report -------------------------------------
+
+var _matchLogSelectedIds = new Set(); // gameIds checked in the Match Log game picker
+var _matchLogRows = [];               // last-built report rows, cached for export/print
+var MATCH_LOG_COLUMNS = ["Date", "Time", "Location", "Teams", "League", "Age", "Gender", "Set Score", "Set Scores"];
+
+function renderMatchLogGamePicker() {
+  var container = $("matchLogGamePicker");
+  if (!container) return;
+  var games = dbListGames();
+  if (!games.length) {
+    container.innerHTML = '<p class="no-data-msg">No saved games yet.</p>';
+    updateMatchLogToolbar();
+    return;
+  }
+
+  container.innerHTML = "";
+  games.forEach(function (g) {
+    var meta = (g.teamA || "?") + " vs " + (g.teamB || "?");
+    var dateStr = formatDateTimeShort(g.scheduledAt || g.createdAt || g.updatedAt);
+
+    var row = document.createElement("label");
+    row.className = "report-game-row";
+
+    var chk = document.createElement("input");
+    chk.type = "checkbox";
+    chk.checked = _matchLogSelectedIds.has(g.gameId);
+    chk.addEventListener("change", function () {
+      if (chk.checked) _matchLogSelectedIds.add(g.gameId);
+      else _matchLogSelectedIds.delete(g.gameId);
+      updateMatchLogToolbar();
+      void renderMatchLogOutput();
+    });
+
+    var span = document.createElement("span");
+    span.className = "report-game-row-label";
+    span.textContent = (g.gameName || meta) + " \u00B7 " + dateStr;
+
+    row.appendChild(chk);
+    row.appendChild(span);
+    container.appendChild(row);
+  });
+
+  updateMatchLogToolbar();
+}
+
+function updateMatchLogToolbar() {
+  var countEl = $("matchLogSelectedCount");
+  if (countEl) countEl.textContent = _matchLogSelectedIds.size + " selected";
+  var has = _matchLogSelectedIds.size > 0;
+  $("btnMatchLogPreview").disabled = !has;
+  $("btnMatchLogExportXlsx").disabled = !has;
+  $("btnMatchLogPrint").disabled = !has;
+}
+
+// yyyy-mm-dd (local time, 24-hour clock elsewhere) — used by the Match Log report
+function formatDateYMD(iso) {
+  if (!iso) return "";
+  var d = new Date(iso);
+  var pad = function (n) { return String(n).padStart(2, "0"); };
+  return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+}
+
+function formatTime24(iso) {
+  if (!iso) return "";
+  var d = new Date(iso);
+  var pad = function (n) { return String(n).padStart(2, "0"); };
+  return pad(d.getHours()) + ":" + pad(d.getMinutes());
+}
+
+// Builds one Match Log row from a saved game record. Prefers the pre-configured
+// scheduled start for Date/Time, falling back to the actual start if none was set.
+function buildMatchLogRow(record) {
+  var tl = { events: record.events, cursor: record.cursor };
+  var state = deriveGameState(tl);
+  if (!state) return null;
+
+  var dtSource = state.scheduledAt || state.startedAt || null;
+  var completedSets = state.sets.filter(function (s) { return !!s.endedAt; });
+
+  return {
+    sortKey: dtSource ? new Date(dtSource).getTime() : Number.MAX_SAFE_INTEGER,
+    date: dtSource ? formatDateYMD(dtSource) : "N/A",
+    time: dtSource ? formatTime24(dtSource) : "N/A",
+    location: state.location || "N/A",
+    teams: state.teamA + " vs " + state.teamB,
+    league: state.league || "N/A",
+    age: state.ageCategory || "N/A",
+    gender: state.gender || "N/A",
+    setScore: state.setsWonA + "-" + state.setsWonB,
+    setScores: completedSets.length
+      ? completedSets.map(function (s) { return s.scoreA + "-" + s.scoreB; }).join(", ")
+      : "N/A",
+  };
+}
+
+// Shared header/footer for printed & exported reports — reusable by any report,
+// not just Match Log. Referee line only appears when a name is configured
+// (Setup → Game Defaults → Referee Name), since not every user is a referee.
+function buildReportPrintHeaderHtml(reportTitle) {
+  var html = '<div class="report-print-header">' +
+    '<div class="report-print-brand">VolleyScore</div>' +
+    '<h2 class="report-print-title">' + esc(reportTitle) + '</h2>' +
+    '<div class="report-print-meta">Generated ' + esc(formatDateTimeShort(new Date().toISOString())) + '</div>';
+  var referee = (settings.refereeName || "").trim();
+  if (referee) html += '<div class="report-print-meta">Referee: ' + esc(referee) + '</div>';
+  html += '</div>';
+  return html;
+}
+
+function buildReportPrintFooterHtml() {
+  return '<div class="report-print-footer">' + esc(GITHUB_URL) + '</div>';
+}
+
+// Same header/footer info as plain rows, for the Excel export (which has no
+// concept of a fixed on-screen header/footer). Referee row omitted when unset.
+function buildReportXlsxHeaderRows(reportTitle) {
+  var rows = [
+    ["VolleyScore \u2014 " + reportTitle],
+    ["Generated " + formatDateTimeShort(new Date().toISOString())],
+  ];
+  var referee = (settings.refereeName || "").trim();
+  if (referee) rows.push(["Referee: " + referee]);
+  rows.push([]); // blank spacer row before the column headers
+  return rows;
+}
+
+// Builds the header + table + footer markup shared by the live report output,
+// the in-app preview modal, and printing (all three render identical content).
+function buildMatchLogReportContentHtml(rows) {
+  var html = buildReportPrintHeaderHtml("Match Log") +
+    '<table class="report-table" id="matchLogTable"><thead><tr>' +
+    MATCH_LOG_COLUMNS.map(function (c) { return "<th>" + esc(c) + "</th>"; }).join("") +
+    "</tr></thead><tbody>";
+  rows.forEach(function (r) {
+    html += "<tr>" +
+      "<td>" + esc(r.date) + "</td>" +
+      "<td>" + esc(r.time) + "</td>" +
+      "<td>" + esc(r.location) + "</td>" +
+      "<td>" + esc(r.teams) + "</td>" +
+      "<td>" + esc(r.league) + "</td>" +
+      "<td>" + esc(r.age) + "</td>" +
+      "<td>" + esc(r.gender) + "</td>" +
+      "<td>" + esc(r.setScore) + "</td>" +
+      "<td>" + esc(r.setScores) + "</td>" +
+      "</tr>";
+  });
+  html += "</tbody></table>" + buildReportPrintFooterHtml();
+  return html;
+}
+
+async function renderMatchLogOutput() {
+  var container = $("matchLogOutput");
+  if (!container) return;
+
+  if (!_matchLogSelectedIds.size) {
+    container.innerHTML = '<p class="no-data-msg">Select one or more games above to build the Match Log.</p>';
+    _matchLogRows = [];
+    return;
+  }
+
+  var rows = [];
+  var ids = Array.from(_matchLogSelectedIds);
+  for (var i = 0; i < ids.length; i++) {
+    var record = await dbLoadGame(ids[i]);
+    if (!record) continue;
+    var row = buildMatchLogRow(record);
+    if (row) rows.push(row);
+  }
+  rows.sort(function (a, b) { return a.sortKey - b.sortKey; }); // oldest first
+  _matchLogRows = rows;
+
+  if (!rows.length) {
+    container.innerHTML = '<p class="no-data-msg">No data available for the selected games.</p>';
+    return;
+  }
+
+  container.innerHTML = '<div id="matchLogPrintArea" class="print-area">' +
+    buildMatchLogReportContentHtml(rows) + "</div>";
+}
+
+// Reuses the hand-rolled XLSX writer built for Match Info Lists export (see below).
+function exportMatchLogXlsx() {
+  if (!_matchLogRows.length) return;
+  var rows = buildReportXlsxHeaderRows("Match Log")
+    .concat([MATCH_LOG_COLUMNS])
+    .concat(_matchLogRows.map(function (r) {
+      return [r.date, r.time, r.location, r.teams, r.league, r.age, r.gender, r.setScore, r.setScores];
+    }));
+
+  var enc = new TextEncoder();
+  var files = [
+    { name: "[Content_Types].xml", data: enc.encode(xlsxContentTypesXml(1)) },
+    { name: "_rels/.rels", data: enc.encode(XLSX_ROOT_RELS) },
+    { name: "xl/workbook.xml", data: enc.encode(xlsxWorkbookXml(["Match Log"])) },
+    { name: "xl/_rels/workbook.xml.rels", data: enc.encode(xlsxWorkbookRelsXml(1)) },
+    { name: "xl/styles.xml", data: enc.encode(XLSX_STYLES_XML) },
+    { name: "xl/worksheets/sheet1.xml", data: enc.encode(xlsxSheetXml(rows, GITHUB_URL)) },
+  ];
+  var zipBytes = buildZip(files);
+  downloadFile("volleyscore_match_log_" + new Date().toISOString().slice(0, 10) + ".xlsx",
+    zipBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+}
+
+// Printing/PDF relies on the @media print rules in styles.css, which show only
+// the #matchLogPrintArea element (see ".print-area") on the printed page.
+function printMatchLog() {
+  if (!_matchLogRows.length) return;
+  window.print();
 }
 
 function wireGamesPage() {
@@ -4053,6 +4312,7 @@ function renderSetupPage() {
   $("cfgConfirmUndo").checked = !!settings.confirmUndo;
   $("cfgShowMlEditIcons").checked = !!settings.showMasterListEditIcons;
   $("cfgPersistNewGameData").checked = !!settings.persistNewGameData;
+  $("cfgRefereeName").value = settings.refereeName || "";
   $("cfgDefTeamA").value    = settings.defaultTeamA    || "";
   $("cfgDefTeamB").value    = settings.defaultTeamB    || "";
   $("cfgDefLocation").value = settings.defaultLocation || "";
@@ -4333,6 +4593,10 @@ function wireSetupPage() {
   $("cfgPersistNewGameData").addEventListener("change", function () {
     settings.persistNewGameData = this.checked;
     saveSettings();
+  });
+
+  $("cfgRefereeName").addEventListener("input", function () {
+    settings.refereeName = this.value; saveSettings();
   });
 
   // Default team names and location
