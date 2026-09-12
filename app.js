@@ -162,15 +162,43 @@ function renameInMasterList(listName, oldValue, rawNewValue) {
 // window.prompt() is unusable here since standalone iOS PWAs silently no-op it.
 var _mlEditing = null;
 
+// Per-list chip filter text, keyed by listName — lets a long list be searched
+// instead of scrolling through every chip on a small screen.
+var _mlFilter = {
+  masterTeamNames: "",
+  masterLocations: "",
+  masterAgeCategories: "",
+  masterLeagues: "",
+};
+
+var ML_COUNT_ELS = {
+  masterTeamNames: "mlCountTeamNames",
+  masterLocations: "mlCountLocations",
+  masterAgeCategories: "mlCountAgeCategories",
+  masterLeagues: "mlCountLeagues",
+};
+
 function renderMasterListChips(containerId, listName) {
   var container = $(containerId);
   if (!container) return;
   var values = settings[listName] || [];
+  var filterText = (_mlFilter[listName] || "").trim().toLowerCase();
+  var shown = filterText ? values.filter(function (v) { return v.toLowerCase().indexOf(filterText) !== -1; }) : values;
+
+  var countEl = $(ML_COUNT_ELS[listName]);
+  if (countEl) {
+    countEl.textContent = filterText ? (shown.length + " of " + values.length) : (values.length ? String(values.length) : "");
+  }
+
   if (!values.length) {
     container.innerHTML = '<span class="no-data-msg">None yet</span>';
     return;
   }
-  container.innerHTML = values.map(function (v) {
+  if (!shown.length) {
+    container.innerHTML = '<span class="no-data-msg">No matches</span>';
+    return;
+  }
+  container.innerHTML = shown.map(function (v) {
     if (_mlEditing && _mlEditing.listName === listName && _mlEditing.value === v) {
       return '<span class="ml-chip ml-chip-editing">' +
         '<input type="text" class="ml-chip-input" data-list="' + listName + '" data-value="' + esc(v) + '" value="' + esc(v) + '"></span>';
@@ -191,6 +219,50 @@ function renderMasterListEditors() {
   renderMasterListChips("mlListLocations", "masterLocations");
   renderMasterListChips("mlListAgeCategories", "masterAgeCategories");
   renderMasterListChips("mlListLeagues", "masterLeagues");
+}
+
+// Scans every saved game's GAME_STARTED event and returns, per master list, the
+// set of lower-cased values actually referenced by at least one saved game.
+async function computeMasterListUsage() {
+  var usage = {
+    masterTeamNames: new Set(),
+    masterLocations: new Set(),
+    masterAgeCategories: new Set(),
+    masterLeagues: new Set(),
+  };
+  var index = dbListGames();
+  for (var i = 0; i < index.length; i++) {
+    var record = await dbLoadGame(index[i].gameId);
+    if (!record) continue;
+    var startEv = (record.events || []).find(function (e) { return e.type === "GAME_STARTED"; });
+    if (!startEv) continue;
+    if (startEv.teamA) usage.masterTeamNames.add(startEv.teamA.toLowerCase());
+    if (startEv.teamB) usage.masterTeamNames.add(startEv.teamB.toLowerCase());
+    if (startEv.location) usage.masterLocations.add(startEv.location.toLowerCase());
+    if (startEv.ageCategory) usage.masterAgeCategories.add(startEv.ageCategory.toLowerCase());
+    if (startEv.league) usage.masterLeagues.add(startEv.league.toLowerCase());
+  }
+  return usage;
+}
+
+// Removes master-list entries not referenced by any saved game (case-insensitive).
+// Safe to run any time — saved games store their own copy of these fields directly
+// on the GAME_STARTED event, so pruning the master list never touches game data.
+async function removeUnusedMasterListEntries(listName, label) {
+  var usage = await computeMasterListUsage();
+  var used = usage[listName] || new Set();
+  var list = settings[listName] || [];
+  var unused = list.filter(function (v) { return !used.has(v.toLowerCase()); });
+  if (!unused.length) {
+    alert("Every " + label + " entry is used by a saved game — nothing to remove.");
+    return;
+  }
+  var plural = unused.length === 1 ? "y" : "ies";
+  if (!confirm("Remove " + unused.length + " unused " + label + " entr" + plural + "?\n\n" +
+    "These aren't referenced by any saved game. You can always re-add one by typing it again.")) return;
+  unused.forEach(function (v) { removeFromMasterList(listName, v); });
+  renderMasterListEditors();
+  renderDefaultPickerOptions();
 }
 
 function fillSelectOptions(id, values, selected) {
@@ -4261,6 +4333,22 @@ function wireSetupPage() {
   $("btnAddLocation").addEventListener("click", wireMasterListAdd("cfgAddLocation", "masterLocations"));
   $("btnAddAgeCategory").addEventListener("click", wireMasterListAdd("cfgAddAgeCategory", "masterAgeCategories"));
   $("btnAddLeague").addEventListener("click", wireMasterListAdd("cfgAddLeague", "masterLeagues"));
+
+  // Match Info Lists — filter chips shown per list (delegated; inputs render statically in HTML)
+  document.addEventListener("input", function (e) {
+    var input = e.target.closest(".ml-filter-input");
+    if (!input) return;
+    var listName = input.getAttribute("data-list");
+    _mlFilter[listName] = input.value;
+    renderMasterListChips("mlList" + listName.replace("master", ""), listName);
+  });
+
+  // Match Info Lists — remove entries unused by any saved game
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest(".ml-prune-btn");
+    if (!btn) return;
+    void removeUnusedMasterListEntries(btn.getAttribute("data-list"), btn.getAttribute("data-label"));
+  });
 
   // Match Info Lists — remove an entry (delegated for the dynamically rendered chips)
   document.addEventListener("click", function (e) {

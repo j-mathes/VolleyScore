@@ -758,37 +758,65 @@
       </div>
 
       <div class="ml-editor">
-        <h3 class="ml-editor-title">Team Names</h3>
+        <div class="ml-editor-header">
+          <h3 class="ml-editor-title">Team Names</h3>
+          <span class="ml-count" id="mlCountTeamNames"></span>
+        </div>
         <div class="ml-add-row">
           <input id="cfgAddTeamName" type="text" placeholder="Add team name" autocomplete="off">
           <button id="btnAddTeamName" class="ctrl-btn" type="button">Add</button>
+        </div>
+        <div class="ml-filter-row">
+          <input type="search" class="ml-filter-input" data-list="masterTeamNames" placeholder="Filter team names…" autocomplete="off">
+          <button type="button" class="icon-btn ml-prune-btn" data-list="masterTeamNames" data-label="team name">Remove Unused</button>
         </div>
         <div id="mlListTeamNames" class="ml-chip-list"></div>
       </div>
 
       <div class="ml-editor">
-        <h3 class="ml-editor-title">Locations</h3>
+        <div class="ml-editor-header">
+          <h3 class="ml-editor-title">Locations</h3>
+          <span class="ml-count" id="mlCountLocations"></span>
+        </div>
         <div class="ml-add-row">
           <input id="cfgAddLocation" type="text" placeholder="Add location" autocomplete="off">
           <button id="btnAddLocation" class="ctrl-btn" type="button">Add</button>
+        </div>
+        <div class="ml-filter-row">
+          <input type="search" class="ml-filter-input" data-list="masterLocations" placeholder="Filter locations…" autocomplete="off">
+          <button type="button" class="icon-btn ml-prune-btn" data-list="masterLocations" data-label="location">Remove Unused</button>
         </div>
         <div id="mlListLocations" class="ml-chip-list"></div>
       </div>
 
       <div class="ml-editor">
-        <h3 class="ml-editor-title">Age Categories</h3>
+        <div class="ml-editor-header">
+          <h3 class="ml-editor-title">Age Categories</h3>
+          <span class="ml-count" id="mlCountAgeCategories"></span>
+        </div>
         <div class="ml-add-row">
           <input id="cfgAddAgeCategory" type="text" placeholder="Add age category" autocomplete="off">
           <button id="btnAddAgeCategory" class="ctrl-btn" type="button">Add</button>
+        </div>
+        <div class="ml-filter-row">
+          <input type="search" class="ml-filter-input" data-list="masterAgeCategories" placeholder="Filter age categories…" autocomplete="off">
+          <button type="button" class="icon-btn ml-prune-btn" data-list="masterAgeCategories" data-label="age category">Remove Unused</button>
         </div>
         <div id="mlListAgeCategories" class="ml-chip-list"></div>
       </div>
 
       <div class="ml-editor">
-        <h3 class="ml-editor-title">Leagues</h3>
+        <div class="ml-editor-header">
+          <h3 class="ml-editor-title">Leagues</h3>
+          <span class="ml-count" id="mlCountLeagues"></span>
+        </div>
         <div class="ml-add-row">
           <input id="cfgAddLeague" type="text" placeholder="Add league" autocomplete="off">
           <button id="btnAddLeague" class="ctrl-btn" type="button">Add</button>
+        </div>
+        <div class="ml-filter-row">
+          <input type="search" class="ml-filter-input" data-list="masterLeagues" placeholder="Filter leagues…" autocomplete="off">
+          <button type="button" class="icon-btn ml-prune-btn" data-list="masterLeagues" data-label="league">Remove Unused</button>
         </div>
         <div id="mlListLeagues" class="ml-chip-list"></div>
       </div>
