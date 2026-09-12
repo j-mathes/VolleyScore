@@ -1508,6 +1508,7 @@ function showPage(page) {
   currentPage = page;
   $("scorePage").hidden  = page !== "score";
   $("gamesPage").hidden  = page !== "games";
+  $("reportsPage").hidden = page !== "reports";
   $("setupPage").hidden  = page !== "setup";
   $("logPage").hidden    = page !== "log";
 
@@ -1516,6 +1517,7 @@ function showPage(page) {
   });
 
   if (page === "games") { void renderGamesList(); }
+  if (page === "reports") { renderReportsPage(); }
   if (page === "setup") { renderSetupPage(); }
   if (page === "log")   { renderLogPage(); }
   // When returning to score page, reset to setup if no game is loaded
@@ -3927,6 +3929,28 @@ async function saveMatchInfoEdits() {
   await renderGamesList();
 }
 
+// ---- Reports Page ----------------------------------------
+// Placeholder scaffold — Match Log and Game Report content/data TBD.
+
+var selectedReportTab = "matchLog";
+
+function renderReportsPage() {
+  // Nothing dynamic to compute yet — panel visibility is handled by the tab click wiring.
+}
+
+function wireReportsPage() {
+  document.querySelectorAll(".reports-tab-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      selectedReportTab = btn.getAttribute("data-report");
+      document.querySelectorAll(".reports-tab-btn").forEach(function (b) {
+        b.classList.toggle("active", b === btn);
+      });
+      $("reportMatchLog").hidden = selectedReportTab !== "matchLog";
+      $("reportGameReport").hidden = selectedReportTab !== "gameReport";
+    });
+  });
+}
+
 function wireGamesPage() {
   // Set filter pills — delegated click on the detail set table
   $("detailSetTable").addEventListener("click", function (e) {
@@ -4552,6 +4576,7 @@ async function init() {
   wireSanctionModal();
   wireGamesPage();
   wireSetupPage();
+  wireReportsPage();
   wireColorPresetPopover();
   wireComboInputs();
 

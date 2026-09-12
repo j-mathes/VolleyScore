@@ -20,6 +20,7 @@
     <div class="nav-pages">
       <button class="nav-btn active" data-page="score" aria-label="Score page">Score</button>
       <button class="nav-btn" data-page="games" aria-label="Games history">Games</button>
+      <button class="nav-btn" data-page="reports" aria-label="Reports">Reports</button>
       <button class="nav-btn" data-page="setup" aria-label="App settings">Setup</button>
     </div>
     <!-- Match Log button — only visible during an active game -->
@@ -424,6 +425,21 @@
     </div>
 
   </div><!-- end gamesPage -->
+
+  <!-- ===== Reports Page ===== -->
+  <div id="reportsPage" class="page page-reports" hidden>
+    <div class="reports-tabs">
+      <button class="reports-tab-btn active" data-report="matchLog">Match Log</button>
+      <button class="reports-tab-btn" data-report="gameReport">Game Report</button>
+    </div>
+
+    <div id="reportMatchLog" class="report-panel">
+      <p class="no-data-msg">Match Log report coming soon.</p>
+    </div>
+    <div id="reportGameReport" class="report-panel" hidden>
+      <p class="no-data-msg">Game Report coming soon.</p>
+    </div>
+  </div><!-- end reportsPage -->
 
   <!-- ===== Setup Page ===== -->
   <div id="setupPage" class="page page-setup" hidden>
