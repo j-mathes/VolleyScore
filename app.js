@@ -29,6 +29,8 @@ var _isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
 
 // Triple ball phase definitions: who has the ball at each phase (0-5)
 // Cycle: A Serves → Toss to B → Toss to A → B Serves → Toss to A → Toss to B
+// (letters here assume Team A serves first — tbPhaseBoxHtml flips them when
+// the actual first server for the set is Team B instead)
 var TB_PHASE_TEAMS  = ["A", "B", "A", "B", "A", "B"];
 var TB_PHASE_TYPES  = ["Serves", "Toss", "Toss", "Serves", "Toss", "Toss"];
 var TB_PHASE_TOWARD = ["B", "B", "A", "A", "A", "B"]; // which team receives the ball
@@ -41,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "20";
+var APP_VERSION = "21";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -62,6 +64,7 @@ var DEFAULT_SETTINGS = {
   defaultVariation: "standard",
   defaultFairPlay: "none",
   autoSwitchSidesBetweenSets: false,
+  promptSwitchSidesMidDecider: true,
   defaultTimeouts: 2,
   defaultSubs: 6,
   notchEnabled: false,
@@ -1913,6 +1916,7 @@ async function startNewGame() {
   _tbPrevPhase = -1;           // reset triple ball animation state
   _setWinKey = null;           // reset win condition alert state
   _matchWinKey = null;
+  _midDeciderSwitchPromptedSet = null;
 
   var startEvent = {
     type: "GAME_STARTED",
@@ -1976,6 +1980,7 @@ var setupDeciderWinCap = 0;
 // Win condition alert state — track last triggered key to avoid duplicate toasts
 var _setWinKey = null;   // e.g. "A-2" = Team A at win condition in set 2, or null
 var _matchWinKey = null; // "A" or "B" or null
+var _midDeciderSwitchPromptedSet = null; // set number already prompted for the mid-decider side switch, or null
 
 function showScoreboard() {
   $("gameSetupPanel").hidden = true;
@@ -1993,6 +1998,7 @@ function showSetupPanel() {
   _tbPrevPhase = -1;
   _setWinKey = null;
   _matchWinKey = null;
+  _midDeciderSwitchPromptedSet = null;
   updateTeamColors(); // restore global default colors
   initGameSetupForm();
 }
@@ -2472,10 +2478,9 @@ function renderScoreboard() {
   var courtCenter = $("courtCenter");
   if (courtCenter) courtCenter.classList.toggle("tb-mode", isTriple);
   $("tripleBallBar").hidden = !isTriple;
-  if (isTriple && state.activeSetNumber) {
-    var tbHidePrev = !!(activeSet && (activeSet.scoreA + activeSet.scoreB === 0));
-    renderTripleBall(state.tripleBallPhase, tbHidePrev);
-  }
+  // The actual renderTripleBall() call happens further below, after the serve
+  // picker resolves pendingServePickTeam — otherwise the between-sets preview
+  // (including before Set 1) would read a stale/unset value.
 
   // Control buttons
   var hasActiveSet = !!state.activeSetNumber;
@@ -2509,6 +2514,19 @@ function renderScoreboard() {
   } else if (canCorrectActiveServe) {
     $("servePickerSetNum").textContent = state.activeSetNumber;
     $("servePickerChipTeam").textContent = activeSet.firstServer === "A" ? state.teamA : state.teamB;
+  }
+
+  // Now that pendingServePickTeam is resolved above, render (or preview) the
+  // Triple Ball track. Without the between-sets branch, the indicator would
+  // keep showing whatever was last rendered (e.g. the previous game's last
+  // set) until Start Set is tapped, which looks like a stale/wrong server.
+  if (isTriple) {
+    if (hasActiveSet) {
+      var tbHidePrev = !!(activeSet && (activeSet.scoreA + activeSet.scoreB === 0));
+      renderTripleBall(state.tripleBallPhase, tbHidePrev, activeSet && activeSet.firstServer);
+    } else if (isBetweenSets && !state.gameCanEnd) {
+      renderTripleBall(0, true, pendingServePickTeam || "A");
+    }
   }
 
   // Undo / Redo — Undo is disabled for completed games unless they were just ended
@@ -2626,36 +2644,41 @@ function renderSanctionsBar(barId, sanctions, delaySanctions, irUsed) {
 }
 
 // Build the HTML for a single phase box, including directional ball-flow arrow.
-function tbPhaseBoxHtml(idx, cls) {
-  var team   = TB_PHASE_TEAMS[idx];
+// TB_PHASE_TEAMS/TOWARD assume Team A serves first; flip A/B when the set's
+// actual first server is Team B instead.
+function tbPhaseBoxHtml(idx, cls, firstServer) {
+  function flip(letter) {
+    return firstServer === "B" ? (letter === "A" ? "B" : "A") : letter;
+  }
+  var team   = flip(TB_PHASE_TEAMS[idx]);
   var type   = TB_PHASE_TYPES[idx];
-  var toward = TB_PHASE_TOWARD[idx];
+  var toward = flip(TB_PHASE_TOWARD[idx]);
   var teamCls   = team   === "A" ? "tb-a" : "tb-b";
-  var towardCls = toward === "A" ? "tb-a" : "tb-b";
-  // Arrow points toward the receiving team; reverses when sides are swapped
+  // Arrow points toward the receiving team (direction), but is colored for
+  // the team performing the action (server/tosser), same as the letter.
   var isRight = sidesSwapped ? (toward === "A") : (toward === "B");
   var dirArrow = isRight ? "\u27A1" : "\u2B05"; // ➡ or ⬅  (solid filled arrows)
   return '<div class="tb-phase-box ' + cls + '">' +
     '<span class="tb-team-letter ' + teamCls + '">' + team + '</span>' +
     '<span class="tb-type">' + type + '</span>' +
-    '<span class="tb-dir-arrow ' + towardCls + '">' + dirArrow + '</span>' +
+    '<span class="tb-dir-arrow ' + teamCls + '">' + dirArrow + '</span>' +
     '</div>';
 }
 
 // Rebuild the track as a static 3-box snapshot (prev · current · next).
 // hidePrev: make the prev slot invisible (set start — no ball has been in play yet).
-function tbBuildStatic(track, phase, hidePrev) {
+function tbBuildStatic(track, phase, hidePrev, firstServer) {
   var prevPhase = ((phase - 1) + 6) % 6;
   var nextPhase = (phase + 1) % 6;
   var arrow = '<span class="tb-col-arrow">\u25BC</span>';
   var prevCls = "tb-box-prev" + (hidePrev ? " tb-box-hidden" : "");
   track.innerHTML =
-    tbPhaseBoxHtml(prevPhase, prevCls) + arrow +
-    tbPhaseBoxHtml(phase,     "tb-box-current") + arrow +
-    tbPhaseBoxHtml(nextPhase, "tb-box-next");
+    tbPhaseBoxHtml(prevPhase, prevCls, firstServer) + arrow +
+    tbPhaseBoxHtml(phase,     "tb-box-current", firstServer) + arrow +
+    tbPhaseBoxHtml(nextPhase, "tb-box-next", firstServer);
 }
 
-function renderTripleBall(phase, hidePrev) {
+function renderTripleBall(phase, hidePrev, firstServer) {
   var track = $("tbColTrack");
   if (!track) return;
 
@@ -2684,7 +2707,7 @@ function renderTripleBall(phase, hidePrev) {
   if (!phaseChanged || (!forward && !backward) || _tbAnimating) {
     track.style.transition = "none";
     track.style.transform  = baseTransform;
-    tbBuildStatic(track, phase, !!hidePrev);
+    tbBuildStatic(track, phase, !!hidePrev, firstServer);
     _tbPrevPhase = phase;
     return;
   }
@@ -2697,14 +2720,14 @@ function renderTripleBall(phase, hidePrev) {
   if (forward) {
     // Append new-next box; animate from base to animTarget
     addPhase = (phase + 1) % 6;
-    track.insertAdjacentHTML("beforeend", arrowHtml + tbPhaseBoxHtml(addPhase, "tb-box-next"));
+    track.insertAdjacentHTML("beforeend", arrowHtml + tbPhaseBoxHtml(addPhase, "tb-box-next", firstServer));
     void track.offsetWidth;
     track.style.transition = "transform " + speed + "ms cubic-bezier(0.25,0.46,0.45,0.94)";
     track.style.transform  = animTarget;
   } else {
     // Prepend new-prev box; pre-offset to animTarget (looks like base), then animate to base
     addPhase = ((phase - 1) + 6) % 6;
-    track.insertAdjacentHTML("afterbegin", tbPhaseBoxHtml(addPhase, "tb-box-prev") + arrowHtml);
+    track.insertAdjacentHTML("afterbegin", tbPhaseBoxHtml(addPhase, "tb-box-prev", firstServer) + arrowHtml);
     track.style.transition = "none";
     track.style.transform  = animTarget;
     void track.offsetWidth;
@@ -2719,7 +2742,7 @@ function renderTripleBall(phase, hidePrev) {
     track.style.transition = "none";
     track.style.transform  = baseTransform;
     _tbPrevPhase = phase;
-    tbBuildStatic(track, phase, false);
+    tbBuildStatic(track, phase, false, firstServer);
     _tbAnimating = false;
   }
   fallback = setTimeout(onEnd, speed + 150);
@@ -2878,6 +2901,33 @@ function wireScoreboardControls() {
           stateAfterEnd.setsWonA + "\u2013" + stateAfterEnd.setsWonB + " sets)", toastMs, "toast-win");
       }
     }
+    // Sides for the upcoming set — applied now (while "Start Set N" is up)
+    // rather than only after it's tapped, so the swap is visible ahead of
+    // starting play. A deciding set gets its own real coin-toss prompt
+    // instead of the regular auto-switch setting.
+    if (stateAfterEnd && !stateAfterEnd.gameCanEnd) {
+      var isBestOfFmt = stateAfterEnd.gameFormat === "best3" || stateAfterEnd.gameFormat === "best5";
+      var nextIsDecider = isBestOfFmt && stateAfterEnd.nextSetNum === stateAfterEnd.totalSets;
+      if (nextIsDecider) {
+        pendingServePickTeam = null; // force an explicit pick, no pre-suggested alternation
+        // Teams stay exactly where they finished the last set by default —
+        // only swap if the referee says that's NOT correct after the toss.
+        var sideMsg = "Deciding Set " + stateAfterEnd.nextSetNum + " \u2014 new coin toss. Are teams on the correct side?";
+        if (!confirm(sideMsg)) {
+          sidesSwapped = !sidesSwapped;
+          updateSidesDisplay(stateAfterEnd);
+        }
+        renderScoreboard();
+        // Brief pause so the (possibly just-swapped) team panels are visible
+        // before the next prompt covers the screen.
+        setTimeout(openServePickerModal, 600);
+        return;
+      }
+      if (settings.autoSwitchSidesBetweenSets) {
+        sidesSwapped = !sidesSwapped;
+        updateSidesDisplay(stateAfterEnd);
+      }
+    }
     renderScoreboard();
   });
 
@@ -2925,10 +2975,6 @@ function wireScoreboardControls() {
       var lastSet = prevSets.length ? prevSets[prevSets.length - 1] : null;
       server = lastSet ? (lastSet.firstServer === "A" ? "B" : "A") : "A";
     }
-    if (state.nextSetNum > 1 && settings.autoSwitchSidesBetweenSets) {
-      sidesSwapped = !sidesSwapped;
-      updateSidesDisplay(state);
-    }
     controller.dispatch({
       type: "SET_STARTED",
       setNumber: state.nextSetNum,
@@ -2974,12 +3020,19 @@ function wireScoreboardControls() {
   $("btnSwitchSides").addEventListener("click", function () {
     sidesSwapped = !sidesSwapped;
     updateSidesDisplay(controller.getState());
-    // Re-render TB phases so directional arrows reflect the new sides
+    // Re-render TB phases so directional arrows reflect the new sides —
+    // covers both an active set and the between-sets preview (including
+    // before Set 1 starts, which otherwise wouldn't reflect the swap until
+    // Start Set was tapped).
     var sw = controller.getState();
-    if (sw && sw.variation === "triplebal" && sw.activeSetNumber) {
-      var swSet = sw.sets.find(function(s) { return s.setNumber === sw.activeSetNumber; });
+    if (sw && sw.variation === "triplebal") {
       _tbPrevPhase = -1; // suppress animation on side-swap
-      renderTripleBall(sw.tripleBallPhase, !!(swSet && swSet.scoreA + swSet.scoreB === 0));
+      if (sw.activeSetNumber) {
+        var swSet = sw.sets.find(function(s) { return s.setNumber === sw.activeSetNumber; });
+        renderTripleBall(sw.tripleBallPhase, !!(swSet && swSet.scoreA + swSet.scoreB === 0), swSet && swSet.firstServer);
+      } else if (!sw.endedAt && !sw.gameCanEnd) {
+        renderTripleBall(0, true, pendingServePickTeam || "A");
+      }
     }
   });
 }
@@ -3042,6 +3095,36 @@ function dispatchPoint(team, delta) {
       }
       var toastMs = (settings.winToastDuration || 3) * 1000;
       showToast(toastMsg, toastMs, "toast-win");
+    }
+  }
+  // Deciding-set mid-set side switch (FIVB rule: switch once the first team
+  // reaches 8 points in a 15-point decider). Resets below 8 so it can
+  // honestly re-trigger if the point is undone back under the threshold.
+  if (stateAfter && stateAfter.activeSetIsDecider && !stateAfter.endedAt) {
+    var decSet = stateAfter.sets.find(function (s) { return s.setNumber === stateAfter.activeSetNumber; });
+    var decMax = decSet ? Math.max(decSet.scoreA, decSet.scoreB) : 0;
+    if (decMax < 8) {
+      _midDeciderSwitchPromptedSet = null;
+    } else if (settings.promptSwitchSidesMidDecider && _midDeciderSwitchPromptedSet !== stateAfter.activeSetNumber) {
+      // Triple ball: wait for the current 3-ball sequence to finish (phase 0
+      // or 3) rather than interrupting mid-sequence — so this can end up
+      // firing at 8, 9, or 10 points depending on where in the sequence.
+      var tbReady = stateAfter.variation !== "triplebal" ||
+        stateAfter.tripleBallPhase === 0 || stateAfter.tripleBallPhase === 3;
+      if (tbReady) {
+        _midDeciderSwitchPromptedSet = stateAfter.activeSetNumber;
+        var leaderTeam = decSet.scoreA > decSet.scoreB ? "A" : "B";
+        var leaderName = leaderTeam === "A" ? stateAfter.teamA : stateAfter.teamB;
+        renderScoreboard(); // flush the current score/phase before the prompt covers it
+        if (confirm("Deciding set: " + leaderName + " has reached " + decMax + " points. Switch sides now?")) {
+          sidesSwapped = !sidesSwapped;
+          updateSidesDisplay(stateAfter);
+          if (stateAfter.variation === "triplebal") {
+            _tbPrevPhase = -1; // suppress animation on side-swap
+            renderTripleBall(stateAfter.tripleBallPhase, decSet.scoreA + decSet.scoreB === 0, decSet.firstServer);
+          }
+        }
+      }
     }
   }
   renderScoreboard();
@@ -3779,10 +3862,12 @@ function setGamesSelectMode(on) {
 function updateGamesSelectBar() {
   var countEl = $("gamesSelectedCount");
   var exportBtn = $("btnExportSelectedGames");
+  var deleteBtn = $("btnDeleteSelectedGames");
   var allChk = $("chkSelectAllGames");
   var games = dbListGames();
   if (countEl) countEl.textContent = selectedGameIds.size + " selected";
   if (exportBtn) exportBtn.disabled = selectedGameIds.size === 0;
+  if (deleteBtn) deleteBtn.disabled = selectedGameIds.size === 0;
   if (allChk) allChk.checked = games.length > 0 && selectedGameIds.size === games.length;
 }
 
@@ -4756,6 +4841,21 @@ function wireGamesPage() {
     if (!selectedGameIds.size) return;
     void exportSelectedGames(Array.from(selectedGameIds));
   });
+  $("btnDeleteSelectedGames").addEventListener("click", function () {
+    if (!selectedGameIds.size) return;
+    var n = selectedGameIds.size;
+    if (!confirm("Delete " + n + " selected game" + (n === 1 ? "" : "s") + "? This cannot be undone.\n\nTip: Export first to keep a backup.")) return;
+    void (async function () {
+      var ids = Array.from(selectedGameIds);
+      for (var i = 0; i < ids.length; i++) {
+        if (controller.currentGameId === ids[i]) controller.clear();
+        await dbDeleteGame(ids[i]);
+      }
+      selectedGameIds.clear();
+      clearGameDetail();
+      await renderGamesList();
+    })();
+  });
 
   // Clear all
   $("btnClearAllGames").addEventListener("click", function () {
@@ -4787,6 +4887,7 @@ function renderSetupPage() {
   if (defVarRadio) defVarRadio.checked = true;
   $("cfgDefFairPlay").value = settings.defaultFairPlay || "none";
   $("cfgAutoSwitchSidesBetweenSets").checked = !!settings.autoSwitchSidesBetweenSets;
+  $("cfgPromptSwitchSidesMidDecider").checked = !!settings.promptSwitchSidesMidDecider;
   $("cfgDefTimeouts").textContent = settings.defaultTimeouts;
   $("cfgDefSubs").textContent = settings.defaultSubs;
   $("cfgNotchEnabled").checked = !!settings.notchEnabled;
@@ -4928,6 +5029,11 @@ function wireSetupPage() {
 
   $("cfgAutoSwitchSidesBetweenSets").addEventListener("change", function () {
     settings.autoSwitchSidesBetweenSets = this.checked;
+    saveSettings();
+  });
+
+  $("cfgPromptSwitchSidesMidDecider").addEventListener("change", function () {
+    settings.promptSwitchSidesMidDecider = this.checked;
     saveSettings();
   });
 

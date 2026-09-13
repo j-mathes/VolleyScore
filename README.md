@@ -47,22 +47,22 @@ After installing, the app opens full-screen without browser chrome and works off
 
 ## Features
 
+- **Configurable scoring** — per-game win target, win-by margin, and score cap for regular and deciding sets (see [Scoring Rules](#scoring-rules))
+- **Fair Play rules** — None / Triple Ball / Full / Partial; all timeout and sub limits enforced automatically (see [Fair Play Rules](#fair-play-rules))
 - **Scoring** — tap +/− per team; serve dot follows the last scorer automatically
 - **Timeouts** — dot indicator (filled = used); count enforced per fair play rule; blocked mid-sequence in Triple Ball
 - **Substitutions** — per-team counter; fair play restrictions applied automatically
 - **Sanctions** — full misconduct and delay sanction system with escalation enforcement (see [Sanctions](#sanctions))
-- **Fair Play rules** — None / Triple Ball / Full / Partial; all timeout and sub limits enforced automatically (see [Fair Play Rules](#fair-play-rules))
-- **Configurable scoring** — per-game win target, win-by margin, and score cap for regular and deciding sets (see [Scoring Rules](#scoring-rules))
 - **Win & action alerts** — independently configurable glow and win-condition-toast durations; glow on the TO/sub indicator and sanction chip when actions are recorded (see [Alerts](#alerts))
 - **Win condition reminder** — current set's rules shown in the game bar during active play
 - **Triple Ball** — animated 6-phase sequence indicator with directional arrows (see [Triple Ball](#triple-ball))
 - **Set & match management** — End Set, between-sets serve picker, Start Next Set
 - **Undo / Redo** — available during play and immediately after End Game (with optional confirm)
-- **Side switching** — swap which panel each team appears on, or automatically switch sides between sets; Triple Ball arrows and the sets-won indicator update accordingly
+- **Side switching** — swap which panel each team appears on manually, automatically between sets, or via prompted coin-toss/mid-decider confirmations; Triple Ball arrows and the sets-won indicator update accordingly (see [Side Switching](#side-switching))
 - **Scheduled vs. actual start time** — pre-configure a planned start time in Game Defaults, while the moment **Start Game** is tapped is always recorded as the actual start (see [Match Timing](#match-timing))
 - **Match Info** — track Gender, Age Category, and League per game, with pick-or-type fields backed by editable master lists (see [Match Info Lists](#match-info-lists))
 - **Edit match info after the fact** — correct Team A/B names, Location, Gender, Age Category, or League on any saved game — in progress or finished — from the Games page (see [Editing a Game's Match Info](#editing-a-games-match-info))
-- **Multi-game export & import** — select any subset (or all) of your saved games from the Games page and export them as a single JSON file; importing populates the Team Names, Locations, Age Categories, and League master lists with any new values found, in addition to restoring the games themselves (see [Selecting Games to Export](#selecting-games-to-export))
+- **Multi-game export, import & delete** — select any subset (or all) of your saved games from the Games page to export as a single JSON file or delete together; importing populates the Team Names, Locations, Age Categories, and League master lists with any new values found, in addition to restoring the games themselves (see [Selecting Games to Export or Delete](#selecting-games-to-export-or-delete))
 - **Reports** — build a Match Log (a multi-game summary table) or a Game Report (an FIVB-style score sheet, one page per game) across any subset of saved games, with an in-app preview, Excel export, and print/PDF output formatted to fit letter-size pages (see [Reports](#reports))
 - **Persist New Game Data** — optionally carry every New Game field forward from your last match instead of resetting to defaults (see [Persisting New Game Data](#persisting-new-game-data))
 - **Score button layout** — choose &minus;/+ or +/&minus; order, or mirror the two team panels so the same symbol always sits toward the middle
@@ -108,6 +108,72 @@ Each game stores its own win conditions, set at game start. Global defaults live
 
 ---
 
+## Fair Play Rules
+
+| Rule | Sets 1–2 | Deciding set |
+|------|----------|--------------|
+| None | Standard | Standard |
+| Triple Ball | 3 TOs, no subs | 2 TOs, 12 subs (after last toss only) |
+| Full | 3 TOs, no subs | 2 TOs, 12 subs (any time) |
+| Partial | 2 TOs, subs unlock at 15 pts | 2 TOs, subs any time |
+
+When a fair play rule is active the Timeouts/Set and Subs/Set steppers are hidden — the rule controls those values. For Partial, a toast fires when either team reaches 15 points.
+
+---
+
+## New Game Team Colors
+
+Each team name field on the **New Game** form has a color swatch, pre-filled with the global default colors (Setup → Appearance → Team A/B Color — blue and red out of the box). Tap a swatch to open a preset color grid, or choose "Custom…" for the full color picker. This only affects that one game; leave it untouched to use the current defaults.
+
+The override applies everywhere team color drives the UI — score panels, serve dot, sanctions bar, event log, Match Log tables, and so on. It doesn't change your saved global defaults, and returning to the New Game form always resets the swatches back to those defaults.
+
+---
+
+## Match Info Lists
+
+The New Game screen tracks four extra pieces of match info, each backed by a master list you can pick from or type a new value into:
+
+| Field | Type | Starts with |
+|-------|------|-------------|
+| Team Names | Grows from usage | Empty |
+| Locations | Grows from usage | Empty |
+| Gender | Fixed choice (Women's / Men's / not specified) | n/a — no list |
+| Age Category | Editable list | Senior, Junior, 18U, 17U, 16U, 15U, 14U, 13U, 12U |
+| League | Editable list | CSHSAA, ISAA, Foothills, Rockyview, Volleyball Alberta |
+
+Team Name, Location, Age Category, and League fields are pick-or-type: tap the field to see a dropdown of existing values, keep typing to filter it, or type something new. Anything new you type is saved to that field's master list automatically, so it's available to pick next time.
+
+### Managing the Lists
+
+**Setup → Match Info Lists** shows every value in each list with a rename (&#9998;) button and a remove (&times;) button, plus an input to add a new value directly (without creating a game). Rename edits the chip in place (Enter or tap away to save, Esc to cancel) and re-sorts the list; it's also how you'd clean up a typo added by mistake without losing games that already reference the old value. The rename button can be hidden via **Setup → Match Info Lists → Show Edit (Pencil) Icons** if you don't want it cluttering the chip list.
+
+Each list also has a filter box (type to narrow down a long list instead of scrolling) and a **Remove Unused** button that deletes any entries not referenced by a saved game — safe to run any time, since games store their own copy of these fields directly and don't depend on the master list.
+
+**Setup → Game Defaults** lets you set a default Gender, Age Category, and League (in addition to the existing default team names and location) that pre-fill the New Game form. Each can still be overridden per game.
+
+### Editing a Game's Match Info
+
+Already started or finished a game with the wrong team name, location, gender, age category, or league? **Games → select the game → Edit Info** opens a form pre-filled with that game's current values for just those five fields. Saving updates the saved game record (and the live scoreboard/Match Log too, if it's the game currently in progress); scores, sets, and event history are untouched. New values you type are added to the relevant master list, same as the New Game form.
+
+### Export / Import
+
+**Setup → Data** can export and import the four lists as either:
+
+- **JSON** — the app's own round-trip format.
+- **Excel (.xlsx)** — one tab per category (Team Names, Locations, Age Categories, Leagues). You can edit values in Excel/Sheets/LibreOffice and import the file back in; sheets are matched by tab name, and each sheet's column A becomes that category's values.
+
+Either format merges new values into your existing lists (duplicates are skipped) rather than replacing them.
+
+---
+
+## Persisting New Game Data
+
+By default, the New Game form always resets to your configured defaults (Setup → Game Defaults) for a fresh match. Turning on **Setup → Game Defaults → Persist New Game Data Between Matches** changes this: instead of the defaults, the form pre-fills everything from the *last game you actually started* — team names, team colors, location, gender, age category, league, format, variation, fair play rule, timeouts/subs, scoring rules, and first server.
+
+It's all-or-nothing — there's no way to persist only some fields. Scheduled Start is the one exception and always resets to the current time regardless of this setting, since carrying forward a stale timestamp wouldn't make sense. Turning the toggle off reverts to the original default-based behavior immediately.
+
+---
+
 ## Alerts
 
 The app never automatically ends a set or match — it only draws attention to win conditions.
@@ -141,19 +207,6 @@ A one-shot glow (no toast) flashes on the relevant indicator for each action:
 Only the chip just added glows — existing chips are not re-glowed. Rapid repeat actions restart the animation.
 
 Configure color and duration in **Setup → Scoring Defaults → Action Alert** (default: purple, 2 s).
-
----
-
-## Fair Play Rules
-
-| Rule | Sets 1–2 | Deciding set |
-|------|----------|--------------|
-| None | Standard | Standard |
-| Triple Ball | 3 TOs, no subs | 2 TOs, 12 subs (after last toss only) |
-| Full | 3 TOs, no subs | 2 TOs, 12 subs (any time) |
-| Partial | 2 TOs, subs unlock at 15 pts | 2 TOs, subs any time |
-
-When a fair play rule is active the Timeouts/Set and Subs/Set steppers are hidden — the rule controls those values. For Partial, a toast fires when either team reaches 15 points.
 
 ---
 
@@ -225,73 +278,9 @@ Separately, the app always records the real-world moment **Start Game** is tappe
 
 If the wrong team is picked to serve, a compact "Set N serve: Team X" chip stays available in the game bar for the *current* set — not just between sets — as long as its score is still 0–0. Tap the chip to open a popup and pick the other team; the chip disappears once either team scores a point, locking the server in. The correction is recorded in the Match Log.
 
----
+### Side Switching
 
-## New Game Team Colors
-
-Each team name field on the **New Game** form has a color swatch, pre-filled with the global default colors (Setup → Appearance → Team A/B Color — blue and red out of the box). Tap a swatch to open a preset color grid, or choose "Custom…" for the full color picker. This only affects that one game; leave it untouched to use the current defaults.
-
-The override applies everywhere team color drives the UI — score panels, serve dot, sanctions bar, event log, Match Log tables, and so on. It doesn't change your saved global defaults, and returning to the New Game form always resets the swatches back to those defaults.
-
----
-
-## Match Info Lists
-
-The New Game screen tracks four extra pieces of match info, each backed by a master list you can pick from or type a new value into:
-
-| Field | Type | Starts with |
-|-------|------|-------------|
-| Team Names | Grows from usage | Empty |
-| Locations | Grows from usage | Empty |
-| Gender | Fixed choice (Women's / Men's / not specified) | n/a — no list |
-| Age Category | Editable list | Senior, Junior, 18U, 17U, 16U, 15U, 14U, 13U, 12U |
-| League | Editable list | CSHSAA, ISAA, Foothills, Rockyview, Volleyball Alberta |
-
-Team Name, Location, Age Category, and League fields are pick-or-type: tap the field to see a dropdown of existing values, keep typing to filter it, or type something new. Anything new you type is saved to that field's master list automatically, so it's available to pick next time.
-
-### Managing the Lists
-
-**Setup → Match Info Lists** shows every value in each list with a rename (&#9998;) button and a remove (&times;) button, plus an input to add a new value directly (without creating a game). Rename edits the chip in place (Enter or tap away to save, Esc to cancel) and re-sorts the list; it's also how you'd clean up a typo added by mistake without losing games that already reference the old value. The rename button can be hidden via **Setup → Match Info Lists → Show Edit (Pencil) Icons** if you don't want it cluttering the chip list.
-
-Each list also has a filter box (type to narrow down a long list instead of scrolling) and a **Remove Unused** button that deletes any entries not referenced by a saved game — safe to run any time, since games store their own copy of these fields directly and don't depend on the master list.
-
-**Setup → Game Defaults** lets you set a default Gender, Age Category, and League (in addition to the existing default team names and location) that pre-fill the New Game form. Each can still be overridden per game.
-
-### Editing a Game's Match Info
-
-Already started or finished a game with the wrong team name, location, gender, age category, or league? **Games → select the game → Edit Info** opens a form pre-filled with that game's current values for just those five fields. Saving updates the saved game record (and the live scoreboard/Match Log too, if it's the game currently in progress); scores, sets, and event history are untouched. New values you type are added to the relevant master list, same as the New Game form.
-
-### Export / Import
-
-**Setup → Data** can export and import the four lists as either:
-
-- **JSON** — the app's own round-trip format.
-- **Excel (.xlsx)** — one tab per category (Team Names, Locations, Age Categories, Leagues). You can edit values in Excel/Sheets/LibreOffice and import the file back in; sheets are matched by tab name, and each sheet's column A becomes that category's values.
-
-Either format merges new values into your existing lists (duplicates are skipped) rather than replacing them.
-
----
-
-## Persisting New Game Data
-
-By default, the New Game form always resets to your configured defaults (Setup → Game Defaults) for a fresh match. Turning on **Setup → Game Defaults → Persist New Game Data Between Matches** changes this: instead of the defaults, the form pre-fills everything from the *last game you actually started* — team names, team colors, location, gender, age category, league, format, variation, fair play rule, timeouts/subs, scoring rules, and first server.
-
-It's all-or-nothing — there's no way to persist only some fields. Scheduled Start is the one exception and always resets to the current time regardless of this setting, since carrying forward a stale timestamp wouldn't make sense. Turning the toggle off reverts to the original default-based behavior immediately.
-
----
-
-## Setup
-
-| Section | Settings |
-|---------|----------|
-| Appearance | Dark mode, font size, team colors, sidebar border, Start Set button colors, score button layout (&minus;/+ order and mirroring), Keep Screen Awake, Confirm before Undo |
-| Mobile Display | Notch padding — side (left/right) and amount; useful in landscape when the phone notch covers the sidebar |
-| Game Defaults | Persist New Game Data toggle (see below); Referee Name (optional — used on reports, see [Reports](#reports)); default team names, location, gender, age category, league, scheduled start (see [Match Timing](#match-timing)), format, variation, fair play rule, automatic side switching between sets, timeouts/set, subs/set |
-| Scoring Defaults | Win at / Cap / Win by for regular and deciding sets; Win Alert glow and toast color/duration settings; Action Alert color and duration |
-| Match Info Lists | Add/rename/remove Team Names, Locations, Age Categories, and Leagues; toggle to show/hide the rename (pencil) icons (see [Match Info Lists](#match-info-lists)) |
-| Triple Ball | Phase box size, highlight color, scroll speed |
-| Data | Export/import all games (JSON, one/several/all — see [Selecting Games to Export](#selecting-games-to-export)); export/import Match Info Lists (JSON or Excel) (see [Match Info Lists](#match-info-lists)); clear all data |
-| About | App version and cache name; update toast appears automatically when a new version is cached |
+Tap **⇄ Sides** anytime to swap which panel each team appears on; Triple Ball arrows and the sets-won indicator update immediately, including before the first set starts. **Setup → Game Defaults → Auto-switch sides between sets** does this automatically at the end of every set instead. Deciding sets always get a fresh coin-toss prompt for serve and side, regardless of that setting — real matches call for a new toss there. **Setup → Game Defaults → Prompt to switch sides at 8 pts (deciding set)** additionally asks to switch once the first team reaches 8 points in the deciding set (on by default); Triple Ball waits for the current 3-ball sequence to finish first, so it may fire at 8, 9, or 10 points. Leave that toggle off to switch manually with **⇄ Sides** whenever you judge best.
 
 ---
 
@@ -299,9 +288,9 @@ It's all-or-nothing — there's no way to persist only some fields. Scheduled St
 
 Games save automatically to `localStorage` with an IndexedDB fallback when storage is nearly full. Export and import via JSON — one game, a chosen subset, or the full collection. Transfer between devices by exporting on one and importing on the other.
 
-### Selecting Games to Export
+### Selecting Games to Export or Delete
 
-On the **Games** page, tap **Select** to enter selection mode: a checkbox appears next to each saved game, along with a select-all checkbox and a running count. Check as many games as you want (or **All**) and tap **Export Selected** to download them all as one JSON file — the same round-trip format used by the single-game and export-all options, so it imports back in exactly the same way. Tap **Done** to leave selection mode.
+On the **Games** page, tap **Select** to enter selection mode: a checkbox appears next to each saved game, along with a select-all checkbox and a running count. Check as many games as you want (or **All**), then either **Export Selected** to download them as one JSON file (the same round-trip format used by the single-game and export-all options) or **Delete Selected** to remove just those games (confirmation required — export first if you want a backup). Tap **Done** to leave selection mode.
 
 ### Import & Match Info Lists
 
@@ -329,6 +318,20 @@ A detailed, printable score sheet modeled on the official FIVB score sheet, adap
 - **Sanctions** — one row per sanction, in the order it happened: which of W (Warning) / P (Penalty) / E (Expulsion) / D (Disqualification) applies, who received it (`#12` for a player, or `C` / `AC` / `T` / `M` for Head Coach / Assistant Coach / Trainer / Medical — delay sanctions show `D`), the team and set, and the score at that moment (the sanctioned team's score listed first). A legend explains the abbreviations; the box just reads **None** if there weren't any. Two circle badges next to "Improper Request" mark whether either team has used their one free request, with a bold **X** once it has.
 - **Results** — one row per set the format allows (even sets never played, shown blank), with each team's Timeouts, Subs, Won (1/0), and Points, plus the set number, its duration in minutes, and its start time. Sets are always treated as having exactly a 3-minute break between them, regardless of how long the real gap was, matching the official rule; the final set's duration is adjusted so the whole timeline lines up exactly with the game's real end time. A totals row, Match Starting/Ending Time, Total Match Duration, and the Winner (full team name + sets score) finish the box.
 - **Preview**, **Export Excel** (one workbook sheet per game, with team names as merged headers over their columns), and **Print / PDF** work the same way as Match Log, just paginated one game per page.
+
+---
+
+## Setup
+
+| Section | Settings |
+|---------|----------|
+| Appearance | Dark mode, font size, team colors, sidebar border, Start Set button colors, score button layout (&minus;/+ order and mirroring), Keep Screen Awake, Confirm before Undo, notch padding (side and amount — useful in landscape when the phone notch covers the sidebar) |
+| Game Defaults | Persist New Game Data toggle (see [Persisting New Game Data](#persisting-new-game-data)); Referee Name (optional — used on reports, see [Reports](#reports)); default team names, location, gender, age category, league, scheduled start (see [Match Timing](#match-timing)), format, variation, fair play rule, side switching (see [Side Switching](#side-switching)), timeouts/set, subs/set |
+| Scoring Defaults | Win at / Cap / Win by for regular and deciding sets; Win Alert glow and toast color/duration settings; Action Alert color and duration |
+| Match Info Lists | Add/rename/remove Team Names, Locations, Age Categories, and Leagues; toggle to show/hide the rename (pencil) icons (see [Match Info Lists](#match-info-lists)) |
+| Data | Export/import all games (JSON, one/several/all — see [Selecting Games to Export or Delete](#selecting-games-to-export-or-delete)); export/import Match Info Lists (JSON or Excel) (see [Match Info Lists](#match-info-lists)); clear all data |
+| Triple Ball | Phase box size, highlight color, scroll speed |
+| About | App version and cache name; update toast appears automatically when a new version is cached |
 
 ---
 

@@ -384,6 +384,7 @@
         </label>
         <span id="gamesSelectedCount" class="games-selected-count">0 selected</span>
         <button id="btnExportSelectedGames" class="ctrl-btn" disabled>Export Selected</button>
+        <button id="btnDeleteSelectedGames" class="ctrl-btn danger-btn" disabled>Delete Selected</button>
       </div>
       <div id="gamesList" class="games-list">
         <p class="no-data-msg">No saved games yet.</p>
@@ -604,6 +605,15 @@
           <span class="toggle-slider"></span>
         </label>
       </div>
+
+      <div class="setting-row">
+        <label class="setting-label" for="cfgPromptSwitchSidesMidDecider">Prompt to switch sides at 8 pts (deciding set)</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="cfgPromptSwitchSidesMidDecider">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <p class="setup-hint">Deciding sets always get a fresh coin-toss prompt for serve and side, regardless of this setting. When this is also on, you're asked to confirm a side switch once the first team reaches 8 points in the deciding set (Triple Ball waits until the current 3-ball sequence finishes, so it may fire at 8, 9, or 10). Leave it off to switch manually with the Sides button whenever you judge best.</p>
 
       <div class="setting-row">
         <label class="setting-label" for="cfgRefereeName">Referee Name</label>

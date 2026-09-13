@@ -6,7 +6,7 @@
 
 "use strict";
 
-var CACHE_VERSION = "v20";
+var CACHE_VERSION = "v21";
 var CACHE_NAME    = "volleyscore-" + CACHE_VERSION;
 
 var CORE_ASSETS = [
