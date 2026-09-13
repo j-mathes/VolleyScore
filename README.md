@@ -1,5 +1,7 @@
 ﻿# VolleyScore
 
+**Version 22**
+
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
 **[https://j-mathes.github.io/VolleyScore/](https://j-mathes.github.io/VolleyScore/)**
@@ -272,7 +274,7 @@ A Red card or Delay Penalty awards a point and advances the sequence. A toast id
 
 The **Scheduled Start** field (Score page setup, optional) lets you pre-configure a match for a planned time — useful when setting up a game ahead of the actual first serve. It has no effect on match logic.
 
-Separately, the app always records the real-world moment **Start Game** is tapped as the match's actual start time. Wherever a single date/time is shown (Recent Games, Games list), the actual start time is used. In the **Game Detail** view and **Match Log** header, if the scheduled time and actual start differ, both are shown — e.g. `Scheduled Sep 9 7:00 PM · Started Sep 9 7:12 PM`.
+Separately, the app always records the real-world moment **Start Game** is tapped as the match's actual start time. Wherever a single date/time is shown (Recent Games, Games list), the actual start time is used. In the **Game Detail** view and **Match Log** header, if the scheduled time and actual start differ, both are shown — e.g. `Scheduled Sep 9 19:00 · Started Sep 9 19:12`.
 
 ### Fixing the First Server
 

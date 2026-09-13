@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "21";
+var APP_VERSION = "22";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -1478,7 +1478,7 @@ function $(id) { return document.getElementById(id); }
 function formatTime(iso) {
   if (!iso) return "";
   var d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 }
 
 function formatDate(iso) {
@@ -1491,7 +1491,7 @@ function formatDateTime(iso) {
   if (!iso) return "";
   var d = new Date(iso);
   return d.toLocaleDateString([], { month: "short", day: "numeric" }) + " " +
-    d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 // yyyy-mm-dd hh:mm (24-hour) — used in Recent Games list
