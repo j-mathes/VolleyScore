@@ -2349,13 +2349,6 @@ function updateSidesDisplay(state) {
 
   var btn = $("btnSwitchSides");
   if (btn) btn.title = sidesSwapped ? "Restore original sides" : "Swap which side each team appears on";
-
-  var indicator = $("sideIndicator");
-  if (indicator && state) {
-    indicator.textContent = sidesSwapped
-      ? "\u21C4 " + state.teamB + " left \u00B7 " + state.teamA + " right"
-      : "";
-  }
 }
 
 // Apply or remove the win-glow class without restarting the animation when already active

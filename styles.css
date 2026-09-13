@@ -753,16 +753,18 @@ input.color-picker-sm {
 .game-info.sides-swapped .sb-sets-a { order: 6; }
 .game-info.sides-swapped .sb-sets-b { order: 4; }
 
-/* Win condition reminder — second row of the game bar */
+/* Win condition reminder — sits beside the serve-picker chip while it's shown
+   (between sets / before a set's first point), and fills the space between
+   .game-info and .game-controls once the chip hides (during active play). */
 .sb-win-condition {
-  flex-basis: 100%;
-  order: 100;
+  flex: 1 1 auto;
   text-align: center;
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--ink-muted);
   letter-spacing: 0.02em;
   padding: 0.05rem 0 0.1rem;
+  min-width: 0;
 }
 
 .game-controls {
