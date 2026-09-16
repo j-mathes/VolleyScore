@@ -53,6 +53,9 @@ var DEFAULT_SETTINGS = {
   fontSize: "medium",
   teamAColor: "#1d4ed8",
   teamBColor: "#b91c1c",
+  // Remembers the last color used for each team name (keyed lowercased/trimmed)
+  // so picking that team again on the New Game form auto-fills its color.
+  teamColors: {},
   sidebarBtnBorder: "#000000",
   tbBoxSize: 84,
   tbHighlightColor: "#15803d",
@@ -160,6 +163,7 @@ function renameInMasterList(listName, oldValue, rawNewValue) {
   }
   settings[listName] = list.map(function (v) { return v === oldValue ? newValue : v; })
     .sort(function (a, b) { return a.localeCompare(b); });
+  if (listName === "masterTeamNames") renameRememberedTeamColor(oldValue, newValue);
   saveSettings();
   return true;
 }
@@ -184,6 +188,9 @@ var ML_COUNT_ELS = {
   masterLeagues: "mlCountLeagues",
 };
 
+// Fill shown on a Team Names chip's color swatch when no color has been remembered yet
+var ML_CHIP_NO_COLOR = "#9ca3af";
+
 function renderMasterListChips(containerId, listName) {
   var container = $(containerId);
   if (!container) return;
@@ -204,12 +211,21 @@ function renderMasterListChips(containerId, listName) {
     container.innerHTML = '<span class="no-data-msg">No matches</span>';
     return;
   }
+  var isTeamNames = listName === "masterTeamNames";
   container.innerHTML = shown.map(function (v) {
-    if (_mlEditing && _mlEditing.listName === listName && _mlEditing.value === v) {
-      return '<span class="ml-chip ml-chip-editing">' +
+    var isEditingThis = _mlEditing && _mlEditing.listName === listName && _mlEditing.value === v;
+    var color = isTeamNames ? (getRememberedTeamColor(v) || ML_CHIP_NO_COLOR) : null;
+    if (isEditingThis) {
+      // Full edit mode (entered via the pencil): the color becomes editable here too.
+      var colorBtn = isTeamNames ?
+        '<button type="button" class="ml-chip-color" data-value="' + esc(v) + '" style="background:' + esc(color) + '" aria-label="Set color for ' + esc(v) + '" title="Set color for ' + esc(v) + '"></button>' : "";
+      return '<span class="ml-chip ml-chip-editing">' + colorBtn +
         '<input type="text" class="ml-chip-input" data-list="' + listName + '" data-value="' + esc(v) + '" value="' + esc(v) + '"></span>';
     }
-    return '<span class="ml-chip">' + esc(v) +
+    // Outside edit mode, the color is just a static display dot — editing it
+    // requires clicking the pencil first (same as renaming).
+    var colorDot = isTeamNames ? '<span class="ml-chip-color-dot" style="background:' + esc(color) + '" aria-hidden="true"></span>' : "";
+    return '<span class="ml-chip">' + colorDot + esc(v) +
       (settings.showMasterListEditIcons ? '<button type="button" class="ml-chip-edit" data-list="' + listName + '" data-value="' + esc(v) + '" aria-label="Rename ' + esc(v) + '">&#9998;</button>' : "") +
       '<button type="button" class="ml-chip-remove" data-list="' + listName + '" data-value="' + esc(v) + '" aria-label="Remove ' + esc(v) + '">&times;</button></span>';
   }).join("");
@@ -1063,6 +1079,7 @@ function exportCategoriesJson() {
     locations: settings.masterLocations || [],
     ageCategories: settings.masterAgeCategories || [],
     leagues: settings.masterLeagues || [],
+    teamColors: settings.teamColors || {},
   };
   downloadFile("volleyscore_categories_" + new Date().toISOString().slice(0, 10) + ".json",
     JSON.stringify(payload, null, 2), "application/json");
@@ -1079,9 +1096,20 @@ function importCategoriesFromJson(text) {
   (payload.ageCategories || []).forEach(function (v) { if (addToMasterList("masterAgeCategories", v)) added++; });
   (payload.leagues || []).forEach(function (v) { if (addToMasterList("masterLeagues", v)) added++; });
 
+  var colorsImported = 0;
+  if (payload.teamColors && typeof payload.teamColors === "object") {
+    for (var key in payload.teamColors) {
+      if (!payload.teamColors.hasOwnProperty(key)) continue;
+      var hex = payload.teamColors[key];
+      if (typeof hex === "string" && /^#[0-9a-f]{6}$/i.test(hex)) { rememberTeamColor(key, hex); colorsImported++; }
+    }
+  }
+
   renderMasterListEditors();
   renderDefaultPickerOptions();
-  alert("Imported " + added + " new entr" + (added === 1 ? "y" : "ies") + ".");
+  var msg = "Imported " + added + " new entr" + (added === 1 ? "y" : "ies") + ".";
+  if (colorsImported) msg += " Updated " + colorsImported + " team color" + (colorsImported === 1 ? "" : "s") + ".";
+  alert(msg);
 }
 
 // ---- Match Info Lists: export as .xlsx (hand-rolled, stored/uncompressed ZIP) ----
@@ -1293,7 +1321,9 @@ function exportCategoriesXlsx() {
     { name: "xl/styles.xml", data: enc.encode(XLSX_STYLES_XML) },
   ];
   sheetsData.forEach(function (sheet, i) {
-    var rows = [[sheet.name]].concat(sheet.values.map(function (v) { return [v]; }));
+    var rows = sheet.name === "Team Names" ?
+      [[sheet.name, "Color"]].concat(sheet.values.map(function (v) { return [v, getRememberedTeamColor(v) || ""]; })) :
+      [[sheet.name]].concat(sheet.values.map(function (v) { return [v]; }));
     files.push({ name: "xl/worksheets/sheet" + (i + 1) + ".xml", data: enc.encode(xlsxSheetXml(rows)) });
   });
 
@@ -1374,6 +1404,23 @@ var CATEGORY_SHEET_NAMES = {
   "leagues": "masterLeagues",
 };
 
+// Reads a single XLSX cell's text content, resolving shared-string references.
+function xlsxCellText(cell, sharedStrings) {
+  if (!cell) return "";
+  var type = cell.getAttribute("t");
+  var text;
+  if (type === "inlineStr") {
+    text = xmlText(cell.getElementsByTagName("is")[0]);
+  } else if (type === "s") {
+    var vEl = cell.getElementsByTagName("v")[0];
+    text = sharedStrings[vEl ? parseInt(vEl.textContent, 10) : -1] || "";
+  } else {
+    var vEl2 = cell.getElementsByTagName("v")[0];
+    text = vEl2 ? vEl2.textContent : (cell.textContent || "");
+  }
+  return (text || "").trim();
+}
+
 async function importCategoriesFromXlsx(arrayBuffer) {
   var bytes = new Uint8Array(arrayBuffer);
   var decoder = new TextDecoder();
@@ -1395,6 +1442,7 @@ async function importCategoriesFromXlsx(arrayBuffer) {
   }
 
   var added = 0;
+  var colorsAdded = 0;
   try {
     var workbookXml = await readPart("xl/workbook.xml");
     if (!workbookXml) throw new Error("Missing workbook.xml.");
@@ -1429,29 +1477,29 @@ async function importCategoriesFromXlsx(arrayBuffer) {
       var sheetXml = await readPart(xlsxPartPath(target));
       if (!sheetXml) continue;
 
+      var isTeamNames = listKey === "masterTeamNames";
       var values = [];
+      var colorsByName = {}; // Team Names sheet only — column B holds the hex color, if any
       var rows = sheetXml.getElementsByTagName("row");
       for (var r = 0; r < rows.length; r++) {
-        var cell = rows[r].getElementsByTagName("c")[0]; // column A only
-        if (!cell) continue;
-        var type = cell.getAttribute("t");
-        var text;
-        if (type === "inlineStr") {
-          text = xmlText(cell.getElementsByTagName("is")[0]);
-        } else if (type === "s") {
-          var vEl = cell.getElementsByTagName("v")[0];
-          text = sharedStrings[vEl ? parseInt(vEl.textContent, 10) : -1] || "";
-        } else {
-          var vEl2 = cell.getElementsByTagName("v")[0];
-          text = vEl2 ? vEl2.textContent : (cell.textContent || "");
+        var cells = rows[r].getElementsByTagName("c");
+        var text = xlsxCellText(cells[0], sharedStrings);
+        if (!text) continue;
+        values.push(text);
+        if (isTeamNames) {
+          var colorText = xlsxCellText(cells[1], sharedStrings);
+          if (/^#[0-9a-f]{6}$/i.test(colorText)) colorsByName[text] = colorText;
         }
-        text = (text || "").trim();
-        if (text) values.push(text);
       }
 
       // Drop the header row (our own export repeats the category name there)
       if (values.length && values[0].toLowerCase() === sheetName.toLowerCase()) values.shift();
       values.forEach(function (v) { if (addToMasterList(listKey, v)) added++; });
+      if (isTeamNames) {
+        values.forEach(function (v) {
+          if (colorsByName[v]) { rememberTeamColor(v, colorsByName[v]); colorsAdded++; }
+        });
+      }
     }
   } catch (e) {
     alert(e.message || "Could not import that Excel file.");
@@ -1460,7 +1508,9 @@ async function importCategoriesFromXlsx(arrayBuffer) {
 
   renderMasterListEditors();
   renderDefaultPickerOptions();
-  alert("Imported " + added + " new entr" + (added === 1 ? "y" : "ies") + " from Excel.");
+  var msg = "Imported " + added + " new entr" + (added === 1 ? "y" : "ies") + " from Excel.";
+  if (colorsAdded) msg += " Updated " + colorsAdded + " team color" + (colorsAdded === 1 ? "" : "s") + ".";
+  alert(msg);
 }
 
 // ---- UI Utilities ---------------------------------------
@@ -1577,9 +1627,10 @@ function initGameSetupForm() {
   $("cfgAgeCategory").value = last ? last.ageCategory : (settings.defaultAgeCategory || "");
   $("cfgLeague").value = last ? last.league : (settings.defaultLeague || "");
   // Per-game color override — reset to the current global defaults each time,
-  // unless persisting, in which case reuse the last game's override colors.
-  $("cfgTeamAColorOverride").value = last ? last.teamAColor : settings.teamAColor;
-  $("cfgTeamBColorOverride").value = last ? last.teamBColor : settings.teamBColor;
+  // unless persisting, in which case reuse the last game's override colors. A
+  // remembered per-team-name color (if any) takes priority over both of those.
+  $("cfgTeamAColorOverride").value = getRememberedTeamColor($("cfgTeamA").value) || (last ? last.teamAColor : settings.teamAColor);
+  $("cfgTeamBColorOverride").value = getRememberedTeamColor($("cfgTeamB").value) || (last ? last.teamBColor : settings.teamBColor);
   syncColorSwatchButtons();
   // Apply those colors live (setting .value alone doesn't fire input/update the CSS vars)
   updateTeamColors($("cfgTeamAColorOverride").value, $("cfgTeamBColorOverride").value);
@@ -1753,16 +1804,27 @@ function clearGenericTeamNameOnFocus(input, genericName) {
 function wireGameSetupForm() {
   clearGenericTeamNameOnFocus($("cfgTeamA"), "Team A");
   clearGenericTeamNameOnFocus($("cfgTeamB"), "Team B");
-  $("cfgTeamA").addEventListener("input", updateFirstServeBtnLabels);
-  $("cfgTeamB").addEventListener("input", updateFirstServeBtnLabels);
+  // Also auto-fill that team's remembered color (if any) when its name changes,
+  // whether typed to an exact match or picked from the dropdown.
+  $("cfgTeamA").addEventListener("input", function () {
+    updateFirstServeBtnLabels();
+    applyRememberedTeamColor("A");
+  });
+  $("cfgTeamB").addEventListener("input", function () {
+    updateFirstServeBtnLabels();
+    applyRememberedTeamColor("B");
+  });
 
   // Live-preview the per-game color override on the First Serve buttons (and
-  // anything else on this screen driven by --team-a/--team-b) as it's picked.
+  // anything else on this screen driven by --team-a/--team-b) as it's picked —
+  // and remember it against the current team name for next time.
   $("cfgTeamAColorOverride").addEventListener("input", function () {
     updateTeamColors(this.value, $("cfgTeamBColorOverride").value);
+    rememberTeamColor($("cfgTeamA").value, this.value);
   });
   $("cfgTeamBColorOverride").addEventListener("input", function () {
     updateTeamColors($("cfgTeamAColorOverride").value, this.value);
+    rememberTeamColor($("cfgTeamB").value, this.value);
   });
 
   $("btnFirstServeA").addEventListener("click", function () {
@@ -1897,6 +1959,8 @@ async function startNewGame() {
   addToMasterList("masterLocations", location);
   addToMasterList("masterAgeCategories", ageCategory);
   addToMasterList("masterLeagues", league);
+  rememberTeamColor(teamA, teamAColor);
+  rememberTeamColor(teamB, teamBColor);
 
   // Snapshot this game's New Game form entries, used next time if "persist New
   // Game data" is on. Captured unconditionally so turning the setting on later
@@ -2041,6 +2105,84 @@ function hexToRgb(hex) {
   return parseInt(m[1], 16) + "," + parseInt(m[2], 16) + "," + parseInt(m[3], 16);
 }
 
+// ---- Per-team-name remembered colors ---------------------------------
+
+// Looks up the color last used for this team name, or null if none saved yet.
+function getRememberedTeamColor(name) {
+  var key = (name || "").trim().toLowerCase();
+  if (!key) return null;
+  return (settings.teamColors && settings.teamColors[key]) || null;
+}
+
+// Saves/updates the color remembered for this team name. Always builds a new
+// object (never mutates settings.teamColors in place) so DEFAULT_SETTINGS'
+// shared {} literal is never touched, same precaution as addToMasterList.
+function rememberTeamColor(name, hex) {
+  var key = (name || "").trim().toLowerCase();
+  if (!key || !hex) return;
+  var map = settings.teamColors || {};
+  if (map[key] === hex) return;
+  var next = {};
+  for (var k in map) { if (map.hasOwnProperty(k)) next[k] = map[k]; }
+  next[key] = hex;
+  settings.teamColors = next;
+  saveSettings();
+}
+
+// Carries a remembered color over to a team's new name after a master-list rename
+// (otherwise it would be silently orphaned under the old, now-unused key).
+function renameRememberedTeamColor(oldName, newName) {
+  var oldKey = (oldName || "").trim().toLowerCase();
+  var newKey = (newName || "").trim().toLowerCase();
+  if (!oldKey || !newKey || oldKey === newKey) return;
+  var map = settings.teamColors || {};
+  if (!Object.prototype.hasOwnProperty.call(map, oldKey)) return;
+  var next = {};
+  for (var k in map) { if (map.hasOwnProperty(k) && k !== oldKey) next[k] = map[k]; }
+  next[newKey] = map[oldKey];
+  settings.teamColors = next;
+}
+
+// If the named team (A or B) has a remembered color, applies it to that team's
+// color override field (and live CSS vars) — called whenever the team name
+// field changes, whether typed or picked from the dropdown.
+function applyRememberedTeamColor(letter) {
+  var nameInput = $(letter === "A" ? "cfgTeamA" : "cfgTeamB");
+  var colorInput = $(letter === "A" ? "cfgTeamAColorOverride" : "cfgTeamBColorOverride");
+  var remembered = getRememberedTeamColor(nameInput.value);
+  if (remembered && remembered.toLowerCase() !== colorInput.value.toLowerCase()) {
+    setColorInputValue(colorInput, remembered);
+  }
+}
+
+// A single reusable (never removed) hidden <input type=color> that stands in for
+// whichever Team Names chip's swatch was last clicked, so the shared color preset
+// popover (built around a real color input) can also drive per-team-name colors.
+function getMlTeamColorProxyInput() {
+  var input = $("mlTeamColorProxy");
+  if (input) return input;
+  input = document.createElement("input");
+  input.type = "color";
+  input.id = "mlTeamColorProxy";
+  input.className = "color-input-visually-hidden";
+  input.tabIndex = -1;
+  document.body.appendChild(input);
+  input.addEventListener("input", function () {
+    if (!input.dataset.teamName) return;
+    rememberTeamColor(input.dataset.teamName, input.value);
+    renderMasterListEditors();
+  });
+  return input;
+}
+
+// Opens the shared color preset popover anchored to a Team Names chip's swatch button.
+function openTeamColorPickerForChip(teamName, anchorBtn) {
+  var proxy = getMlTeamColorProxyInput();
+  proxy.dataset.teamName = teamName;
+  proxy.value = getRememberedTeamColor(teamName) || ML_CHIP_NO_COLOR;
+  openColorPresetPopover(proxy, anchorBtn);
+}
+
 // ---- Color preset popover (shared by all color pickers) -------------
 
 var COLOR_PRESET_SWATCHES = [
@@ -2142,7 +2284,7 @@ function wireColorPresetPopover() {
     "cfgTeamAColor", "cfgTeamBColor", "cfgSidebarBtnBorder",
     "cfgStartSetColor", "cfgStartSetPulseColor", "cfgTbHighlight",
     "cfgWinGlowColor", "cfgActionGlowColor",
-    "cfgTeamAColorOverride", "cfgTeamBColorOverride",
+    "cfgTeamAColorOverride", "cfgTeamBColorOverride", "cfgAddTeamNameColor",
   ].forEach(enhanceColorInput);
 
   $("btnColorPresetCustom").addEventListener("click", function () {
@@ -2153,7 +2295,7 @@ function wireColorPresetPopover() {
 
   document.addEventListener("click", function (e) {
     var pop = $("colorPresetPopover");
-    if (!pop.hidden && !pop.contains(e.target) && !e.target.closest(".color-swatch-btn")) {
+    if (!pop.hidden && !pop.contains(e.target) && !e.target.closest(".color-swatch-btn, .ml-chip-color")) {
       closeColorPresetPopover();
     }
   });
@@ -5215,11 +5357,17 @@ function wireSetupPage() {
   });
 
   // Match Info Lists — add new entries
-  function wireMasterListAdd(inputId, listName) {
+  function wireMasterListAdd(inputId, listName, colorInputId) {
     var input = $(inputId);
+    var colorInput = colorInputId ? $(colorInputId) : null;
     function add() {
-      if (addToMasterList(listName, input.value)) {
+      var value = input.value;
+      if (addToMasterList(listName, value)) {
+        if (colorInput && colorInput.value.toLowerCase() !== ML_CHIP_NO_COLOR) {
+          rememberTeamColor(value, colorInput.value);
+        }
         input.value = "";
+        if (colorInput) setColorInputValue(colorInput, ML_CHIP_NO_COLOR);
         renderMasterListEditors();
         renderDefaultPickerOptions();
       }
@@ -5227,7 +5375,7 @@ function wireSetupPage() {
     input.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); add(); } });
     return add;
   }
-  $("btnAddTeamName").addEventListener("click", wireMasterListAdd("cfgAddTeamName", "masterTeamNames"));
+  $("btnAddTeamName").addEventListener("click", wireMasterListAdd("cfgAddTeamName", "masterTeamNames", "cfgAddTeamNameColor"));
   $("btnAddLocation").addEventListener("click", wireMasterListAdd("cfgAddLocation", "masterLocations"));
   $("btnAddAgeCategory").addEventListener("click", wireMasterListAdd("cfgAddAgeCategory", "masterAgeCategories"));
   $("btnAddLeague").addEventListener("click", wireMasterListAdd("cfgAddLeague", "masterLeagues"));
@@ -5263,6 +5411,22 @@ function wireSetupPage() {
     if (!btn) return;
     _mlEditing = { listName: btn.getAttribute("data-list"), value: btn.getAttribute("data-value") };
     renderMasterListEditors();
+  });
+
+  // Match Info Lists — open the color picker for a Team Names chip's swatch.
+  // mousedown must preventDefault so clicking it (while the sibling rename
+  // input is focused) doesn't blur that input first — a blur commits/exits
+  // the rename and re-renders the chip list, which would detach this very
+  // button before its own "click" handler runs (the popover would then open
+  // anchored to a removed, zero-sized element).
+  document.addEventListener("mousedown", function (e) {
+    if (e.target.closest(".ml-chip-color")) e.preventDefault();
+  });
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest(".ml-chip-color");
+    if (!btn) return;
+    e.stopPropagation();
+    openTeamColorPickerForChip(btn.getAttribute("data-value"), btn);
   });
 
   document.addEventListener("keydown", function (e) {

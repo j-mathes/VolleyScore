@@ -2268,6 +2268,10 @@ details[open] .event-log-summary::before {
   min-width: 0;
 }
 
+.ml-add-row input[type="color"] {
+  flex: none;
+}
+
 .ml-filter-row {
   display: flex;
   gap: 0.5rem;
@@ -2321,6 +2325,27 @@ details[open] .event-log-summary::before {
   padding: 0;
 }
 
+.ml-chip-color {
+  width: 16px;
+  height: 16px;
+  min-width: unset;
+  min-height: unset;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, 0.25);
+  padding: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.ml-chip-color-dot {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+
 .ml-chip-remove:hover:not(:disabled) {
   background: rgba(220, 38, 38, 0.25);
 }
@@ -2351,6 +2376,14 @@ details[open] .event-log-summary::before {
 
 [data-theme="dark"] .ml-chip-remove {
   background: rgba(255, 255, 255, 0.14);
+}
+
+[data-theme="dark"] .ml-chip-color {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+[data-theme="dark"] .ml-chip-color-dot {
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 /* ---- Sanction Modal ---- */
