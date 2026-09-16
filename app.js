@@ -1581,6 +1581,8 @@ function initGameSetupForm() {
   $("cfgTeamAColorOverride").value = last ? last.teamAColor : settings.teamAColor;
   $("cfgTeamBColorOverride").value = last ? last.teamBColor : settings.teamBColor;
   syncColorSwatchButtons();
+  // Apply those colors live (setting .value alone doesn't fire input/update the CSS vars)
+  updateTeamColors($("cfgTeamAColorOverride").value, $("cfgTeamBColorOverride").value);
   // Prefill defaults from settings
   document.querySelector('input[name="gameFormat"][value="' + (last ? last.gameFormat : settings.defaultFormat) + '"]').checked = true;
   document.querySelector('input[name="variation"][value="' + (last ? last.variation : (settings.defaultVariation || "standard")) + '"]').checked = true;
