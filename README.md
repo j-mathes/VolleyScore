@@ -1,6 +1,6 @@
 ﻿# VolleyScore
 
-**Version 22**
+**Version 23**
 
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
@@ -62,7 +62,7 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Undo / Redo** — available during play and immediately after End Game (with optional confirm)
 - **Side switching** — swap which panel each team appears on manually, automatically between sets, or via prompted coin-toss/mid-decider confirmations; Triple Ball arrows and the sets-won indicator update accordingly (see [Side Switching](#side-switching))
 - **Scheduled vs. actual start time** — pre-configure a planned start time in Game Defaults, while the moment **Start Game** is tapped is always recorded as the actual start (see [Match Timing](#match-timing))
-- **Match Info** — track Gender, Age Category, and League per game, with pick-or-type fields backed by editable master lists (see [Match Info Lists](#match-info-lists))
+- **Match Info** — track Gender, Age Category, and League per game, with pick-or-type fields backed by editable master lists, plus optional League ↔ Team/Age Category/Location associations that filter those fields against each other (see [Match Info Lists](#match-info-lists))
 - **Edit match info after the fact** — correct Team A/B names, Location, Gender, Age Category, or League on any saved game — in progress or finished — from the Games page (see [Editing a Game's Match Info](#editing-a-games-match-info))
 - **Multi-game export, import & delete** — select any subset (or all) of your saved games from the Games page to export as a single JSON file or delete together; importing populates the Team Names, Locations, Age Categories, and League master lists with any new values found, in addition to restoring the games themselves (see [Selecting Games to Export or Delete](#selecting-games-to-export-or-delete))
 - **Reports** — build a Match Log (a multi-game summary table) or a Game Report (an FIVB-style score sheet, one page per game) across any subset of saved games, with an in-app preview, Excel export, and print/PDF output formatted to fit letter-size pages (see [Reports](#reports))
@@ -127,7 +127,11 @@ When a fair play rule is active the Timeouts/Set and Subs/Set steppers are hidde
 
 Each team name field on the **New Game** form has a color swatch, pre-filled with the global default colors (Setup → Appearance → Team A/B Color — blue and red out of the box). Tap a swatch to open a preset color grid, or choose "Custom…" for the full color picker. This only affects that one game; leave it untouched to use the current defaults.
 
-The override applies everywhere team color drives the UI — score panels, serve dot, sanctions bar, event log, Match Log tables, and so on. It doesn't change your saved global defaults, and returning to the New Game form always resets the swatches back to those defaults.
+The override applies everywhere team color drives the UI — score panels, serve dot, sanctions bar, event log, Match Log tables, and so on. It doesn't change your saved global defaults, and returning to the New Game form always resets the swatches back to those defaults **unless a color has been remembered for that team name** (see below), in which case that remembered color wins over the global default.
+
+### Remembered Team Colors
+
+The app remembers the last color used for each team name. Type or pick a team that's used a color before (on the New Game form, in **Setup → Match Info Lists**, or when adding a new team name there) and its swatch auto-fills with that color; changing the color anywhere updates what's remembered for next time. In **Setup → Match Info Lists**, each Team Names chip shows a small color dot — tap the pencil (rename) icon to enter edit mode, where the dot becomes a clickable swatch you can change directly, without starting a game.
 
 ---
 
@@ -143,7 +147,18 @@ The New Game screen tracks four extra pieces of match info, each backed by a mas
 | Age Category | Editable list | Senior, Junior, 18U, 17U, 16U, 15U, 14U, 13U, 12U |
 | League | Editable list | CSHSAA, ISAA, Foothills, Rockyview, Volleyball Alberta |
 
-Team Name, Location, Age Category, and League fields are pick-or-type: tap the field to see a dropdown of existing values, keep typing to filter it, or type something new. Anything new you type is saved to that field's master list automatically, so it's available to pick next time.
+Team Name, Location, Age Category, and League fields are pick-or-type: tap the field to see a dropdown of existing values, keep typing to filter it, or type something new. Anything new you type is saved to that field's master list automatically **once you actually start the game** (or save an Edit Info change, or add it directly in Setup) — typing into the New Game form alone doesn't add anything to Setup → Match Info Lists until then, so an abandoned/unstarted game leaves no trace there.
+
+### League Associations
+
+Leagues can be linked to specific Team Names, Age Categories, and Locations (many-to-many — a team, age category, or location can belong to multiple leagues). Once a League is picked on the New Game form (or Edit Info), the Team A/B, Age Category, and Location fields only suggest entries already linked to that league — but you can still freely type a brand-new value regardless. Picking a Team A/B, Age Category, or Location *first* narrows the League suggestions the same way, in reverse.
+
+Typing a brand-new value while a League is set links it to that league automatically. Reusing an existing value:
+
+- **Not linked to any league yet** — links it silently, no prompt.
+- **Already linked to a *different* league** — asks for confirmation before also linking it to the current one.
+
+Manage links directly in **Setup → Match Info Lists → Leagues** — tap the people icon on any league to open a checklist of every team, age category, and location, and check/uncheck to link or unlink. There's also an **Infer League Associations from Saved Games** button that scans your saved match history and links whatever combinations of team/age category/location/league actually appeared together in a past game — handy for backfilling links for games recorded before this feature existed, without having to redo it all by hand.
 
 ### Managing the Lists
 
@@ -159,12 +174,16 @@ Already started or finished a game with the wrong team name, location, gender, a
 
 ### Export / Import
 
-**Setup → Data** can export and import the four lists as either:
+**Setup → Data** can export and import the four lists — plus each Team Name's remembered color and every League association — as either:
 
 - **JSON** — the app's own round-trip format.
-- **Excel (.xlsx)** — one tab per category (Team Names, Locations, Age Categories, Leagues). You can edit values in Excel/Sheets/LibreOffice and import the file back in; sheets are matched by tab name, and each sheet's column A becomes that category's values.
+- **Excel (.xlsx)** — one tab per category (Team Names, Locations, Age Categories, Leagues); Team Names also gets a Color column, and Team Names/Age Categories/Locations each get a Leagues column (comma-separated). You can edit values in Excel/Sheets/LibreOffice and import the file back in; sheets are matched by tab name, not position, so they can be in any order.
 
-Either format merges new values into your existing lists (duplicates are skipped) rather than replacing them.
+Either format merges into your existing lists rather than replacing them:
+
+- New list values and new league links are added; duplicates (including ones that only differ by case) are skipped.
+- A color for a team you already have gets updated to the imported value.
+- A hand-edited file with an invalid entry (wrong type, or a league link referencing a team/league that isn't otherwise in the file) is skipped rather than breaking the whole import.
 
 ---
 
@@ -225,8 +244,10 @@ Configure color and duration in **Setup → Scoring Defaults → Action Alert** 
 
 Escalation is enforced — each sanction for the same individual must be higher than the last. Two roles are exempt from individual tracking:
 
-- **Unnumbered players** — without a jersey number the app can't identify the individual, so escalation is not tracked and all levels remain available. The team-level one-warning limit still applies.
-- **Asst. Coach** — each assistant may receive their own sanctions independently. The team-level warning limit still applies.
+- **Unnumbered players** — without a jersey number the app can't identify the individual, so escalation is not tracked and all levels remain available.
+- **Asst. Coach** — each assistant may receive their own sanctions independently.
+
+The team-level one-warning limit still applies to both.
 
 ### Delay (team)
 
@@ -282,7 +303,10 @@ If the wrong team is picked to serve, a compact "Set N serve: Team X" chip stays
 
 ### Side Switching
 
-Tap **⇄ Sides** anytime to swap which panel each team appears on; Triple Ball arrows and the sets-won indicator update immediately, including before the first set starts. **Setup → Game Defaults → Auto-switch sides between sets** does this automatically at the end of every set instead. Deciding sets always get a fresh coin-toss prompt for serve and side, regardless of that setting — real matches call for a new toss there. **Setup → Game Defaults → Prompt to switch sides at 8 pts (deciding set)** additionally asks to switch once the first team reaches 8 points in the deciding set (on by default); Triple Ball waits for the current 3-ball sequence to finish first, so it may fire at 8, 9, or 10 points. Leave that toggle off to switch manually with **⇄ Sides** whenever you judge best.
+- Tap **⇄ Sides** anytime to swap which panel each team appears on; Triple Ball arrows and the sets-won indicator update immediately, including before the first set starts.
+- **Setup → Game Defaults → Auto-switch sides between sets** does this automatically at the end of every set instead.
+- Deciding sets always get a fresh coin-toss prompt for serve and side, regardless of that setting — real matches call for a new toss there.
+- **Setup → Game Defaults → Prompt to switch sides at 8 pts (deciding set)** (on by default) additionally asks to switch once the first team reaches 8 points in the deciding set; Triple Ball waits for the current 3-ball sequence to finish first, so it may fire at 8, 9, or 10 points. Leave it off to switch manually with **⇄ Sides** whenever you judge best.
 
 ---
 

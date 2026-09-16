@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "22";
+var APP_VERSION = "23";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -56,6 +56,14 @@ var DEFAULT_SETTINGS = {
   // Remembers the last color used for each team name (keyed lowercased/trimmed)
   // so picking that team again on the New Game form auto-fills its color.
   teamColors: {},
+  // League associations — keyed lowercased/trimmed team name / age category /
+  // location, each value an array of league name strings (many-to-many; any of
+  // these can belong to multiple leagues). Drives the New Game form's hard
+  // filter (pick a League, then Team A/B + Age Category + Location only
+  // suggest entries associated with it), and vice versa.
+  teamLeagues: {},
+  ageCategoryLeagues: {},
+  locationLeagues: {},
   sidebarBtnBorder: "#000000",
   tbBoxSize: 84,
   tbHighlightColor: "#15803d",
@@ -130,11 +138,19 @@ function saveSettings() {
 
 // ---- Master lists (Team Names, Locations, Age Categories, Leagues) -------
 
+// Coerces to a string, treating any non-string value (e.g. malformed hand-edited
+// import data — a number, object, null, etc.) as empty rather than throwing when
+// .trim() is called on it downstream. Use this at the entry point for any value
+// arriving from outside the app (JSON/Excel imports) before trimming/lowercasing it.
+function safeStr(x) {
+  return typeof x === "string" ? x : "";
+}
+
 // Adds a trimmed value to the named master list (case-insensitive de-dupe); returns true if added.
 // Always reassigns a new array rather than mutating in place, so DEFAULT_SETTINGS'
 // shared array references are never modified (that literal is reused via Object.assign).
 function addToMasterList(listName, rawValue) {
-  var value = (rawValue || "").trim();
+  var value = safeStr(rawValue).trim();
   if (!value) return false;
   var list = Array.isArray(settings[listName]) ? settings[listName] : [];
   var exists = list.some(function (v) { return v.toLowerCase() === value.toLowerCase(); });
@@ -144,16 +160,29 @@ function addToMasterList(listName, rawValue) {
   return true;
 }
 
+// Case-insensitive membership check against a master list — used to guard against
+// importing a league association that references a name never added to its list
+// (e.g. a hand-edited file with an orphaned/typo'd reference).
+function masterListHasCI(listName, value) {
+  var v = safeStr(value).trim().toLowerCase();
+  if (!v) return false;
+  return (settings[listName] || []).some(function (item) { return item.toLowerCase() === v; });
+}
+
 function removeFromMasterList(listName, value) {
   if (!Array.isArray(settings[listName])) return;
   settings[listName] = settings[listName].filter(function (v) { return v !== value; });
+  if (listName === "masterTeamNames") removeEntryLeagueMapEntry("teamLeagues", value);
+  if (listName === "masterAgeCategories") removeEntryLeagueMapEntry("ageCategoryLeagues", value);
+  if (listName === "masterLocations") removeEntryLeagueMapEntry("locationLeagues", value);
+  if (listName === "masterLeagues") removeLeagueEverywhere(value);
   saveSettings();
 }
 
 // Renames an existing entry in place (case-insensitive de-dupe against other entries).
 // Returns true if renamed; alerts and returns false on an empty/duplicate/unchanged name.
 function renameInMasterList(listName, oldValue, rawNewValue) {
-  var newValue = (rawNewValue || "").trim();
+  var newValue = safeStr(rawNewValue).trim();
   if (!newValue || newValue === oldValue) return false;
   var list = Array.isArray(settings[listName]) ? settings[listName] : [];
   var duplicate = list.some(function (v) { return v !== oldValue && v.toLowerCase() === newValue.toLowerCase(); });
@@ -164,8 +193,146 @@ function renameInMasterList(listName, oldValue, rawNewValue) {
   settings[listName] = list.map(function (v) { return v === oldValue ? newValue : v; })
     .sort(function (a, b) { return a.localeCompare(b); });
   if (listName === "masterTeamNames") renameRememberedTeamColor(oldValue, newValue);
+  if (listName === "masterTeamNames") renameEntryLeagueKey("teamLeagues", oldValue, newValue);
+  if (listName === "masterAgeCategories") renameEntryLeagueKey("ageCategoryLeagues", oldValue, newValue);
+  if (listName === "masterLocations") renameEntryLeagueKey("locationLeagues", oldValue, newValue);
+  if (listName === "masterLeagues") renameLeagueEverywhere(oldValue, newValue);
   saveSettings();
   return true;
+}
+
+// ---- League ↔ Team / Age Category associations -----------------------
+// mapKey is always "teamLeagues" or "ageCategoryLeagues" (settings keys), each
+// a lowercased/trimmed-name -> array-of-league-strings map, many-to-many.
+
+// Maps a league-association settings key to the master list it's paired with —
+// used by the import guards to reject associations for names never added there.
+var MASTER_LIST_KEY_BY_LEAGUE_MAP = {
+  teamLeagues: "masterTeamNames",
+  ageCategoryLeagues: "masterAgeCategories",
+  locationLeagues: "masterLocations",
+};
+
+function getEntryLeagues(mapKey, name) {
+  var key = safeStr(name).trim().toLowerCase();
+  if (!key) return [];
+  var map = settings[mapKey] || {};
+  return Array.isArray(map[key]) ? map[key] : [];
+}
+
+function isEntryInLeague(mapKey, name, league) {
+  var target = safeStr(league).trim().toLowerCase();
+  if (!target) return false;
+  return getEntryLeagues(mapKey, name).some(function (l) { return l.toLowerCase() === target; });
+}
+
+// Adds a league to an entry's association list; returns true if it changed anything.
+// Always rebuilds a new object (never mutates settings[mapKey] in place), same
+// precaution as addToMasterList/rememberTeamColor.
+function addEntryLeague(mapKey, name, league) {
+  var key = safeStr(name).trim().toLowerCase();
+  var leagueTrimmed = safeStr(league).trim();
+  if (!key || !leagueTrimmed || isEntryInLeague(mapKey, name, leagueTrimmed)) return false;
+  var map = settings[mapKey] || {};
+  var next = {};
+  for (var k in map) { if (map.hasOwnProperty(k)) next[k] = map[k]; }
+  next[key] = (next[key] || []).concat([leagueTrimmed]);
+  settings[mapKey] = next;
+  saveSettings();
+  return true;
+}
+
+function removeEntryLeague(mapKey, name, league) {
+  var key = safeStr(name).trim().toLowerCase();
+  var target = safeStr(league).trim().toLowerCase();
+  if (!key) return;
+  var map = settings[mapKey] || {};
+  if (!map[key]) return;
+  var next = {};
+  for (var k in map) { if (map.hasOwnProperty(k)) next[k] = map[k]; }
+  next[key] = next[key].filter(function (l) { return l.toLowerCase() !== target; });
+  if (!next[key].length) delete next[key];
+  settings[mapKey] = next;
+  saveSettings();
+}
+
+// Carries an entry's associations over to its new name after a master-list rename
+// (called from renameInMasterList — that function saves once at the end, so this
+// one doesn't call saveSettings() itself).
+function renameEntryLeagueKey(mapKey, oldName, newName) {
+  var oldKey = safeStr(oldName).trim().toLowerCase();
+  var newKey = safeStr(newName).trim().toLowerCase();
+  if (!oldKey || !newKey || oldKey === newKey) return;
+  var map = settings[mapKey] || {};
+  if (!Object.prototype.hasOwnProperty.call(map, oldKey)) return;
+  var next = {};
+  for (var k in map) { if (map.hasOwnProperty(k) && k !== oldKey) next[k] = map[k]; }
+  next[newKey] = map[oldKey];
+  settings[mapKey] = next;
+}
+
+// Deletes an entry's association list entirely (called when the team/age category
+// itself is removed from its master list — no saveSettings(), same reason as above).
+function removeEntryLeagueMapEntry(mapKey, name) {
+  var key = safeStr(name).trim().toLowerCase();
+  if (!key) return;
+  var map = settings[mapKey] || {};
+  if (!Object.prototype.hasOwnProperty.call(map, key)) return;
+  var next = {};
+  for (var k in map) { if (map.hasOwnProperty(k) && k !== key) next[k] = map[k]; }
+  settings[mapKey] = next;
+}
+
+// Renames a league string wherever it appears across BOTH association maps
+// (called when a League itself is renamed in the master list).
+function renameLeagueEverywhere(oldLeague, newLeague) {
+  var oldLower = safeStr(oldLeague).trim().toLowerCase();
+  if (!oldLower) return;
+  ["teamLeagues", "ageCategoryLeagues", "locationLeagues"].forEach(function (mapKey) {
+    var map = settings[mapKey] || {};
+    var next = {};
+    var changed = false;
+    for (var k in map) {
+      if (!map.hasOwnProperty(k)) continue;
+      next[k] = map[k].map(function (l) {
+        if (l.toLowerCase() === oldLower) { changed = true; return newLeague; }
+        return l;
+      });
+    }
+    if (changed) settings[mapKey] = next;
+  });
+}
+
+// Strips a removed league from every association array across both maps
+// (dangling-reference cleanup when a League is removed from the master list).
+function removeLeagueEverywhere(league) {
+  var target = safeStr(league).trim().toLowerCase();
+  if (!target) return;
+  ["teamLeagues", "ageCategoryLeagues", "locationLeagues"].forEach(function (mapKey) {
+    var map = settings[mapKey] || {};
+    var next = {};
+    var changed = false;
+    for (var k in map) {
+      if (!map.hasOwnProperty(k)) continue;
+      var filtered = map[k].filter(function (l) { return l.toLowerCase() !== target; });
+      if (filtered.length !== map[k].length) changed = true;
+      if (filtered.length) next[k] = filtered;
+    }
+    if (changed) settings[mapKey] = next;
+  });
+}
+
+// Auto-associates a newly-used team/age-category with the given league at game-
+// start time: silent when the entry has zero existing associations (the common
+// case), but confirms first when it's already tied to OTHER leagues (genuinely
+// ambiguous — it might not actually belong to this one too).
+function autoAssociateWithLeague(mapKey, name, league) {
+  var trimmedLeague = safeStr(league).trim();
+  if (!trimmedLeague || !name) return;
+  if (isEntryInLeague(mapKey, name, trimmedLeague)) return;
+  var existing = getEntryLeagues(mapKey, name);
+  if (existing.length && !confirm('"' + name + '" is already linked to ' + existing.join(", ") + '. Also link it to "' + trimmedLeague + '"?')) return;
+  addEntryLeague(mapKey, name, trimmedLeague);
 }
 
 // Tracks the single chip currently in inline-rename mode, e.g. { listName, value }.
@@ -212,6 +379,8 @@ function renderMasterListChips(containerId, listName) {
     return;
   }
   var isTeamNames = listName === "masterTeamNames";
+  var isLeagues = listName === "masterLeagues";
+  var leagueMapKey = LEAGUE_MAP_KEY_BY_LIST[listName] || null;
   container.innerHTML = shown.map(function (v) {
     var isEditingThis = _mlEditing && _mlEditing.listName === listName && _mlEditing.value === v;
     var color = isTeamNames ? (getRememberedTeamColor(v) || ML_CHIP_NO_COLOR) : null;
@@ -225,7 +394,19 @@ function renderMasterListChips(containerId, listName) {
     // Outside edit mode, the color is just a static display dot — editing it
     // requires clicking the pencil first (same as renaming).
     var colorDot = isTeamNames ? '<span class="ml-chip-color-dot" style="background:' + esc(color) + '" aria-hidden="true"></span>' : "";
-    return '<span class="ml-chip">' + colorDot + esc(v) +
+    // League-tags badge: read-only display of this entry's league associations
+    // (editing happens in the League's own "manage members" modal, not here).
+    var leagueTagsHtml = leagueMapKey ? renderLeagueTagsHtml(getEntryLeagues(leagueMapKey, v)) : "";
+    // League chips get an always-visible "manage members" button (a primary
+    // action, unlike rename which is decorative and gated behind the pencil setting).
+    // Uses an inline SVG (fill="currentColor") rather than the 👥 emoji — emoji
+    // glyphs render with their own fixed color regardless of theme, which made
+    // this icon too dark to read against both light and dark chip backgrounds.
+    var manageBtn = isLeagues ?
+      '<button type="button" class="ml-chip-manage-btn" data-value="' + esc(v) + '" aria-label="Manage teams, age categories, and locations for ' + esc(v) + '" title="Manage teams, age categories &amp; locations">' +
+      '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4.5 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0ZM14.25 8.625a3.375 3.375 0 116.75 0 3.375 3.375 0 01-6.75 0ZM1.5 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122ZM17.25 19.128l-.001.144a2.25 2.25 0 01-.233.96 10.088 10.088 0 005.06-1.01.75.75 0 00.42-.643 4.875 4.875 0 00-6.957-4.611 8.586 8.586 0 011.71 5.157v.003Z"/></svg>' +
+      '</button>' : "";
+    return '<span class="ml-chip">' + colorDot + esc(v) + leagueTagsHtml + manageBtn +
       (settings.showMasterListEditIcons ? '<button type="button" class="ml-chip-edit" data-list="' + listName + '" data-value="' + esc(v) + '" aria-label="Rename ' + esc(v) + '">&#9998;</button>' : "") +
       '<button type="button" class="ml-chip-remove" data-list="' + listName + '" data-value="' + esc(v) + '" aria-label="Remove ' + esc(v) + '">&times;</button></span>';
   }).join("");
@@ -235,12 +416,96 @@ function renderMasterListChips(containerId, listName) {
   }
 }
 
+// Renders a read-only row of small league-name pills for a Team Name/Age
+// Category chip, or "" if the entry has no league associations yet.
+function renderLeagueTagsHtml(leagues) {
+  if (!leagues || !leagues.length) return "";
+  return '<span class="ml-chip-league-tags">' +
+    leagues.map(function (l) { return '<span class="ml-chip-league-tag">' + esc(l) + '</span>'; }).join("") +
+    '</span>';
+}
+
 // Renders the Setup → Match Info Lists editors (add input + chip list) for all four master lists.
 function renderMasterListEditors() {
   renderMasterListChips("mlListTeamNames", "masterTeamNames");
   renderMasterListChips("mlListLocations", "masterLocations");
   renderMasterListChips("mlListAgeCategories", "masterAgeCategories");
   renderMasterListChips("mlListLeagues", "masterLeagues");
+}
+
+// ---- League "manage members" modal ---------------------------------
+
+var _lmLeague = null; // league name currently open in the modal, or null
+var _lmTeamFilter = "";
+var _lmAgeCategoryFilter = "";
+var _lmLocationFilter = "";
+
+function openLeagueMembersModal(league) {
+  _lmLeague = league;
+  _lmTeamFilter = "";
+  _lmAgeCategoryFilter = "";
+  _lmLocationFilter = "";
+  $("lmTeamFilter").value = "";
+  $("lmAgeCategoryFilter").value = "";
+  $("lmLocationFilter").value = "";
+  $("leagueMembersModalTitle").textContent = "Manage \u201c" + league + "\u201d";
+  renderLeagueMembersModal();
+  $("leagueMembersModal").removeAttribute("hidden");
+}
+
+function closeLeagueMembersModal() {
+  _lmLeague = null;
+  $("leagueMembersModal").hidden = true;
+}
+
+function renderLeagueMembersCheckList(containerId, listName, mapKey, filterText) {
+  var container = $(containerId);
+  if (!container || !_lmLeague) return;
+  var values = settings[listName] || [];
+  var q = (filterText || "").trim().toLowerCase();
+  var shown = q ? values.filter(function (v) { return v.toLowerCase().indexOf(q) !== -1; }) : values;
+  if (!shown.length) {
+    container.innerHTML = '<span class="no-data-msg">' + (values.length ? "No matches" : "None yet") + '</span>';
+    return;
+  }
+  container.innerHTML = shown.map(function (v) {
+    var checked = isEntryInLeague(mapKey, v, _lmLeague);
+    return '<label class="lm-check-row"><input type="checkbox" data-map="' + mapKey + '" data-value="' + esc(v) + '"' + (checked ? " checked" : "") + '> ' + esc(v) + '</label>';
+  }).join("");
+}
+
+function renderLeagueMembersModal() {
+  renderLeagueMembersCheckList("lmTeamList", "masterTeamNames", "teamLeagues", _lmTeamFilter);
+  renderLeagueMembersCheckList("lmAgeCategoryList", "masterAgeCategories", "ageCategoryLeagues", _lmAgeCategoryFilter);
+  renderLeagueMembersCheckList("lmLocationList", "masterLocations", "locationLeagues", _lmLocationFilter);
+}
+
+// ---- Backfill league associations from saved game history -------------
+
+// Scans every saved game's GAME_STARTED event and, for any that recorded a
+// league, links that league to the game's teamA/teamB/ageCategory (if not
+// already linked). Opt-in/explicit (button-triggered) — never runs automatically,
+// since inferring associations from history could occasionally be wrong (e.g. a
+// one-off exhibition match under a league a team doesn't normally play in).
+async function backfillLeagueAssociationsFromGames() {
+  var index = dbListGames();
+  var linked = 0;
+  var gamesWithLeague = 0;
+  for (var i = 0; i < index.length; i++) {
+    var record = await dbLoadGame(index[i].gameId);
+    if (!record) continue;
+    var startEv = (record.events || []).find(function (e) { return e.type === "GAME_STARTED"; });
+    if (!startEv || !startEv.league) continue;
+    gamesWithLeague++;
+    if (startEv.teamA && addEntryLeague("teamLeagues", startEv.teamA, startEv.league)) linked++;
+    if (startEv.teamB && addEntryLeague("teamLeagues", startEv.teamB, startEv.league)) linked++;
+    if (startEv.ageCategory && addEntryLeague("ageCategoryLeagues", startEv.ageCategory, startEv.league)) linked++;
+    if (startEv.location && addEntryLeague("locationLeagues", startEv.location, startEv.league)) linked++;
+  }
+  renderMasterListEditors();
+  alert(gamesWithLeague ?
+    ("Linked " + linked + " association" + (linked === 1 ? "" : "s") + " from " + gamesWithLeague + " game" + (gamesWithLeague === 1 ? "" : "s") + " with a league recorded.") :
+    "No saved games have a league recorded — nothing to infer.");
 }
 
 // Scans every saved game's GAME_STARTED event and returns, per master list, the
@@ -1080,9 +1345,34 @@ function exportCategoriesJson() {
     ageCategories: settings.masterAgeCategories || [],
     leagues: settings.masterLeagues || [],
     teamColors: settings.teamColors || {},
+    teamLeagues: settings.teamLeagues || {},
+    ageCategoryLeagues: settings.ageCategoryLeagues || {},
+    locationLeagues: settings.locationLeagues || {},
   };
   downloadFile("volleyscore_categories_" + new Date().toISOString().slice(0, 10) + ".json",
     JSON.stringify(payload, null, 2), "application/json");
+}
+
+// Merges a {name: [league, ...]} payload map into the given association map via
+// addEntryLeague (shared by JSON import). Skips (rather than crashing on) any
+// name or league that isn't a real, already-known master-list entry — guards
+// against a hand-edited file referencing something that was never added (a
+// dangling/typo'd reference), not just against wrong data types. Returns the
+// number of links added.
+function importLeagueAssociationsMap(mapKey, payloadMap) {
+  var added = 0;
+  if (!payloadMap || typeof payloadMap !== "object") return added;
+  var masterListKey = MASTER_LIST_KEY_BY_LEAGUE_MAP[mapKey];
+  for (var name in payloadMap) {
+    if (!payloadMap.hasOwnProperty(name)) continue;
+    if (!masterListHasCI(masterListKey, name)) continue;
+    var leagues = payloadMap[name];
+    if (!Array.isArray(leagues)) continue;
+    leagues.forEach(function (league) {
+      if (typeof league === "string" && masterListHasCI("masterLeagues", league) && addEntryLeague(mapKey, name, league)) added++;
+    });
+  }
+  return added;
 }
 
 function importCategoriesFromJson(text) {
@@ -1091,10 +1381,21 @@ function importCategoriesFromJson(text) {
   if (payload.type !== "volleyscore-categories") { alert("Unrecognized file format."); return; }
 
   var added = 0;
-  (payload.teamNames || []).forEach(function (v) { if (addToMasterList("masterTeamNames", v)) added++; });
-  (payload.locations || []).forEach(function (v) { if (addToMasterList("masterLocations", v)) added++; });
-  (payload.ageCategories || []).forEach(function (v) { if (addToMasterList("masterAgeCategories", v)) added++; });
-  (payload.leagues || []).forEach(function (v) { if (addToMasterList("masterLeagues", v)) added++; });
+  var skipped = 0;
+  // Non-string entries (a hand-edited file with e.g. a stray number) are counted
+  // and skipped rather than passed to addToMasterList, which would otherwise
+  // just silently no-op on them now that it's hardened — this just gives the
+  // user visible feedback that something in the file wasn't right.
+  function importList(listName, arr) {
+    (arr || []).forEach(function (v) {
+      if (typeof v !== "string") { skipped++; return; }
+      if (addToMasterList(listName, v)) added++;
+    });
+  }
+  importList("masterTeamNames", payload.teamNames);
+  importList("masterLocations", payload.locations);
+  importList("masterAgeCategories", payload.ageCategories);
+  importList("masterLeagues", payload.leagues);
 
   var colorsImported = 0;
   if (payload.teamColors && typeof payload.teamColors === "object") {
@@ -1104,11 +1405,16 @@ function importCategoriesFromJson(text) {
       if (typeof hex === "string" && /^#[0-9a-f]{6}$/i.test(hex)) { rememberTeamColor(key, hex); colorsImported++; }
     }
   }
+  var associationsImported = importLeagueAssociationsMap("teamLeagues", payload.teamLeagues) +
+    importLeagueAssociationsMap("ageCategoryLeagues", payload.ageCategoryLeagues) +
+    importLeagueAssociationsMap("locationLeagues", payload.locationLeagues);
 
   renderMasterListEditors();
   renderDefaultPickerOptions();
   var msg = "Imported " + added + " new entr" + (added === 1 ? "y" : "ies") + ".";
   if (colorsImported) msg += " Updated " + colorsImported + " team color" + (colorsImported === 1 ? "" : "s") + ".";
+  if (associationsImported) msg += " Linked " + associationsImported + " league association" + (associationsImported === 1 ? "" : "s") + ".";
+  if (skipped) msg += " Skipped " + skipped + " invalid entr" + (skipped === 1 ? "y" : "ies") + " in the file.";
   alert(msg);
 }
 
@@ -1321,9 +1627,22 @@ function exportCategoriesXlsx() {
     { name: "xl/styles.xml", data: enc.encode(XLSX_STYLES_XML) },
   ];
   sheetsData.forEach(function (sheet, i) {
-    var rows = sheet.name === "Team Names" ?
-      [[sheet.name, "Color"]].concat(sheet.values.map(function (v) { return [v, getRememberedTeamColor(v) || ""]; })) :
-      [[sheet.name]].concat(sheet.values.map(function (v) { return [v]; }));
+    var rows;
+    if (sheet.name === "Team Names") {
+      rows = [[sheet.name, "Color", "Leagues"]].concat(sheet.values.map(function (v) {
+        return [v, getRememberedTeamColor(v) || "", getEntryLeagues("teamLeagues", v).join(", ")];
+      }));
+    } else if (sheet.name === "Age Categories") {
+      rows = [[sheet.name, "Leagues"]].concat(sheet.values.map(function (v) {
+        return [v, getEntryLeagues("ageCategoryLeagues", v).join(", ")];
+      }));
+    } else if (sheet.name === "Locations") {
+      rows = [[sheet.name, "Leagues"]].concat(sheet.values.map(function (v) {
+        return [v, getEntryLeagues("locationLeagues", v).join(", ")];
+      }));
+    } else {
+      rows = [[sheet.name]].concat(sheet.values.map(function (v) { return [v]; }));
+    }
     files.push({ name: "xl/worksheets/sheet" + (i + 1) + ".xml", data: enc.encode(xlsxSheetXml(rows)) });
   });
 
@@ -1443,6 +1762,7 @@ async function importCategoriesFromXlsx(arrayBuffer) {
 
   var added = 0;
   var colorsAdded = 0;
+  var associationsAdded = 0;
   try {
     var workbookXml = await readPart("xl/workbook.xml");
     if (!workbookXml) throw new Error("Missing workbook.xml.");
@@ -1464,6 +1784,7 @@ async function importCategoriesFromXlsx(arrayBuffer) {
     }
 
     var sheetEls = workbookXml.getElementsByTagName("sheet");
+    var sheetsData = []; // collected per-sheet, applied in two passes below (see comment there)
     for (var i = 0; i < sheetEls.length; i++) {
       var sheetName = (sheetEls[i].getAttribute("name") || "").trim();
       var listKey = CATEGORY_SHEET_NAMES[sheetName.toLowerCase()];
@@ -1478,8 +1799,14 @@ async function importCategoriesFromXlsx(arrayBuffer) {
       if (!sheetXml) continue;
 
       var isTeamNames = listKey === "masterTeamNames";
+      var isAgeCategories = listKey === "masterAgeCategories";
+      var isLocations = listKey === "masterLocations";
+      // Team Names: A=name, B=color, C=leagues. Age Categories/Locations: A=name, B=leagues.
+      var leagueColIndex = isTeamNames ? 2 : ((isAgeCategories || isLocations) ? 1 : -1);
+      var leagueMapKey = LEAGUE_MAP_KEY_BY_LIST[listKey] || null;
       var values = [];
       var colorsByName = {}; // Team Names sheet only — column B holds the hex color, if any
+      var leaguesByName = {}; // Team Names/Age Categories sheets only — comma-joined league list
       var rows = sheetXml.getElementsByTagName("row");
       for (var r = 0; r < rows.length; r++) {
         var cells = rows[r].getElementsByTagName("c");
@@ -1490,17 +1817,49 @@ async function importCategoriesFromXlsx(arrayBuffer) {
           var colorText = xlsxCellText(cells[1], sharedStrings);
           if (/^#[0-9a-f]{6}$/i.test(colorText)) colorsByName[text] = colorText;
         }
+        if (leagueColIndex >= 0) {
+          var leaguesText = xlsxCellText(cells[leagueColIndex], sharedStrings);
+          if (leaguesText) {
+            leaguesByName[text] = leaguesText.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+          }
+        }
       }
 
       // Drop the header row (our own export repeats the category name there)
       if (values.length && values[0].toLowerCase() === sheetName.toLowerCase()) values.shift();
-      values.forEach(function (v) { if (addToMasterList(listKey, v)) added++; });
-      if (isTeamNames) {
-        values.forEach(function (v) {
-          if (colorsByName[v]) { rememberTeamColor(v, colorsByName[v]); colorsAdded++; }
+      sheetsData.push({ listKey: listKey, values: values, colorsByName: colorsByName, leagueMapKey: leagueMapKey, leaguesByName: leaguesByName });
+    }
+
+    // Pass 1: add every sheet's plain values to their master lists FIRST, across
+    // ALL sheets, before touching any league associations below. This matters
+    // because our own sheet order is Team Names/Locations/Age Categories/Leagues,
+    // but a hand-reordered workbook could put "Leagues" first — associations are
+    // only accepted for names/leagues that already exist in their master list
+    // (see importLeagueAssociationsMap's sibling guard below), so every sheet's
+    // plain entries must be committed before any association is evaluated,
+    // regardless of what order the sheets happen to appear in the file.
+    sheetsData.forEach(function (sd) {
+      sd.values.forEach(function (v) { if (addToMasterList(sd.listKey, v)) added++; });
+    });
+
+    // Pass 2: colors and league associations, now that every sheet's names are
+    // guaranteed to already be in their master lists.
+    sheetsData.forEach(function (sd) {
+      if (sd.listKey === "masterTeamNames") {
+        sd.values.forEach(function (v) {
+          if (sd.colorsByName[v]) { rememberTeamColor(v, sd.colorsByName[v]); colorsAdded++; }
         });
       }
-    }
+      if (sd.leagueMapKey) {
+        var masterListKey = MASTER_LIST_KEY_BY_LEAGUE_MAP[sd.leagueMapKey];
+        sd.values.forEach(function (v) {
+          if (!masterListHasCI(masterListKey, v)) return;
+          (sd.leaguesByName[v] || []).forEach(function (league) {
+            if (masterListHasCI("masterLeagues", league) && addEntryLeague(sd.leagueMapKey, v, league)) associationsAdded++;
+          });
+        });
+      }
+    });
   } catch (e) {
     alert(e.message || "Could not import that Excel file.");
     return;
@@ -1510,6 +1869,7 @@ async function importCategoriesFromXlsx(arrayBuffer) {
   renderDefaultPickerOptions();
   var msg = "Imported " + added + " new entr" + (added === 1 ? "y" : "ies") + " from Excel.";
   if (colorsAdded) msg += " Updated " + colorsAdded + " team color" + (colorsAdded === 1 ? "" : "s") + ".";
+  if (associationsAdded) msg += " Linked " + associationsAdded + " league association" + (associationsAdded === 1 ? "" : "s") + ".";
   alert(msg);
 }
 
@@ -1961,6 +2321,10 @@ async function startNewGame() {
   addToMasterList("masterLeagues", league);
   rememberTeamColor(teamA, teamAColor);
   rememberTeamColor(teamB, teamBColor);
+  autoAssociateWithLeague("teamLeagues", teamA, league);
+  autoAssociateWithLeague("teamLeagues", teamB, league);
+  autoAssociateWithLeague("ageCategoryLeagues", ageCategory, league);
+  autoAssociateWithLeague("locationLeagues", location, league);
 
   // Snapshot this game's New Game form entries, used next time if "persist New
   // Game data" is on. Captured unconditionally so turning the setting on later
@@ -2109,7 +2473,7 @@ function hexToRgb(hex) {
 
 // Looks up the color last used for this team name, or null if none saved yet.
 function getRememberedTeamColor(name) {
-  var key = (name || "").trim().toLowerCase();
+  var key = safeStr(name).trim().toLowerCase();
   if (!key) return null;
   return (settings.teamColors && settings.teamColors[key]) || null;
 }
@@ -2118,7 +2482,7 @@ function getRememberedTeamColor(name) {
 // object (never mutates settings.teamColors in place) so DEFAULT_SETTINGS'
 // shared {} literal is never touched, same precaution as addToMasterList.
 function rememberTeamColor(name, hex) {
-  var key = (name || "").trim().toLowerCase();
+  var key = safeStr(name).trim().toLowerCase();
   if (!key || !hex) return;
   var map = settings.teamColors || {};
   if (map[key] === hex) return;
@@ -2132,8 +2496,8 @@ function rememberTeamColor(name, hex) {
 // Carries a remembered color over to a team's new name after a master-list rename
 // (otherwise it would be silently orphaned under the old, now-unused key).
 function renameRememberedTeamColor(oldName, newName) {
-  var oldKey = (oldName || "").trim().toLowerCase();
-  var newKey = (newName || "").trim().toLowerCase();
+  var oldKey = safeStr(oldName).trim().toLowerCase();
+  var newKey = safeStr(newName).trim().toLowerCase();
   if (!oldKey || !newKey || oldKey === newKey) return;
   var map = settings.teamColors || {};
   if (!Object.prototype.hasOwnProperty.call(map, oldKey)) return;
@@ -2317,45 +2681,94 @@ function wireColorPresetPopover() {
 // Custom pick-or-type list that always opens below the field, unlike native
 // <datalist> which some browsers position inconsistently (e.g. flipped left).
 
+// Maps a master-list settings key to its paired league-association map key.
+var LEAGUE_MAP_KEY_BY_LIST = {
+  masterTeamNames: "teamLeagues",
+  masterAgeCategories: "ageCategoryLeagues",
+  masterLocations: "locationLeagues",
+};
+
 var COMBO_FIELDS = [
-  { inputId: "cfgTeamA", listKey: "masterTeamNames" },
-  { inputId: "cfgTeamB", listKey: "masterTeamNames" },
-  { inputId: "cfgLocation", listKey: "masterLocations" },
-  { inputId: "cfgAgeCategory", listKey: "masterAgeCategories" },
-  { inputId: "cfgLeague", listKey: "masterLeagues" },
-  { inputId: "emiTeamA", listKey: "masterTeamNames" },
-  { inputId: "emiTeamB", listKey: "masterTeamNames" },
-  { inputId: "emiLocation", listKey: "masterLocations" },
-  { inputId: "emiAgeCategory", listKey: "masterAgeCategories" },
-  { inputId: "emiLeague", listKey: "masterLeagues" },
+  { inputId: "cfgTeamA", listKey: "masterTeamNames", filterByLeague: true, leagueInputId: "cfgLeague" },
+  { inputId: "cfgTeamB", listKey: "masterTeamNames", filterByLeague: true, leagueInputId: "cfgLeague" },
+  { inputId: "cfgLocation", listKey: "masterLocations", filterByLeague: true, leagueInputId: "cfgLeague" },
+  { inputId: "cfgAgeCategory", listKey: "masterAgeCategories", filterByLeague: true, leagueInputId: "cfgLeague" },
+  { inputId: "cfgLeague", listKey: "masterLeagues", filterByEntries: [
+      { inputId: "cfgTeamA", mapKey: "teamLeagues" },
+      { inputId: "cfgTeamB", mapKey: "teamLeagues" },
+      { inputId: "cfgAgeCategory", mapKey: "ageCategoryLeagues" },
+      { inputId: "cfgLocation", mapKey: "locationLeagues" },
+    ] },
+  { inputId: "emiTeamA", listKey: "masterTeamNames", filterByLeague: true, leagueInputId: "emiLeague" },
+  { inputId: "emiTeamB", listKey: "masterTeamNames", filterByLeague: true, leagueInputId: "emiLeague" },
+  { inputId: "emiLocation", listKey: "masterLocations", filterByLeague: true, leagueInputId: "emiLeague" },
+  { inputId: "emiAgeCategory", listKey: "masterAgeCategories", filterByLeague: true, leagueInputId: "emiLeague" },
+  { inputId: "emiLeague", listKey: "masterLeagues", filterByEntries: [
+      { inputId: "emiTeamA", mapKey: "teamLeagues" },
+      { inputId: "emiTeamB", mapKey: "teamLeagues" },
+      { inputId: "emiAgeCategory", mapKey: "ageCategoryLeagues" },
+      { inputId: "emiLocation", mapKey: "locationLeagues" },
+    ] },
 ];
 
 var _comboInput = null;   // input currently showing the dropdown
 var _comboOptions = [];   // current filtered option strings
 var _comboActiveIndex = -1;
 
-function enhanceComboInput(inputId, listKey) {
-  var input = $(inputId);
+function enhanceComboInput(field) {
+  var input = $(field.inputId);
   if (!input || input.dataset.comboEnhanced) return;
   input.dataset.comboEnhanced = "1";
   input.setAttribute("role", "combobox");
   input.setAttribute("aria-expanded", "false");
   input.setAttribute("aria-autocomplete", "list");
 
-  input.addEventListener("focus", function () { openComboDropdown(input, listKey); });
+  input.addEventListener("focus", function () { openComboDropdown(input, field); });
   // Dismissing the dropdown (e.g. tapping a non-focusable area) doesn't always blur
   // the input, so a second tap on an already-focused field wouldn't refire "focus" —
   // "click" fires every tap regardless, so it reliably reopens the dropdown.
-  input.addEventListener("click", function () { openComboDropdown(input, listKey); });
-  input.addEventListener("input", function () { openComboDropdown(input, listKey); });
+  input.addEventListener("click", function () { openComboDropdown(input, field); });
+  input.addEventListener("input", function () { openComboDropdown(input, field); });
   input.addEventListener("keydown", function (e) { handleComboKeydown(e, input); });
   // mousedown on an option calls preventDefault (see below), so blur only fires
   // for genuine focus-away actions (Tab, clicking elsewhere) — safe to close here.
   input.addEventListener("blur", function () { closeComboDropdown(); });
 }
 
-function openComboDropdown(input, listKey) {
-  var values = settings[listKey] || [];
+function openComboDropdown(input, field) {
+  var values = settings[field.listKey] || [];
+  // Hard-filter Team/Age-Category suggestions to the currently selected League's
+  // members — but only once that league is itself a known, saved league; while
+  // typing a brand-new league there's nothing to filter by yet, so fall back to
+  // the full unfiltered list rather than blocking the flow.
+  if (field.filterByLeague) {
+    var leagueInput = $(field.leagueInputId);
+    var league = leagueInput ? leagueInput.value.trim() : "";
+    if (league) {
+      var knownLeague = (settings.masterLeagues || []).some(function (l) { return l.toLowerCase() === league.toLowerCase(); });
+      if (knownLeague) {
+        var mapKey = LEAGUE_MAP_KEY_BY_LIST[field.listKey];
+        values = values.filter(function (v) { return isEntryInLeague(mapKey, v, league); });
+      }
+    }
+  }
+  // Reverse direction (League field only): narrow league suggestions to the
+  // union of leagues already associated with whichever Team A/B/Age Category
+  // fields have something typed in — falls back to the full list if none of
+  // them have any known associations yet.
+  if (field.filterByEntries) {
+    var leagueSet = null;
+    field.filterByEntries.forEach(function (fe) {
+      var otherInput = $(fe.inputId);
+      var val = otherInput ? otherInput.value.trim() : "";
+      if (!val) return;
+      getEntryLeagues(fe.mapKey, val).forEach(function (l) {
+        leagueSet = leagueSet || {};
+        leagueSet[l.toLowerCase()] = true;
+      });
+    });
+    if (leagueSet) values = values.filter(function (v) { return leagueSet[v.toLowerCase()]; });
+  }
   var q = input.value.trim().toLowerCase();
   var filtered = q ? values.filter(function (v) { return v.toLowerCase().indexOf(q) !== -1; }) : values.slice();
 
@@ -2465,7 +2878,7 @@ function updateComboActiveOption() {
 }
 
 function wireComboInputs() {
-  COMBO_FIELDS.forEach(function (f) { enhanceComboInput(f.inputId, f.listKey); });
+  COMBO_FIELDS.forEach(function (f) { enhanceComboInput(f); });
 
   document.addEventListener("click", function (e) {
     var panel = $("comboDropdown");
@@ -4139,6 +4552,10 @@ async function saveMatchInfoEdits() {
   addToMasterList("masterLocations", location);
   addToMasterList("masterAgeCategories", ageCategory);
   addToMasterList("masterLeagues", league);
+  autoAssociateWithLeague("teamLeagues", teamA, league);
+  autoAssociateWithLeague("teamLeagues", teamB, league);
+  autoAssociateWithLeague("ageCategoryLeagues", ageCategory, league);
+  autoAssociateWithLeague("locationLeagues", location, league);
   renderMasterListEditors();
   renderDefaultPickerOptions();
 
@@ -5445,6 +5862,46 @@ function wireSetupPage() {
     renameInMasterList(listName, oldValue, input.value);
     renderMasterListEditors();
     renderDefaultPickerOptions();
+  });
+
+  // League "manage members" modal — open, close, filter, toggle membership
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest(".ml-chip-manage-btn");
+    if (!btn) return;
+    openLeagueMembersModal(btn.getAttribute("data-value"));
+  });
+  $("btnCloseLeagueMembersModal").addEventListener("click", closeLeagueMembersModal);
+  $("leagueMembersModal").addEventListener("click", function (e) {
+    if (e.target === $("leagueMembersModal")) closeLeagueMembersModal();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !$("leagueMembersModal").hidden) closeLeagueMembersModal();
+  });
+  $("lmTeamFilter").addEventListener("input", function () {
+    _lmTeamFilter = this.value;
+    renderLeagueMembersCheckList("lmTeamList", "masterTeamNames", "teamLeagues", _lmTeamFilter);
+  });
+  $("lmAgeCategoryFilter").addEventListener("input", function () {
+    _lmAgeCategoryFilter = this.value;
+    renderLeagueMembersCheckList("lmAgeCategoryList", "masterAgeCategories", "ageCategoryLeagues", _lmAgeCategoryFilter);
+  });
+  $("lmLocationFilter").addEventListener("input", function () {
+    _lmLocationFilter = this.value;
+    renderLeagueMembersCheckList("lmLocationList", "masterLocations", "locationLeagues", _lmLocationFilter);
+  });
+  document.addEventListener("change", function (e) {
+    var chk = e.target.closest("#leagueMembersModal input[type=checkbox]");
+    if (!chk || !_lmLeague) return;
+    var mapKey = chk.getAttribute("data-map");
+    var value = chk.getAttribute("data-value");
+    if (chk.checked) addEntryLeague(mapKey, value, _lmLeague);
+    else removeEntryLeague(mapKey, value, _lmLeague);
+    renderMasterListEditors(); // keep the underlying chip's league tags in sync
+  });
+
+  // Match Info Lists — infer league associations from saved game history
+  $("btnBackfillLeagueAssociations").addEventListener("click", function () {
+    void backfillLeagueAssociationsFromGames();
   });
 
   // Match Info Lists — export / import

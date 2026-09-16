@@ -46,6 +46,13 @@
 
       <div class="setup-card">
         <h2>New Game</h2>
+        <div class="setup-optional-row">
+          <label class="setup-field">
+            <span class="setup-field-label">League <span class="optional">(optional)</span></span>
+            <input id="cfgLeague" type="text" placeholder="e.g. CSHSAA" autocomplete="off" spellcheck="false">
+          </label>
+        </div>
+
         <div class="setup-team-row">
           <label class="setup-field">
             <span class="setup-field-label">Team A</span>
@@ -86,10 +93,6 @@
           <label class="setup-field">
             <span class="setup-field-label">Age Category <span class="optional">(optional)</span></span>
             <input id="cfgAgeCategory" type="text" placeholder="e.g. 16U" autocomplete="off" spellcheck="false">
-          </label>
-          <label class="setup-field">
-            <span class="setup-field-label">League <span class="optional">(optional)</span></span>
-            <input id="cfgLeague" type="text" placeholder="e.g. CSHSAA" autocomplete="off" spellcheck="false">
           </label>
         </div>
 
@@ -824,6 +827,24 @@
 
       <div class="ml-editor">
         <div class="ml-editor-header">
+          <h3 class="ml-editor-title">Leagues</h3>
+          <span class="ml-count" id="mlCountLeagues"></span>
+        </div>
+        <div class="ml-add-row">
+          <input id="cfgAddLeague" type="text" placeholder="Add league" autocomplete="off">
+          <button id="btnAddLeague" class="ctrl-btn" type="button">Add</button>
+        </div>
+        <div class="ml-filter-row">
+          <input type="search" class="ml-filter-input" data-list="masterLeagues" placeholder="Filter leagues…" autocomplete="off">
+          <button type="button" class="icon-btn ml-prune-btn" data-list="masterLeagues" data-label="league">Remove Unused</button>
+        </div>
+        <div id="mlListLeagues" class="ml-chip-list"></div>
+        <p class="setup-hint">Tap <strong>&#128101;</strong> on a league above to link teams and age categories to it. Or infer links from your saved match history:</p>
+        <button id="btnBackfillLeagueAssociations" class="ctrl-btn" type="button">Infer League Associations from Saved Games</button>
+      </div>
+
+      <div class="ml-editor">
+        <div class="ml-editor-header">
           <h3 class="ml-editor-title">Team Names</h3>
           <span class="ml-count" id="mlCountTeamNames"></span>
         </div>
@@ -837,22 +858,6 @@
           <button type="button" class="icon-btn ml-prune-btn" data-list="masterTeamNames" data-label="team name">Remove Unused</button>
         </div>
         <div id="mlListTeamNames" class="ml-chip-list"></div>
-      </div>
-
-      <div class="ml-editor">
-        <div class="ml-editor-header">
-          <h3 class="ml-editor-title">Locations</h3>
-          <span class="ml-count" id="mlCountLocations"></span>
-        </div>
-        <div class="ml-add-row">
-          <input id="cfgAddLocation" type="text" placeholder="Add location" autocomplete="off">
-          <button id="btnAddLocation" class="ctrl-btn" type="button">Add</button>
-        </div>
-        <div class="ml-filter-row">
-          <input type="search" class="ml-filter-input" data-list="masterLocations" placeholder="Filter locations…" autocomplete="off">
-          <button type="button" class="icon-btn ml-prune-btn" data-list="masterLocations" data-label="location">Remove Unused</button>
-        </div>
-        <div id="mlListLocations" class="ml-chip-list"></div>
       </div>
 
       <div class="ml-editor">
@@ -873,18 +878,18 @@
 
       <div class="ml-editor">
         <div class="ml-editor-header">
-          <h3 class="ml-editor-title">Leagues</h3>
-          <span class="ml-count" id="mlCountLeagues"></span>
+          <h3 class="ml-editor-title">Locations</h3>
+          <span class="ml-count" id="mlCountLocations"></span>
         </div>
         <div class="ml-add-row">
-          <input id="cfgAddLeague" type="text" placeholder="Add league" autocomplete="off">
-          <button id="btnAddLeague" class="ctrl-btn" type="button">Add</button>
+          <input id="cfgAddLocation" type="text" placeholder="Add location" autocomplete="off">
+          <button id="btnAddLocation" class="ctrl-btn" type="button">Add</button>
         </div>
         <div class="ml-filter-row">
-          <input type="search" class="ml-filter-input" data-list="masterLeagues" placeholder="Filter leagues…" autocomplete="off">
-          <button type="button" class="icon-btn ml-prune-btn" data-list="masterLeagues" data-label="league">Remove Unused</button>
+          <input type="search" class="ml-filter-input" data-list="masterLocations" placeholder="Filter locations…" autocomplete="off">
+          <button type="button" class="icon-btn ml-prune-btn" data-list="masterLocations" data-label="location">Remove Unused</button>
         </div>
-        <div id="mlListLeagues" class="ml-chip-list"></div>
+        <div id="mlListLocations" class="ml-chip-list"></div>
       </div>
     </div>
 
@@ -1095,6 +1100,12 @@
   <div id="editMatchInfoModal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="editMatchInfoModalTitle">
     <div class="modal-card">
       <h3 id="editMatchInfoModalTitle">Edit Match Info</h3>
+      <div class="setup-optional-row">
+        <label class="setup-field">
+          <span class="setup-field-label">League</span>
+          <input id="emiLeague" type="text" autocomplete="off" spellcheck="false">
+        </label>
+      </div>
       <div class="setup-team-row">
         <label class="setup-field">
           <span class="setup-field-label">Team A</span>
@@ -1124,14 +1135,43 @@
           <span class="setup-field-label">Age Category</span>
           <input id="emiAgeCategory" type="text" autocomplete="off" spellcheck="false">
         </label>
-        <label class="setup-field">
-          <span class="setup-field-label">League</span>
-          <input id="emiLeague" type="text" autocomplete="off" spellcheck="false">
-        </label>
       </div>
       <div class="edit-match-info-actions">
         <button id="btnSaveMatchInfo" class="ctrl-btn">Save</button>
         <button id="btnCloseEditMatchInfoModal" class="modal-close-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== League Members Modal (manage which teams/age categories/locations belong to a league) ===== -->
+  <div id="leagueMembersModal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="leagueMembersModalTitle">
+    <div class="modal-card league-members-card">
+      <h3 id="leagueMembersModalTitle">Manage League</h3>
+      <div class="lm-columns">
+        <div class="lm-column">
+          <div class="lm-column-header">
+            <h4>Teams</h4>
+            <input type="search" id="lmTeamFilter" class="ml-filter-input" placeholder="Filter teams…" autocomplete="off">
+          </div>
+          <div id="lmTeamList" class="lm-check-list"></div>
+        </div>
+        <div class="lm-column">
+          <div class="lm-column-header">
+            <h4>Age Categories</h4>
+            <input type="search" id="lmAgeCategoryFilter" class="ml-filter-input" placeholder="Filter age categories…" autocomplete="off">
+          </div>
+          <div id="lmAgeCategoryList" class="lm-check-list"></div>
+        </div>
+        <div class="lm-column">
+          <div class="lm-column-header">
+            <h4>Locations</h4>
+            <input type="search" id="lmLocationFilter" class="ml-filter-input" placeholder="Filter locations…" autocomplete="off">
+          </div>
+          <div id="lmLocationList" class="lm-check-list"></div>
+        </div>
+      </div>
+      <div class="edit-match-info-actions">
+        <button id="btnCloseLeagueMembersModal" class="modal-close-btn">Close</button>
       </div>
     </div>
   </div>
