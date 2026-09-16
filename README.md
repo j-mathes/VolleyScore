@@ -1,6 +1,6 @@
 ﻿# VolleyScore
 
-**Version 23**
+**Version 24**
 
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
@@ -55,6 +55,7 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Timeouts** — dot indicator (filled = used); count enforced per fair play rule; blocked mid-sequence in Triple Ball
 - **Substitutions** — per-team counter; fair play restrictions applied automatically
 - **Sanctions** — full misconduct and delay sanction system with escalation enforcement (see [Sanctions](#sanctions))
+- **Remarks** — a free-form, timestamped notepad per match; add numbered notes during a live game from the top nav, view or edit them from Game Detail, and see them in the Match Log and Game Report (see [Remarks](#remarks))
 - **Win & action alerts** — independently configurable glow and win-condition-toast durations; glow on the TO/sub indicator and sanction chip when actions are recorded (see [Alerts](#alerts))
 - **Win condition reminder** — current set's rules shown in the game bar during active play
 - **Triple Ball** — animated 6-phase sequence indicator with directional arrows (see [Triple Ball](#triple-ball))
@@ -310,6 +311,20 @@ If the wrong team is picked to serve, a compact "Set N serve: Team X" chip stays
 
 ---
 
+## Remarks
+
+A free-form, timestamped notepad for each match — for anything the structured event log doesn't capture (delays, weather, injuries, official rulings, and so on).
+
+- While a game is live, a **Remarks** button appears in the top nav next to **Match Log**. Tap it to open a popup, type a note, and tap **Add Remark**.
+- You never number remarks yourself — each one is numbered automatically (1, 2, 3, ...) in the order it was added.
+- Every remark also records the time, set, and score at the moment it was added, e.g. `Set 2 – (A) 15 - 12 (B)`. Before the first set starts, or between sets, the score is always 0-0 and the set number reflects how many sets have been completed so far (`Set 0` before Set 1 has started, `Set 1` between Sets 1 and 2, and so on).
+- Remarks also appear inline in the **Match Log** event log, in time order alongside every other event — its score column shows the score at that moment, since its position in the log already tells you which set it happened in.
+- On the **Games** page, the **Game Detail** view has a collapsible **Remarks** section — positioned just above **Event Log** — listing every remark for that game, or "No remarks recorded." if there aren't any. Tap the pencil ✎ icon to enter edit mode and correct a remark's text. Games saved before this feature existed simply show no remarks.
+- The **Game Report** (see [Reports](#reports)) includes a Remarks box below Results, listing every remark or "None" if there aren't any.
+- Remarks are ordinary game data, so they're included automatically in every export/import path (single game, multi-select, or full export).
+
+---
+
 ## Data & Storage
 
 Games save automatically to `localStorage` with an IndexedDB fallback when storage is nearly full. Export and import via JSON — one game, a chosen subset, or the full collection. Transfer between devices by exporting on one and importing on the other.
@@ -343,6 +358,7 @@ A detailed, printable score sheet modeled on the official FIVB score sheet, adap
 - **Match Info** — Date, Time, Location, League, Gender, Age, and both team names next to A/B circles.
 - **Sanctions** — one row per sanction, in the order it happened: which of W (Warning) / P (Penalty) / E (Expulsion) / D (Disqualification) applies, who received it (`#12` for a player, or `C` / `AC` / `T` / `M` for Head Coach / Assistant Coach / Trainer / Medical — delay sanctions show `D`), the team and set, and the score at that moment (the sanctioned team's score listed first). A legend explains the abbreviations; the box just reads **None** if there weren't any. Two circle badges next to "Improper Request" mark whether either team has used their one free request, with a bold **X** once it has.
 - **Results** — one row per set the format allows (even sets never played, shown blank), with each team's Timeouts, Subs, Won (1/0), and Points, plus the set number, its duration in minutes, and its start time. Sets are always treated as having exactly a 3-minute break between them, regardless of how long the real gap was, matching the official rule; the final set's duration is adjusted so the whole timeline lines up exactly with the game's real end time. A totals row, Match Starting/Ending Time, Total Match Duration, and the Winner (full team name + sets score) finish the box.
+- **Remarks** — every remark recorded for the game (see [Remarks](#remarks)), numbered with its time and the set/score it was made at; reads **None** if none were recorded.
 - **Preview**, **Export Excel** (one workbook sheet per game, with team names as merged headers over their columns), and **Print / PDF** work the same way as Match Log, just paginated one game per page.
 
 ---

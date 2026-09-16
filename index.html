@@ -25,6 +25,8 @@
     </div>
     <!-- Match Log button — only visible during an active game -->
     <button id="navLogBtn" class="nav-btn nav-btn-log" data-page="log" aria-label="Match log" hidden>Match Log</button>
+    <!-- Remarks button — only visible during an active game; opens a popup notepad instead of navigating -->
+    <button id="navRemarksBtn" class="nav-btn-log nav-btn-remarks" aria-label="Match remarks" type="button" hidden>Remarks</button>
     <div class="nav-links">
       <a href="https://github.com/j-mathes/VolleyScore" target="_blank" rel="noopener noreferrer"
          class="nav-github" title="View on GitHub" aria-label="View on GitHub">
@@ -421,6 +423,13 @@
           <button id="btnExportGame" class="ctrl-btn">Export JSON</button>
           <button id="btnDeleteGame" class="ctrl-btn danger-btn">Delete</button>
         </div>
+        <details class="event-log-card" id="detailRemarksCard">
+          <summary class="event-log-summary">
+            Remarks
+            <button id="btnEditRemarks" class="remarks-edit-btn" type="button" title="Edit remarks" aria-label="Edit remarks">&#9998;</button>
+          </summary>
+          <div class="event-log-body" id="detailRemarksBody"></div>
+        </details>
         <details class="event-log-card" id="detailEventLogCard">
           <summary class="event-log-summary">Event Log</summary>
           <div class="event-log-body" id="detailEventLogBody"></div>
@@ -1093,6 +1102,24 @@
       </div>
 
       <button id="btnCloseSanctionModal" class="modal-close-btn">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ===== Remarks Modal (live game notepad) ===== -->
+  <div id="remarksModal" class="modal-overlay" hidden role="dialog" aria-modal="true" aria-labelledby="remarksModalTitle">
+    <div class="modal-card">
+      <h3 id="remarksModalTitle">Match Remarks</h3>
+      <div id="remarksModalList" class="remarks-modal-list">
+        <div class="remarks-modal-empty">No remarks yet.</div>
+      </div>
+      <label class="setup-field remarks-modal-input-field">
+        <span class="setup-field-label">Add a remark</span>
+        <textarea id="remarksModalInput" rows="3" placeholder="Enter a note about this match…" spellcheck="true"></textarea>
+      </label>
+      <div class="edit-match-info-actions">
+        <button id="btnAddRemark" class="ctrl-btn" type="button">Add Remark</button>
+        <button id="btnCloseRemarksModal" class="modal-close-btn" type="button">Close</button>
+      </div>
     </div>
   </div>
 

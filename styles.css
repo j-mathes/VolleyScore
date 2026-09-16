@@ -177,7 +177,8 @@ button:disabled {
 
 input[type="text"],
 input[type="datetime-local"],
-select {
+select,
+textarea {
   font-family: inherit;
   font-size: 0.95rem;
   color: var(--ink);
@@ -193,7 +194,12 @@ select {
   touch-action: manipulation;
 }
 
-input:focus, select:focus {
+textarea {
+  resize: vertical;
+  min-height: 4.5rem;
+}
+
+input:focus, select:focus, textarea:focus {
   outline: 2px solid var(--brand-color);
   outline-offset: 1px;
 }
@@ -300,6 +306,17 @@ details summary::-webkit-details-marker { display: none; }
   background: var(--serve-color);
   color: #fff;
   border-color: transparent;
+}
+
+/* Remarks nav button — reuses .nav-btn-log's layout, just a different color */
+.nav-btn-remarks {
+  background: rgba(37, 99, 235, 0.20);
+  color: #60a5fa;
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.nav-btn-remarks:hover:not(:disabled) {
+  background: rgba(37, 99, 235, 0.32);
 }
 
 .nav-links {
@@ -1724,6 +1741,115 @@ details[open] .event-log-summary::before {
   font-size: 0.76rem;
   white-space: nowrap;
   text-align: right;
+}
+
+/* ---- Remarks (live notepad modal + Game Detail section) ---- */
+.remarks-edit-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.remarks-edit-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.remarks-edit-btn.active {
+  background: var(--brand-color);
+  color: #fff;
+}
+
+[data-theme="dark"] .remarks-edit-btn {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+[data-theme="dark"] .remarks-edit-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.remark-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.5rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.remark-row:nth-child(odd) {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.remark-num {
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.remark-time {
+  color: var(--ink-muted);
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.remark-context {
+  color: var(--ink-muted);
+  font-size: 0.76rem;
+  flex-shrink: 0;
+}
+
+.remark-text {
+  flex: 1 1 100%;
+  white-space: pre-wrap;
+}
+
+.remark-row-editing {
+  flex-direction: column;
+  align-items: stretch;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.remark-edit-input {
+  min-height: 3.2rem;
+  font-size: 0.85rem;
+}
+
+.remark-save-btn {
+  align-self: flex-end;
+  margin-top: 0.3rem;
+}
+
+/* ---- Remarks modal (live game) ---- */
+.remarks-modal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 240px;
+  overflow-y: auto;
+  margin-bottom: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem;
+}
+
+.remarks-modal-empty {
+  color: var(--ink-muted);
+  font-style: italic;
+  padding: 0.4rem;
+}
+
+.remarks-modal-input-field {
+  margin-bottom: 0.8rem;
 }
 
 /* ---- Games page ---- */
@@ -3290,7 +3416,8 @@ input.player-num-input {
 
 .gr-info-box,
 .gr-sanctions-box,
-.gr-results-box {
+.gr-results-box,
+.gr-remarks-box {
   border: 2px solid #000;
   margin-bottom: 0.7rem;
 }
@@ -3450,6 +3577,43 @@ input.player-num-input {
   flex: 1;
 }
 
+.gr-remarks-list {
+  font-size: 0.8rem;
+}
+
+.gr-remark-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  border-top: 1px solid #000;
+}
+
+.gr-remark-row:first-child {
+  border-top: none;
+}
+
+.gr-remark-num {
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.gr-remark-time,
+.gr-remark-context {
+  color: #444;
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
+.gr-remark-text {
+  flex: 1 1 100%;
+}
+
+.gr-remark-row.gr-remarks-empty {
+  justify-content: center;
+  font-weight: 800;
+}
+
 /* In the on-screen preview modal, hint at the page break between games since
    there's no real pagination outside of an actual print/PDF. */
 .report-preview-paper .gr-page + .gr-page {
@@ -3584,7 +3748,8 @@ input.player-num-input {
 
   .gr-info-box,
   .gr-sanctions-box,
-  .gr-results-box {
+  .gr-results-box,
+  .gr-remarks-box {
     margin-bottom: 5pt;
   }
 
@@ -3621,6 +3786,14 @@ input.player-num-input {
   .gr-winner-row {
     padding: 2pt 5pt;
     font-size: 9pt;
+  }
+
+  .gr-remarks-list {
+    font-size: 7.5pt;
+  }
+
+  .gr-remark-row {
+    padding: 1.5pt 5pt;
   }
 }
 

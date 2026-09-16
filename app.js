@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "23";
+var APP_VERSION = "24";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -804,6 +804,7 @@ function deriveGameState(timeline) {
   var endedAt = null;
   var improperRequestA = false; // match-wide: one free per team
   var improperRequestB = false;
+  var remarks = []; // match-wide, chronological — display numbering is derived from array position
 
   function getOrCreateSet(n) {
     if (!setsMap[n]) {
@@ -881,6 +882,13 @@ function deriveGameState(timeline) {
       case "IMPROPER_REQUEST": {
         if (ev.team === "A") improperRequestA = true;
         else improperRequestB = true;
+        break;
+      }
+      case "REMARK_ADDED": {
+        remarks.push({
+          id: ev.remarkId, text: ev.text, timestamp: ev.timestamp,
+          setNumber: ev.setNumber || 0, scoreA: ev.scoreA || 0, scoreB: ev.scoreB || 0,
+        });
         break;
       }
       /* SERVE_CHANGED is handled by serving team derivation below */
@@ -1058,6 +1066,7 @@ function deriveGameState(timeline) {
     gameCanEnd: gameCanEnd,
     improperRequestA: improperRequestA,
     improperRequestB: improperRequestB,
+    remarks: remarks,
     fairPlay: fairPlay,
     effectiveTimeoutsPerSet: effectiveTimeoutsPerSet,
     subsAllowedInActiveSet: subsAllowedInActiveSet,
@@ -2424,6 +2433,7 @@ function showSetupPanel() {
   $("scoreboard").hidden = true;
   $("gameSetupPanel").hidden = false;
   $("navLogBtn").hidden = true;
+  $("navRemarksBtn").hidden = true;
   _justEndedGame = false; // navigating away clears the undo window
   _tbPrevPhase = -1;
   _setWinKey = null;
@@ -3105,8 +3115,9 @@ function renderScoreboard() {
     $("btnToB").disabled = !state.timeoutAllowedInTripleBall;
   }
 
-  // Show/hide the Match Log nav button
+  // Show/hide the Match Log / Remarks nav buttons
   $("navLogBtn").hidden = false;
+  $("navRemarksBtn").hidden = false;
 
   // ---- Win condition glow -----------------------------------------------
   var winA = !isGameOver && state.setWinConditionMet && state.setWinnerTeam === "A";
@@ -4085,6 +4096,7 @@ function buildEventLogHtml(state, timeline, filterSetNumber) {
     events = events.filter(function (e) {
       return e.type === "GAME_STARTED" ||
              e.type === "GAME_ENDED"   ||
+             e.type === "REMARK_ADDED" ||
              e.setNumber === filterSetNumber;
     });
     if (events.length <= 1) {
@@ -4099,6 +4111,7 @@ function buildEventLogHtml(state, timeline, filterSetNumber) {
     return setScores[setNum];
   }
   var lastLeader = {}; // setNumber → "A" | "B" | "tied"
+  var remarkNum = 0; // running 1-based count of REMARK_ADDED events seen so far
 
   var rows = [];
   for (var i = 0; i < events.length; i++) {
@@ -4225,10 +4238,107 @@ function buildEventLogHtml(state, timeline, filterSetNumber) {
         '<span class="elr-desc">Serve changed</span>' +
         '<span class="elr-detail">' + esc(seTeam) + ' serves</span>' +
         '</div>');
+    } else if (ev.type === "REMARK_ADDED") {
+      remarkNum++;
+      rows.push('<div class="event-log-row event-log-system">' +
+        '<span class="elr-time">' + esc(time) + '</span>' +
+        '<span class="elr-score">' + (ev.scoreA || 0) + ' \u2013 ' + (ev.scoreB || 0) + '</span>' +
+        '<span class="elr-desc">Remark ' + remarkNum + '</span>' +
+        '<span class="elr-detail">' + esc(ev.text) + '</span>' +
+        '</div>');
     }
   }
 
   return rows.join("") || '<div class="event-log-empty">No events recorded yet.</div>';
+}
+
+// ---- Remarks Modal (live game notepad) -------------------
+
+// Set/score context captured at the moment a remark is added: while a set is
+// active, its live score; before the first set (or between sets), the score
+// is 0-0 and the set number is the count of sets completed so far (0, 1, ...).
+function currentRemarkContext(state) {
+  if (!state) return { setNumber: 0, scoreA: 0, scoreB: 0 };
+  if (state.activeSetNumber) {
+    var activeSet = state.sets.find(function (s) { return s.setNumber === state.activeSetNumber; });
+    return {
+      setNumber: state.activeSetNumber,
+      scoreA: activeSet ? activeSet.scoreA : 0,
+      scoreB: activeSet ? activeSet.scoreB : 0,
+    };
+  }
+  return { setNumber: state.sets.length, scoreA: 0, scoreB: 0 };
+}
+
+function remarkContextLabel(setNumber, scoreA, scoreB) {
+  return "Set " + setNumber + " \u2013 (A) " + scoreA + " - " + scoreB + " (B)";
+}
+
+function addRemark(text) {
+  var trimmed = (text || "").trim();
+  if (!trimmed || !controller.currentGameId) return;
+  var ctx = currentRemarkContext(controller.getState());
+  controller.dispatch({
+    type: "REMARK_ADDED",
+    remarkId: crypto.randomUUID(),
+    text: trimmed,
+    timestamp: new Date().toISOString(),
+    setNumber: ctx.setNumber,
+    scoreA: ctx.scoreA,
+    scoreB: ctx.scoreB,
+  });
+}
+
+function buildRemarksModalListHtml(remarks) {
+  if (!remarks.length) return '<div class="remarks-modal-empty">No remarks yet.</div>';
+  return remarks.map(function (r, i) {
+    return '<div class="remark-row">' +
+      '<span class="remark-num">' + (i + 1) + '.</span>' +
+      '<span class="remark-time">' + esc(formatTime(r.timestamp)) + '</span>' +
+      '<span class="remark-context">' + esc(remarkContextLabel(r.setNumber, r.scoreA, r.scoreB)) + '</span>' +
+      '<span class="remark-text">' + esc(r.text) + '</span>' +
+      '</div>';
+  }).join("");
+}
+
+function renderRemarksModalList() {
+  var state = controller.getState();
+  var list = $("remarksModalList");
+  if (list) list.innerHTML = buildRemarksModalListHtml((state && state.remarks) || []);
+}
+
+function openRemarksModal() {
+  renderRemarksModalList();
+  $("remarksModalInput").value = "";
+  $("remarksModal").removeAttribute("hidden");
+  $("remarksModalInput").focus();
+}
+
+function closeRemarksModal() {
+  $("remarksModal").hidden = true;
+}
+
+function wireRemarksModal() {
+  $("navRemarksBtn").addEventListener("click", openRemarksModal);
+  $("btnCloseRemarksModal").addEventListener("click", closeRemarksModal);
+  $("remarksModal").addEventListener("click", function (e) {
+    if (e.target === $("remarksModal")) closeRemarksModal();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !$("remarksModal").hidden) closeRemarksModal();
+  });
+  $("btnAddRemark").addEventListener("click", function () {
+    var input = $("remarksModalInput");
+    if (!input.value.trim()) return;
+    addRemark(input.value);
+    input.value = "";
+    renderRemarksModalList();
+    renderEventLog();
+    // If the Games page detail panel happens to be showing this same in-progress
+    // game, keep its Remarks section in sync too.
+    if (selectedDetailGameId === controller.currentGameId) renderDetailRemarks(controller.getState());
+    input.focus();
+  });
 }
 
 // ---- Match Log Page -------------------------------------
@@ -4317,6 +4427,7 @@ var selectedDetailGameId = null;
 var selectedDetailSetFilter = null; // null = all sets; number = filter to that set
 var _detailState = null;            // cached for filter re-renders
 var _detailTimeline = null;
+var _detailRemarksEditMode = false; // toggled via the pencil icon in the Remarks section
 
 var gamesSelectMode = false;
 var selectedGameIds = new Set(); // gameIds checked for bulk export, only used while gamesSelectMode is true
@@ -4429,6 +4540,7 @@ function updateGamesSelectBar() {
 }
 
 async function selectDetailGame(gameId) {
+  if (gameId !== selectedDetailGameId) _detailRemarksEditMode = false; // reset only on a real navigation, not a re-render after saving an edit
   selectedDetailGameId = gameId;
   selectedDetailSetFilter = null; // reset filter for new selection
   await renderGamesList(); // refresh selection highlight
@@ -4502,6 +4614,9 @@ async function selectDetailGame(gameId) {
   // Event log
   var logBody = $("detailEventLogBody");
   if (logBody) logBody.innerHTML = buildEventLogHtml(state, tl, selectedDetailSetFilter);
+
+  // Remarks
+  renderDetailRemarks(state);
 }
 
 function clearGameDetail() {
@@ -4509,8 +4624,63 @@ function clearGameDetail() {
   selectedDetailSetFilter = null;
   _detailState = null;
   _detailTimeline = null;
+  _detailRemarksEditMode = false;
   $("gameDetailPlaceholder").hidden = false;
   $("gameDetailContent").hidden = true;
+}
+
+function renderDetailRemarks(state) {
+  var body = $("detailRemarksBody");
+  if (!body) return;
+  var remarks = (state && state.remarks) || [];
+  var editBtn = $("btnEditRemarks");
+  if (editBtn) editBtn.classList.toggle("active", _detailRemarksEditMode);
+
+  if (!remarks.length) {
+    body.innerHTML = '<div class="event-log-empty">No remarks recorded.</div>';
+    return;
+  }
+
+  body.innerHTML = remarks.map(function (r, i) {
+    var num = (i + 1) + ".";
+    var time = esc(formatTime(r.timestamp));
+    var context = esc(remarkContextLabel(r.setNumber, r.scoreA, r.scoreB));
+    if (_detailRemarksEditMode) {
+      return '<div class="remark-row remark-row-editing">' +
+        '<span class="remark-num">' + num + '</span>' +
+        '<span class="remark-time">' + time + '</span>' +
+        '<span class="remark-context">' + context + '</span>' +
+        '<textarea class="remark-edit-input" data-remark-id="' + esc(r.id) + '">' + esc(r.text) + '</textarea>' +
+        '<button class="remark-save-btn ctrl-btn" type="button" data-remark-id="' + esc(r.id) + '">Save</button>' +
+        '</div>';
+    }
+    return '<div class="remark-row">' +
+      '<span class="remark-num">' + num + '</span>' +
+      '<span class="remark-time">' + time + '</span>' +
+      '<span class="remark-context">' + context + '</span>' +
+      '<span class="remark-text">' + esc(r.text) + '</span>' +
+      '</div>';
+  }).join("");
+}
+
+// Edits a remark's text in place (post-hoc correction, mirrors saveMatchInfoEdits)
+async function saveRemarkEdit(gameId, remarkId, newText) {
+  function applyEdit(events) {
+    var ev = events.find(function (e) { return e.type === "REMARK_ADDED" && e.remarkId === remarkId; });
+    if (ev) ev.text = newText;
+  }
+  if (gameId === controller.currentGameId) {
+    applyEdit(controller.timeline.events);
+    controller._state = deriveGameState(controller.timeline);
+    await persistGame();
+  } else {
+    var record = await dbLoadGame(gameId);
+    if (record) {
+      applyEdit(record.events || []);
+      await dbSaveGame(record);
+    }
+  }
+  if (selectedDetailGameId === gameId) await selectDetailGame(gameId);
 }
 
 // ---- Edit Match Info (post-hoc correction for finished/in-progress games) --
@@ -5209,12 +5379,34 @@ function buildGrResultsBoxHtml(results, state) {
     "</div>";
 }
 
+function buildGrRemarksBoxHtml(state) {
+  var remarks = state.remarks || [];
+  var bodyHtml;
+  if (!remarks.length) {
+    bodyHtml = '<div class="gr-remark-row gr-remarks-empty">None</div>';
+  } else {
+    bodyHtml = remarks.map(function (r, i) {
+      return '<div class="gr-remark-row">' +
+        '<span class="gr-remark-num">' + (i + 1) + ".</span>" +
+        '<span class="gr-remark-time">' + esc(formatTime24(r.timestamp)) + '</span>' +
+        '<span class="gr-remark-context">' + esc(remarkContextLabel(r.setNumber, r.scoreA, r.scoreB)) + '</span>' +
+        '<span class="gr-remark-text">' + esc(r.text) + '</span>' +
+        '</div>';
+    }).join("");
+  }
+  return '<div class="gr-remarks-box">' +
+    '<div class="gr-box-header"><span class="gr-box-title">Remarks</span></div>' +
+    '<div class="gr-remarks-list">' + bodyHtml + '</div>' +
+    '</div>';
+}
+
 function buildGameReportPageHtml(record, state) {
   return '<div class="gr-page">' +
     buildReportPrintHeaderHtml("Game Report") +
     buildGrInfoBoxHtml(state) +
     buildGrSanctionsBoxHtml(buildGameReportSanctionRows(record), state) +
     buildGrResultsBoxHtml(buildGameReportResults(state), state) +
+    buildGrRemarksBoxHtml(state) +
     buildReportPrintFooterHtml() +
     "</div>";
 }
@@ -5318,6 +5510,16 @@ function exportGameReportXlsx() {
     rows.push(["Match Ending Time", results.matchEnd ? formatTime24FromDate(results.matchEnd) : "N/A"]);
     rows.push(["Total Match Duration", results.totalMatchDuration != null ? formatDurationMin(results.totalMatchDuration) : "N/A"]);
     rows.push(["Winner", results.winnerName || "N/A", results.winnerScore || ""]);
+    rows.push([]);
+    rows.push(["Remarks"]);
+    var remarks = state.remarks || [];
+    if (!remarks.length) {
+      rows.push(["None"]);
+    } else {
+      remarks.forEach(function (r, i) {
+        rows.push([(i + 1) + ".", formatTime24(r.timestamp), remarkContextLabel(r.setNumber, r.scoreA, r.scoreB), r.text]);
+      });
+    }
 
     sheetXmls.push(xlsxSheetXml(rows, GITHUB_URL, merges, [teamHeaderRowIdx]));
   });
@@ -5368,6 +5570,25 @@ function wireGamesPage() {
   });
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && !$("editMatchInfoModal").hidden) closeEditMatchInfoModal();
+  });
+
+  // Remarks section — pencil toggles edit mode; preventDefault so it doesn't also
+  // collapse/expand the <details> it sits inside of
+  $("btnEditRemarks").addEventListener("click", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    _detailRemarksEditMode = !_detailRemarksEditMode;
+    renderDetailRemarks(_detailState);
+  });
+  $("detailRemarksBody").addEventListener("click", function (e) {
+    var btn = e.target.closest(".remark-save-btn");
+    if (!btn || !selectedDetailGameId) return;
+    var row = btn.closest(".remark-row");
+    var textarea = row ? row.querySelector(".remark-edit-input") : null;
+    if (!textarea) return;
+    var newText = textarea.value.trim();
+    if (!newText) return;
+    void saveRemarkEdit(selectedDetailGameId, btn.getAttribute("data-remark-id"), newText);
   });
 
   // Import button
@@ -6054,6 +6275,7 @@ async function init() {
   wireGameSetupForm();
   wireScoreboardControls();
   wireSanctionModal();
+  wireRemarksModal();
   wireGamesPage();
   wireSetupPage();
   wireReportsPage();
