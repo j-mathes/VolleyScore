@@ -2973,6 +2973,15 @@ input.player-num-input {
   color: #fff;
 }
 
+/* Higher specificity than the plain :hover rule above — needed because on touch
+   devices tapping a button leaves it in a "stuck" :hover state (no real mouse to
+   un-hover), which would otherwise repaint the just-activated tab grey instead
+   of blue (only visible after switching tabs via touch, not on initial load). */
+.reports-tab-btn.active:hover:not(:disabled) {
+  background: var(--brand-color);
+  color: #fff;
+}
+
 .report-panel {
   background: var(--bg-card);
   border: 1.5px solid var(--border);
