@@ -73,6 +73,9 @@
   /* Action alert (timeouts, subs, sanctions) */
   --action-glow-color: #a855f7;
   --action-glow-duration: 2s;
+
+  /* Timeout countdown popup — deep orange reads clearly on the light card bg */
+  --timeout-timer-color: #c2410c;
 }
 
 /* ---- Dark theme ---- */
@@ -97,6 +100,8 @@
   --start-set-color: #4ade80;
   --start-set-pulse-color: #4ade80;
   --start-set-rgb: 74, 222, 128;
+  /* Timeout countdown popup — lighter orange for contrast on the dark card bg */
+  --timeout-timer-color: #fb923c;
   --nav-bg: #020617;
 }
 
@@ -3053,6 +3058,68 @@ input.player-num-input {
   to   { opacity: 0; transform: translateX(-50%) translateY(6px); }
 }
 
+/* ---- Timeout countdown overlay ---- */
+.timeout-timer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.timeout-timer-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: clamp(1.5rem, 5vw, 3rem) clamp(1.5rem, 6vw, 4rem);
+  width: min(94vw, 560px);
+  text-align: center;
+  box-shadow: 0 16px 56px rgba(0, 0, 0, 0.45);
+}
+
+.timeout-timer-label {
+  font-size: clamp(1.1rem, 3vw, 1.6rem);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+}
+
+.timeout-timer-team {
+  font-size: clamp(1rem, 2.6vw, 1.3rem);
+  font-weight: 700;
+  color: var(--ink);
+  margin-top: 0.3rem;
+}
+
+.timeout-timer-count {
+  font-size: clamp(4.5rem, 22vw, 9rem);
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--timeout-timer-color);
+  margin: 1rem 0 1.5rem;
+}
+
+.timeout-timer-count.timeout-timer-done {
+  color: var(--danger);
+}
+
+.timeout-timer-end-btn {
+  font-size: clamp(1rem, 2.6vw, 1.2rem);
+  font-weight: 700;
+  padding: 0.75rem 2.2rem;
+  border-radius: var(--radius);
+  background: var(--brand-color);
+  color: #fff;
+}
+
+.timeout-timer-end-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--brand-color) 85%, #000 15%);
+}
+
 /* ---- Win condition glow ---- */
 @keyframes win-glow-pulse {
   0%   { box-shadow: 0 0 0 2px var(--win-glow-color); }
@@ -3652,7 +3719,8 @@ input.player-num-input {
   .reports-tabs,
   .report-toolbar,
   .report-game-picker,
-  .modal-overlay {
+  .modal-overlay,
+  .timeout-timer-overlay {
     display: none !important;
   }
 

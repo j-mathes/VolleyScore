@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "24";
+var APP_VERSION = "25";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -115,6 +115,9 @@ var DEFAULT_SETTINGS = {
   // Action alert (timeouts, subs, sanctions)
   actionGlowColor: "#a855f7",
   actionGlowDuration: 2,
+  // Timeout countdown popup
+  timeoutTimerEnabled: false,
+  timeoutTimerDuration: 60,
 };
 
 // ---- Settings -------------------------------------------
@@ -2434,6 +2437,7 @@ function showSetupPanel() {
   $("gameSetupPanel").hidden = false;
   $("navLogBtn").hidden = true;
   $("navRemarksBtn").hidden = true;
+  closeTimeoutCountdown(); // don't leave a stale countdown showing after leaving the game
   _justEndedGame = false; // navigating away clears the undo window
   _tbPrevPhase = -1;
   _setWinKey = null;
@@ -3410,6 +3414,52 @@ function showToast(message, duration, extraClass) {
   }, duration + 400); // extra time covers the fade-out animation
 }
 
+// ---- Timeout Countdown Overlay ---------------------------
+
+var _timeoutTimerInterval = null;
+var _timeoutTimerAutoHideTimer = null;
+
+function startTimeoutCountdown(team) {
+  if (!settings.timeoutTimerEnabled) return;
+  var state = controller.getState();
+  var teamName = state ? (team === "A" ? state.teamA : state.teamB) : ("Team " + team);
+  var remaining = settings.timeoutTimerDuration || 60;
+
+  clearTimeoutCountdown();
+
+  var countEl = $("timeoutTimerCount");
+  countEl.textContent = remaining;
+  countEl.classList.remove("timeout-timer-done");
+  $("timeoutTimerTeam").textContent = teamName;
+  $("timeoutTimerOverlay").removeAttribute("hidden");
+
+  _timeoutTimerInterval = setInterval(function () {
+    remaining--;
+    if (remaining <= 0) {
+      countEl.textContent = 0;
+      countEl.classList.add("timeout-timer-done");
+      clearInterval(_timeoutTimerInterval);
+      _timeoutTimerInterval = null;
+      var hideMs = (settings.winToastDuration || 3) * 1000;
+      _timeoutTimerAutoHideTimer = setTimeout(closeTimeoutCountdown, hideMs);
+    } else {
+      countEl.textContent = remaining;
+    }
+  }, 1000);
+}
+
+// Stops any running countdown/auto-hide timers without touching the overlay's visibility.
+function clearTimeoutCountdown() {
+  if (_timeoutTimerInterval) { clearInterval(_timeoutTimerInterval); _timeoutTimerInterval = null; }
+  if (_timeoutTimerAutoHideTimer) { clearTimeout(_timeoutTimerAutoHideTimer); _timeoutTimerAutoHideTimer = null; }
+}
+
+function closeTimeoutCountdown() {
+  clearTimeoutCountdown();
+  var overlay = $("timeoutTimerOverlay");
+  if (overlay) overlay.hidden = true;
+}
+
 // ---- Score Page — Game Controls -------------------------
 
 function wireScoreboardControls() {
@@ -3432,11 +3482,15 @@ function wireScoreboardControls() {
   $("btnCardA").addEventListener("click", function () { openSanctionModal("A"); });
   $("btnCardB").addEventListener("click", function () { openSanctionModal("B"); });
 
+  // Timeout countdown overlay — single dismiss button
+  $("btnEndTimeoutTimer").addEventListener("click", closeTimeoutCountdown);
+
   // Undo / Redo
   $("btnUndo").addEventListener("click", function () {
     if (settings.confirmUndo && !confirm("Undo last action?")) return;
     controller.undo();
     renderScoreboard();
+    closeTimeoutCountdown(); // an undone timeout shouldn't leave a stale countdown showing
   });
   $("btnRedo").addEventListener("click", function () {
     controller.redo();
@@ -3721,6 +3775,7 @@ function dispatchTimeout(team) {
   });
   renderScoreboard();
   applyActionGlow($("toIndicator" + team));
+  startTimeoutCountdown(team);
 }
 
 function dispatchSub(team) {
@@ -5672,6 +5727,8 @@ function renderSetupPage() {
   $("cfgPromptSwitchSidesMidDecider").checked = !!settings.promptSwitchSidesMidDecider;
   $("cfgDefTimeouts").textContent = settings.defaultTimeouts;
   $("cfgDefSubs").textContent = settings.defaultSubs;
+  $("cfgTimeoutTimerEnabled").checked = !!settings.timeoutTimerEnabled;
+  $("cfgTimeoutTimerDuration").textContent = settings.timeoutTimerDuration !== undefined ? settings.timeoutTimerDuration : 60;
   $("cfgNotchEnabled").checked = !!settings.notchEnabled;
   $("notchOptions").hidden = !settings.notchEnabled;
   var notchSideRadio = document.querySelector('input[name="cfgNotchSide"][value="' + (settings.notchSide || "left") + '"]');
@@ -5833,6 +5890,20 @@ function wireSetupPage() {
   });
   $("btnDefSubsUp").addEventListener("click", function () {
     if (settings.defaultSubs < 18) { settings.defaultSubs++; $("cfgDefSubs").textContent = settings.defaultSubs; saveSettings(); }
+  });
+
+  // Timeout countdown timer
+  $("cfgTimeoutTimerEnabled").addEventListener("change", function () {
+    settings.timeoutTimerEnabled = this.checked;
+    saveSettings();
+  });
+  $("btnTimeoutTimerDurDown").addEventListener("click", function () {
+    var v = settings.timeoutTimerDuration !== undefined ? settings.timeoutTimerDuration : 60;
+    if (v > 10) { settings.timeoutTimerDuration = v - 5; $("cfgTimeoutTimerDuration").textContent = settings.timeoutTimerDuration; saveSettings(); }
+  });
+  $("btnTimeoutTimerDurUp").addEventListener("click", function () {
+    var v = settings.timeoutTimerDuration !== undefined ? settings.timeoutTimerDuration : 60;
+    if (v < 300) { settings.timeoutTimerDuration = v + 5; $("cfgTimeoutTimerDuration").textContent = settings.timeoutTimerDuration; saveSettings(); }
   });
 
   // Scoring defaults — regular sets

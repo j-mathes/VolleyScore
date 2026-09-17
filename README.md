@@ -1,6 +1,6 @@
 ﻿# VolleyScore
 
-**Version 24**
+**Version 25**
 
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
@@ -53,6 +53,7 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Fair Play rules** — None / Triple Ball / Full / Partial; all timeout and sub limits enforced automatically (see [Fair Play Rules](#fair-play-rules))
 - **Scoring** — tap +/− per team; serve dot follows the last scorer automatically
 - **Timeouts** — dot indicator (filled = used); count enforced per fair play rule; blocked mid-sequence in Triple Ball
+- **Timeout Timer** — optional large full-screen countdown popup when a timeout is called, off by default (see [Timeout Timer](#timeout-timer))
 - **Substitutions** — per-team counter; fair play restrictions applied automatically
 - **Sanctions** — full misconduct and delay sanction system with escalation enforcement (see [Sanctions](#sanctions))
 - **Remarks** — a free-form, timestamped notepad per match; add numbered notes during a live game from the top nav, view or edit them from Game Detail, and see them in the Match Log and Game Report (see [Remarks](#remarks))
@@ -232,6 +233,17 @@ Configure color and duration in **Setup → Scoring Defaults → Action Alert** 
 
 ---
 
+## Timeout Timer
+
+An optional large on-screen countdown for timeouts — off by default.
+
+- Enable it in **Setup → Game Defaults → Timeout Timer** and set the duration in seconds (default 60).
+- When on, calling a timeout for either team shows a full-screen popup with the team name and a large, bold, high-contrast countdown (the color is tuned separately for light and dark mode so it stands out either way).
+- A single **End Timeout** button lets the referee dismiss it early if the timeout ends before time is up.
+- If the countdown reaches 0, the popup stays up briefly (using the **Win condition toast duration** from Setup → Scoring Defaults → Win Alert) and then disappears automatically.
+
+---
+
 ## Sanctions
 
 ### Misconduct (individual)
@@ -368,7 +380,7 @@ A detailed, printable score sheet modeled on the official FIVB score sheet, adap
 | Section | Settings |
 |---------|----------|
 | Appearance | Dark mode, font size, team colors, sidebar border, Start Set button colors, score button layout (&minus;/+ order and mirroring), Keep Screen Awake, Confirm before Undo, notch padding (side and amount — useful in landscape when the phone notch covers the sidebar) |
-| Game Defaults | Persist New Game Data toggle (see [Persisting New Game Data](#persisting-new-game-data)); Referee Name (optional — used on reports, see [Reports](#reports)); default team names, location, gender, age category, league, scheduled start (see [Match Timing](#match-timing)), format, variation, fair play rule, side switching (see [Side Switching](#side-switching)), timeouts/set, subs/set |
+| Game Defaults | Persist New Game Data toggle (see [Persisting New Game Data](#persisting-new-game-data)); Referee Name (optional — used on reports, see [Reports](#reports)); default team names, location, gender, age category, league, scheduled start (see [Match Timing](#match-timing)), format, variation, fair play rule, side switching (see [Side Switching](#side-switching)), timeouts/set, subs/set, Timeout Timer (see [Timeout Timer](#timeout-timer)) |
 | Scoring Defaults | Win at / Cap / Win by for regular and deciding sets; Win Alert glow and toast color/duration settings; Action Alert color and duration |
 | Match Info Lists | Add/rename/remove Team Names, Locations, Age Categories, and Leagues; toggle to show/hide the rename (pencil) icons (see [Match Info Lists](#match-info-lists)) |
 | Data | Export/import all games (JSON, one/several/all — see [Selecting Games to Export or Delete](#selecting-games-to-export-or-delete)); export/import Match Info Lists (JSON or Excel) (see [Match Info Lists](#match-info-lists)); clear all data |

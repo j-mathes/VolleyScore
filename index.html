@@ -368,6 +368,16 @@
 
     </div><!-- end scoreboard -->
 
+    <!-- ===== Timeout Countdown Overlay ===== -->
+    <div id="timeoutTimerOverlay" class="timeout-timer-overlay" hidden role="dialog" aria-modal="true" aria-label="Timeout countdown">
+      <div class="timeout-timer-card">
+        <div class="timeout-timer-label">Time Out</div>
+        <div class="timeout-timer-team" id="timeoutTimerTeam"></div>
+        <div class="timeout-timer-count" id="timeoutTimerCount">60</div>
+        <button id="btnEndTimeoutTimer" class="timeout-timer-end-btn" type="button">End Timeout</button>
+      </div>
+    </div>
+
   </div><!-- end scorePage -->
 
   <!-- ===== Games Page ===== -->
@@ -711,6 +721,25 @@
           <button id="btnDefSubsUp" type="button" class="stepper-btn">+</button>
         </div>
       </div>
+
+      <hr class="setup-divider">
+      <div class="setting-row"><span class="setting-label setting-label-section">Timeout Timer</span></div>
+      <div class="setting-row">
+        <label class="setting-label" for="cfgTimeoutTimerEnabled">Show Timeout Countdown Timer</label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="cfgTimeoutTimerEnabled">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div class="setting-row">
+        <label class="setting-label">Timer duration (seconds)</label>
+        <div class="stepper">
+          <button id="btnTimeoutTimerDurDown" type="button" class="stepper-btn">&minus;</button>
+          <span id="cfgTimeoutTimerDuration" class="stepper-val">60</span>
+          <button id="btnTimeoutTimerDurUp" type="button" class="stepper-btn">+</button>
+        </div>
+      </div>
+      <p class="setup-hint">When on, taking a timeout during a live match shows a large full-screen countdown. Tap "End Timeout" to dismiss it early — it also disappears automatically a few seconds after reaching 0 (uses the Win condition toast duration in Scoring Defaults below).</p>
     </div>
 
     <div class="setup-card">
