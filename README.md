@@ -1,6 +1,6 @@
 ﻿# VolleyScore
 
-**Version 26**
+**Version 27**
 
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 

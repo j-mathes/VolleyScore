@@ -2445,11 +2445,25 @@ details[open] .event-log-summary::before {
 }
 
 .remark-preset-row-editing {
-  padding: 0.3rem 0.5rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding: 0.5rem;
 }
 
 .remark-preset-input {
   width: 100%;
+  min-height: 3.2rem;
+}
+
+.remark-preset-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.remark-preset-cancel-btn {
+  background: transparent;
 }
 
 .remark-preset-reorder {
@@ -2568,12 +2582,16 @@ details[open] .event-log-summary::before {
 }
 
 .ml-chip-color {
-  width: 16px;
-  height: 16px;
+  /* Bigger than the resting .ml-chip-color-dot — this version is only shown
+     for the single chip currently being edited, and needs to be an easy
+     touch target on mobile (was 16px, too small/cramped next to the rename
+     input for fingers to hit reliably). */
+  width: 28px;
+  height: 28px;
   min-width: unset;
   min-height: unset;
   border-radius: 50%;
-  border: 1.5px solid rgba(0, 0, 0, 0.25);
+  border: 2px solid rgba(0, 0, 0, 0.3);
   padding: 0;
   flex-shrink: 0;
   cursor: pointer;
@@ -2629,7 +2647,10 @@ details[open] .event-log-summary::before {
 }
 
 .ml-chip-editing {
-  padding: 0.15rem;
+  padding: 0.3rem 0.4rem;
+  /* Wider than the base .ml-chip gap (0.35rem) so the color swatch and the
+     rename input have clear breathing room between them on mobile. */
+  gap: 0.65rem;
 }
 
 .ml-chip-input {

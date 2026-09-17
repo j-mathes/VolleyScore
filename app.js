@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "26";
+var APP_VERSION = "27";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -496,8 +496,18 @@ function renderRemarkPresetList() {
 
   container.innerHTML = list.map(function (text, i) {
     if (_remarkPresetEditingIndex === i) {
+      // A full <textarea> (not a single-line, select-all-on-focus input) so long
+      // remark text wraps and stays fully visible/editable, with explicit Save/
+      // Cancel buttons instead of committing on blur — on mobile, a pre-selected
+      // input makes tapping mid-text bring up the copy/replace menu instead of
+      // placing the cursor, and losing focus (e.g. to dismiss that menu) would
+      // otherwise silently commit or lose the in-progress edit.
       return '<div class="remark-preset-row remark-preset-row-editing">' +
-        '<input type="text" class="remark-preset-input" data-index="' + i + '" value="' + esc(text) + '">' +
+        '<textarea class="remark-preset-input" data-index="' + i + '">' + esc(text) + '</textarea>' +
+        '<div class="remark-preset-edit-actions">' +
+        '<button type="button" class="remark-preset-save-btn ctrl-btn" data-index="' + i + '">Save</button>' +
+        '<button type="button" class="remark-preset-cancel-btn" data-index="' + i + '">Cancel</button>' +
+        '</div>' +
         '</div>';
     }
     return '<div class="remark-preset-row">' +
@@ -506,14 +516,17 @@ function renderRemarkPresetList() {
       '<button type="button" class="remark-preset-move-btn" data-dir="down" data-index="' + i + '"' + (i === list.length - 1 ? " disabled" : "") + ' aria-label="Move down">&#9660;</button>' +
       '</div>' +
       '<span class="remark-preset-text">' + esc(text) + '</span>' +
-      (settings.showMasterListEditIcons ? '<button type="button" class="remark-preset-edit-btn" data-index="' + i + '" aria-label="Edit remark">&#9998;</button>' : "") +
+      '<button type="button" class="remark-preset-edit-btn" data-index="' + i + '" aria-label="Edit remark">&#9998;</button>' +
       '<button type="button" class="remark-preset-remove-btn" data-index="' + i + '" aria-label="Remove remark">&times;</button>' +
       '</div>';
   }).join("");
 
   if (_remarkPresetEditingIndex !== null) {
     var input = container.querySelector(".remark-preset-input");
-    if (input) { input.focus(); input.select(); }
+    // Focus with the cursor at the end (not select-all) so normal tap-to-position
+    // editing works right away, and no accidental full-text overwrite on the
+    // first keystroke.
+    if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
   }
 }
 
@@ -6469,6 +6482,21 @@ function wireSetupPage() {
       renderRemarkPresetList();
       return;
     }
+    var saveBtn = e.target.closest(".remark-preset-save-btn");
+    if (saveBtn) {
+      var row = saveBtn.closest(".remark-preset-row");
+      var textarea = row ? row.querySelector(".remark-preset-input") : null;
+      _remarkPresetEditingIndex = null;
+      if (textarea) editRemarkPreset(parseInt(saveBtn.getAttribute("data-index"), 10), textarea.value);
+      renderRemarkPresetList();
+      return;
+    }
+    var cancelBtn = e.target.closest(".remark-preset-cancel-btn");
+    if (cancelBtn) {
+      _remarkPresetEditingIndex = null;
+      renderRemarkPresetList();
+      return;
+    }
     var removeBtn = e.target.closest(".remark-preset-remove-btn");
     if (removeBtn) {
       removeRemarkPreset(parseInt(removeBtn.getAttribute("data-index"), 10));
@@ -6478,16 +6506,7 @@ function wireSetupPage() {
   document.addEventListener("keydown", function (e) {
     var input = e.target.closest(".remark-preset-input");
     if (!input) return;
-    if (e.key === "Enter") { e.preventDefault(); input.blur(); }
-    else if (e.key === "Escape") { e.preventDefault(); _remarkPresetEditingIndex = null; renderRemarkPresetList(); }
-  });
-  document.addEventListener("focusout", function (e) {
-    var input = e.target.closest(".remark-preset-input");
-    if (!input || _remarkPresetEditingIndex === null) return;
-    var idx = parseInt(input.getAttribute("data-index"), 10);
-    _remarkPresetEditingIndex = null;
-    editRemarkPreset(idx, input.value);
-    renderRemarkPresetList();
+    if (e.key === "Escape") { e.preventDefault(); _remarkPresetEditingIndex = null; renderRemarkPresetList(); }
   });
 
   // League "manage members" modal — open, close, filter, toggle membership
