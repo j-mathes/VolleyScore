@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "25";
+var APP_VERSION = "26";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -101,6 +101,10 @@ var DEFAULT_SETTINGS = {
   masterAgeCategories: ["Senior", "Junior", "18U", "17U", "16U", "15U", "14U", "13U", "12U"],
   masterLeagues: ["CSHSAA", "ISAA", "Foothills", "Rockyview", "Volleyball Alberta"],
   showMasterListEditIcons: true,
+  // Pre-defined remark text a referee can pick from when adding a remark during a
+  // live game — order here IS the order shown in the live picker (user-controlled,
+  // never auto-sorted, unlike the master lists above).
+  remarkPresets: ["Game delayed due to previous match."],
   // Scoring defaults
   defaultSetWinScore: 25,
   defaultSetWinBy: 2,
@@ -202,6 +206,46 @@ function renameInMasterList(listName, oldValue, rawNewValue) {
   if (listName === "masterLeagues") renameLeagueEverywhere(oldValue, newValue);
   saveSettings();
   return true;
+}
+
+// ---- Remark presets (Setup \u2192 Pre-defined Remarks) --------------------
+// Plain ordered string list \u2014 unlike the master lists above, order is
+// user-controlled (never auto-sorted) since it drives the order shown in the
+// live Remarks picker.
+
+function addRemarkPreset(rawText) {
+  var text = safeStr(rawText).trim();
+  if (!text) return false;
+  var list = Array.isArray(settings.remarkPresets) ? settings.remarkPresets : [];
+  settings.remarkPresets = list.concat([text]);
+  saveSettings();
+  return true;
+}
+
+function editRemarkPreset(index, rawText) {
+  var text = safeStr(rawText).trim();
+  var list = Array.isArray(settings.remarkPresets) ? settings.remarkPresets : [];
+  if (!text || index < 0 || index >= list.length) return false;
+  settings.remarkPresets = list.map(function (v, i) { return i === index ? text : v; });
+  saveSettings();
+  return true;
+}
+
+function removeRemarkPreset(index) {
+  var list = Array.isArray(settings.remarkPresets) ? settings.remarkPresets : [];
+  settings.remarkPresets = list.filter(function (v, i) { return i !== index; });
+  saveSettings();
+}
+
+function moveRemarkPreset(index, delta) {
+  var list = Array.isArray(settings.remarkPresets) ? settings.remarkPresets.slice() : [];
+  var newIndex = index + delta;
+  if (newIndex < 0 || newIndex >= list.length) return;
+  var tmp = list[index];
+  list[index] = list[newIndex];
+  list[newIndex] = tmp;
+  settings.remarkPresets = list;
+  saveSettings();
 }
 
 // ---- League ↔ Team / Age Category associations -----------------------
@@ -434,6 +478,43 @@ function renderMasterListEditors() {
   renderMasterListChips("mlListLocations", "masterLocations");
   renderMasterListChips("mlListAgeCategories", "masterAgeCategories");
   renderMasterListChips("mlListLeagues", "masterLeagues");
+}
+
+// ---- Remark presets editor (Setup) ----------------------------------
+
+var _remarkPresetEditingIndex = null; // index currently in inline-edit mode, or null
+
+function renderRemarkPresetList() {
+  var container = $("remarkPresetList");
+  if (!container) return;
+  var list = settings.remarkPresets || [];
+
+  if (!list.length) {
+    container.innerHTML = '<span class="no-data-msg">None yet</span>';
+    return;
+  }
+
+  container.innerHTML = list.map(function (text, i) {
+    if (_remarkPresetEditingIndex === i) {
+      return '<div class="remark-preset-row remark-preset-row-editing">' +
+        '<input type="text" class="remark-preset-input" data-index="' + i + '" value="' + esc(text) + '">' +
+        '</div>';
+    }
+    return '<div class="remark-preset-row">' +
+      '<div class="remark-preset-reorder">' +
+      '<button type="button" class="remark-preset-move-btn" data-dir="up" data-index="' + i + '"' + (i === 0 ? " disabled" : "") + ' aria-label="Move up">&#9650;</button>' +
+      '<button type="button" class="remark-preset-move-btn" data-dir="down" data-index="' + i + '"' + (i === list.length - 1 ? " disabled" : "") + ' aria-label="Move down">&#9660;</button>' +
+      '</div>' +
+      '<span class="remark-preset-text">' + esc(text) + '</span>' +
+      (settings.showMasterListEditIcons ? '<button type="button" class="remark-preset-edit-btn" data-index="' + i + '" aria-label="Edit remark">&#9998;</button>' : "") +
+      '<button type="button" class="remark-preset-remove-btn" data-index="' + i + '" aria-label="Remove remark">&times;</button>' +
+      '</div>';
+  }).join("");
+
+  if (_remarkPresetEditingIndex !== null) {
+    var input = container.querySelector(".remark-preset-input");
+    if (input) { input.focus(); input.select(); }
+  }
 }
 
 // ---- League "manage members" modal ---------------------------------
@@ -1883,6 +1964,180 @@ async function importCategoriesFromXlsx(arrayBuffer) {
   if (colorsAdded) msg += " Updated " + colorsAdded + " team color" + (colorsAdded === 1 ? "" : "s") + ".";
   if (associationsAdded) msg += " Linked " + associationsAdded + " league association" + (associationsAdded === 1 ? "" : "s") + ".";
   alert(msg);
+}
+
+// ---- Pre-defined Remarks: export / import (JSON, Excel, CSV) -------------
+// Unlike Match Info Lists, order matters here, so importing only ever
+// APPENDS new (case-insensitive de-duped) entries to the end — it never
+// reorders or replaces what's already there.
+
+function exportRemarkPresetsJson() {
+  var payload = {
+    version: 1,
+    type: "volleyscore-remark-presets",
+    exportedAt: new Date().toISOString(),
+    remarkPresets: settings.remarkPresets || [],
+  };
+  downloadFile("volleyscore_remarks_" + new Date().toISOString().slice(0, 10) + ".json",
+    JSON.stringify(payload, null, 2), "application/json");
+}
+
+function exportRemarkPresetsXlsx() {
+  var rows = [["Remarks"]].concat((settings.remarkPresets || []).map(function (v) { return [v]; }));
+  var enc = new TextEncoder();
+  var files = [
+    { name: "[Content_Types].xml", data: enc.encode(xlsxContentTypesXml(1)) },
+    { name: "_rels/.rels", data: enc.encode(XLSX_ROOT_RELS) },
+    { name: "xl/workbook.xml", data: enc.encode(xlsxWorkbookXml(["Remarks"])) },
+    { name: "xl/_rels/workbook.xml.rels", data: enc.encode(xlsxWorkbookRelsXml(1)) },
+    { name: "xl/styles.xml", data: enc.encode(XLSX_STYLES_XML) },
+    { name: "xl/worksheets/sheet1.xml", data: enc.encode(xlsxSheetXml(rows)) },
+  ];
+  var zipBytes = buildZip(files);
+  downloadFile("volleyscore_remarks_" + new Date().toISOString().slice(0, 10) + ".xlsx",
+    zipBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+}
+
+function csvEscapeField(value) {
+  var v = String(value == null ? "" : value);
+  return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+
+function exportRemarkPresetsCsv() {
+  var rows = [["Remarks"]].concat((settings.remarkPresets || []).map(function (v) { return [v]; }));
+  var csv = rows.map(function (r) { return r.map(csvEscapeField).join(","); }).join("\r\n");
+  downloadFile("volleyscore_remarks_" + new Date().toISOString().slice(0, 10) + ".csv", csv, "text/csv");
+}
+
+// Minimal RFC-4180-ish CSV parser: handles quoted fields with embedded commas,
+// newlines, and escaped ("") quotes. Good enough for a simple single-column file.
+function parseCsv(text) {
+  var rows = [];
+  var row = [];
+  var field = "";
+  var inQuotes = false;
+  // Strip a leading UTF-8 BOM, which Excel adds to CSVs it writes.
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  for (var i = 0; i < text.length; i++) {
+    var c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ",") {
+      row.push(field); field = "";
+    } else if (c === "\r") {
+      // handled on the following \n
+    } else if (c === "\n") {
+      row.push(field); rows.push(row); row = []; field = "";
+    } else {
+      field += c;
+    }
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+// Appends new (case-insensitive de-duped) preset strings; returns how many were added.
+function mergeRemarkPresets(candidates) {
+  var added = 0;
+  candidates.forEach(function (text) {
+    if (typeof text !== "string") return;
+    var trimmed = text.trim();
+    if (!trimmed) return;
+    var exists = (settings.remarkPresets || []).some(function (v) { return v.toLowerCase() === trimmed.toLowerCase(); });
+    if (exists) return;
+    if (addRemarkPreset(trimmed)) added++;
+  });
+  return added;
+}
+
+function importRemarkPresetsFromJson(text) {
+  var payload;
+  try { payload = JSON.parse(text); } catch (e) { alert("Invalid JSON file."); return; }
+  var list = Array.isArray(payload) ? payload
+    : (payload && payload.type === "volleyscore-remark-presets" && Array.isArray(payload.remarkPresets)) ? payload.remarkPresets
+    : null;
+  if (!list) { alert("Unrecognized file format."); return; }
+  var added = mergeRemarkPresets(list);
+  renderRemarkPresetList();
+  alert("Imported " + added + " new remark" + (added === 1 ? "" : "s") + ".");
+}
+
+function importRemarkPresetsFromCsv(text) {
+  var rows = parseCsv(text);
+  if (rows.length && (rows[0][0] || "").trim().toLowerCase().replace(/s$/, "") === "remark") rows.shift();
+  var added = mergeRemarkPresets(rows.map(function (r) { return r[0]; }));
+  renderRemarkPresetList();
+  alert("Imported " + added + " new remark" + (added === 1 ? "" : "s") + ".");
+}
+
+async function importRemarkPresetsFromXlsx(arrayBuffer) {
+  var bytes = new Uint8Array(arrayBuffer);
+  var decoder = new TextDecoder();
+  var parser = new DOMParser();
+  var added = 0;
+
+  try {
+    var entries = readZipEntries(bytes);
+    async function readPart(name) {
+      var entry = entries[name];
+      if (!entry) return null;
+      var data = await readZipEntryData(bytes, entry);
+      return parser.parseFromString(decoder.decode(data), "application/xml");
+    }
+
+    var workbookXml = await readPart("xl/workbook.xml");
+    if (!workbookXml) throw new Error("Missing workbook.xml.");
+    var relsXml = await readPart("xl/_rels/workbook.xml.rels");
+    var relMap = {};
+    if (relsXml) {
+      Array.prototype.forEach.call(relsXml.getElementsByTagName("Relationship"), function (rel) {
+        relMap[rel.getAttribute("Id")] = rel.getAttribute("Target");
+      });
+    }
+    var sharedStrings = [];
+    var sstXml = await readPart("xl/sharedStrings.xml");
+    if (sstXml) {
+      Array.prototype.forEach.call(sstXml.getElementsByTagName("si"), function (si) {
+        sharedStrings.push(xmlText(si));
+      });
+    }
+
+    var sheetEls = workbookXml.getElementsByTagName("sheet");
+    var values = null;
+    for (var i = 0; i < sheetEls.length; i++) {
+      var sheetName = (sheetEls[i].getAttribute("name") || "").trim();
+      if (sheetName.toLowerCase().replace(/s$/, "") !== "remark") continue;
+      var rId = sheetEls[i].getAttribute("r:id") ||
+        sheetEls[i].getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id");
+      var target = relMap[rId];
+      if (!target) continue;
+      var sheetXml = await readPart(xlsxPartPath(target));
+      if (!sheetXml) continue;
+      values = [];
+      var rows = sheetXml.getElementsByTagName("row");
+      for (var r = 0; r < rows.length; r++) {
+        var text = xlsxCellText(rows[r].getElementsByTagName("c")[0], sharedStrings);
+        if (text) values.push(text);
+      }
+      if (values.length && values[0].toLowerCase().replace(/s$/, "") === "remark") values.shift();
+      break;
+    }
+    if (!values) throw new Error('No "Remarks" sheet found in that workbook.');
+    added = mergeRemarkPresets(values);
+  } catch (e) {
+    alert(e.message || "Could not import that Excel file.");
+    return;
+  }
+
+  renderRemarkPresetList();
+  alert("Imported " + added + " new remark" + (added === 1 ? "" : "s") + " from Excel.");
 }
 
 // ---- UI Utilities ---------------------------------------
@@ -4365,12 +4620,26 @@ function renderRemarksModalList() {
 function openRemarksModal() {
   renderRemarksModalList();
   $("remarksModalInput").value = "";
+  $("remarksPresetPanel").hidden = true;
   $("remarksModal").removeAttribute("hidden");
   $("remarksModalInput").focus();
 }
 
 function closeRemarksModal() {
   $("remarksModal").hidden = true;
+}
+
+// Renders the pick-a-preset panel inside the live Remarks modal (not the Setup editor).
+function renderRemarksPresetPickerList() {
+  var container = $("remarksPresetList");
+  var presets = settings.remarkPresets || [];
+  if (!presets.length) {
+    container.innerHTML = '<div class="remarks-modal-empty">No pre-defined remarks yet. Add some in Setup \u2192 Pre-defined Remarks.</div>';
+    return;
+  }
+  container.innerHTML = presets.map(function (text, i) {
+    return '<button type="button" class="remarks-preset-pick-btn" data-index="' + i + '">' + esc(text) + '</button>';
+  }).join("");
 }
 
 function wireRemarksModal() {
@@ -4393,6 +4662,26 @@ function wireRemarksModal() {
     // game, keep its Remarks section in sync too.
     if (selectedDetailGameId === controller.currentGameId) renderDetailRemarks(controller.getState());
     input.focus();
+  });
+
+  // Choose-from-list toggle + picking a preset just fills the textarea (doesn't
+  // add it directly) so the referee can still tweak the wording before submitting.
+  $("btnPickRemarkPreset").addEventListener("click", function () {
+    var panel = $("remarksPresetPanel");
+    panel.hidden = !panel.hidden;
+    if (!panel.hidden) renderRemarksPresetPickerList();
+  });
+  $("remarksPresetList").addEventListener("click", function (e) {
+    var btn = e.target.closest(".remarks-preset-pick-btn");
+    if (!btn) return;
+    var presets = settings.remarkPresets || [];
+    var text = presets[parseInt(btn.getAttribute("data-index"), 10)];
+    if (text === undefined) return;
+    var input = $("remarksModalInput");
+    input.value = text;
+    $("remarksPresetPanel").hidden = true;
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
   });
 }
 
@@ -5746,6 +6035,8 @@ function renderSetupPage() {
   $("cfgDefGender").value = settings.defaultGender || "";
   renderMasterListEditors();
   renderDefaultPickerOptions();
+  _remarkPresetEditingIndex = null;
+  renderRemarkPresetList();
   // Scoring defaults
   $("cfgDefSetWinScore").textContent    = settings.defaultSetWinScore    !== undefined ? settings.defaultSetWinScore    : 25;
   $("cfgDefSetWinBy").textContent       = settings.defaultSetWinBy       !== undefined ? settings.defaultSetWinBy       : 2;
@@ -6156,6 +6447,49 @@ function wireSetupPage() {
     renderDefaultPickerOptions();
   });
 
+  // Pre-defined Remarks — add, reorder, edit, remove
+  $("btnAddRemarkPreset").addEventListener("click", function () {
+    var input = $("cfgAddRemarkPreset");
+    if (addRemarkPreset(input.value)) { input.value = ""; renderRemarkPresetList(); }
+  });
+  $("cfgAddRemarkPreset").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); $("btnAddRemarkPreset").click(); }
+  });
+  document.addEventListener("click", function (e) {
+    var moveBtn = e.target.closest(".remark-preset-move-btn");
+    if (moveBtn) {
+      var idx = parseInt(moveBtn.getAttribute("data-index"), 10);
+      moveRemarkPreset(idx, moveBtn.getAttribute("data-dir") === "up" ? -1 : 1);
+      renderRemarkPresetList();
+      return;
+    }
+    var editBtn = e.target.closest(".remark-preset-edit-btn");
+    if (editBtn) {
+      _remarkPresetEditingIndex = parseInt(editBtn.getAttribute("data-index"), 10);
+      renderRemarkPresetList();
+      return;
+    }
+    var removeBtn = e.target.closest(".remark-preset-remove-btn");
+    if (removeBtn) {
+      removeRemarkPreset(parseInt(removeBtn.getAttribute("data-index"), 10));
+      renderRemarkPresetList();
+    }
+  });
+  document.addEventListener("keydown", function (e) {
+    var input = e.target.closest(".remark-preset-input");
+    if (!input) return;
+    if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+    else if (e.key === "Escape") { e.preventDefault(); _remarkPresetEditingIndex = null; renderRemarkPresetList(); }
+  });
+  document.addEventListener("focusout", function (e) {
+    var input = e.target.closest(".remark-preset-input");
+    if (!input || _remarkPresetEditingIndex === null) return;
+    var idx = parseInt(input.getAttribute("data-index"), 10);
+    _remarkPresetEditingIndex = null;
+    editRemarkPreset(idx, input.value);
+    renderRemarkPresetList();
+  });
+
   // League "manage members" modal — open, close, filter, toggle membership
   document.addEventListener("click", function (e) {
     var btn = e.target.closest(".ml-chip-manage-btn");
@@ -6214,6 +6548,29 @@ function wireSetupPage() {
     reader.onload = function (ev) {
       if (isXlsx) void importCategoriesFromXlsx(ev.target.result);
       else importCategoriesFromJson(ev.target.result);
+    };
+    if (isXlsx) reader.readAsArrayBuffer(file);
+    else reader.readAsText(file);
+    e.target.value = "";
+  });
+
+  // Pre-defined Remarks — export / import (JSON, Excel, CSV)
+  $("btnExportRemarkPresetsJson").addEventListener("click", exportRemarkPresetsJson);
+  $("btnExportRemarkPresetsXlsx").addEventListener("click", exportRemarkPresetsXlsx);
+  $("btnExportRemarkPresetsCsv").addEventListener("click", exportRemarkPresetsCsv);
+  $("btnImportRemarkPresets").addEventListener("click", function () {
+    $("importRemarkPresetsFileInput").click();
+  });
+  $("importRemarkPresetsFileInput").addEventListener("change", function (e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var isXlsx = /\.xlsx$/i.test(file.name);
+    var isCsv = /\.csv$/i.test(file.name);
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      if (isXlsx) void importRemarkPresetsFromXlsx(ev.target.result);
+      else if (isCsv) importRemarkPresetsFromCsv(ev.target.result);
+      else importRemarkPresetsFromJson(ev.target.result);
     };
     if (isXlsx) reader.readAsArrayBuffer(file);
     else reader.readAsText(file);

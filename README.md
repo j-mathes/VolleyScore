@@ -1,6 +1,6 @@
 ﻿# VolleyScore
 
-**Version 25**
+**Version 26**
 
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
@@ -328,6 +328,8 @@ If the wrong team is picked to serve, a compact "Set N serve: Team X" chip stays
 A free-form, timestamped notepad for each match — for anything the structured event log doesn't capture (delays, weather, injuries, official rulings, and so on).
 
 - While a game is live, a **Remarks** button appears in the top nav next to **Match Log**. Tap it to open a popup, type a note, and tap **Add Remark**.
+- Common situations come up again and again, so you can pre-define remark text in **Setup → Pre-defined Remarks** and pick from that list instead of typing it out each time — tap **Choose from List** in the popup, pick one, and it fills the text box (still editable before you tap **Add Remark**, so you can tweak or add detail first). The order you arrange them in Setup (use the ▲▼ arrows) is the order they're listed in that picker. Ships with one default: "Game delayed due to previous match."
+- The pre-defined remarks list can be exported/imported separately as JSON, Excel, or CSV (Setup → Pre-defined Remarks) — importing merges in any new entries (duplicates skipped) without touching your existing list or its order.
 - You never number remarks yourself — each one is numbered automatically (1, 2, 3, ...) in the order it was added.
 - Every remark also records the time, set, and score at the moment it was added, e.g. `Set 2 – (A) 15 - 12 (B)`. Before the first set starts, or between sets, the score is always 0-0 and the set number reflects how many sets have been completed so far (`Set 0` before Set 1 has started, `Set 1` between Sets 1 and 2, and so on).
 - Remarks also appear inline in the **Match Log** event log, in time order alongside every other event — its score column shows the score at that moment, since its position in the log already tells you which set it happened in.
@@ -383,6 +385,7 @@ A detailed, printable score sheet modeled on the official FIVB score sheet, adap
 | Game Defaults | Persist New Game Data toggle (see [Persisting New Game Data](#persisting-new-game-data)); Referee Name (optional — used on reports, see [Reports](#reports)); default team names, location, gender, age category, league, scheduled start (see [Match Timing](#match-timing)), format, variation, fair play rule, side switching (see [Side Switching](#side-switching)), timeouts/set, subs/set, Timeout Timer (see [Timeout Timer](#timeout-timer)) |
 | Scoring Defaults | Win at / Cap / Win by for regular and deciding sets; Win Alert glow and toast color/duration settings; Action Alert color and duration |
 | Match Info Lists | Add/rename/remove Team Names, Locations, Age Categories, and Leagues; toggle to show/hide the rename (pencil) icons (see [Match Info Lists](#match-info-lists)) |
+| Pre-defined Remarks | Add/edit/remove/reorder the quick-pick remark texts used by the live Remarks picker; export/import the list as JSON, Excel, or CSV (see [Remarks](#remarks)) |
 | Data | Export/import all games (JSON, one/several/all — see [Selecting Games to Export or Delete](#selecting-games-to-export-or-delete)); export/import Match Info Lists (JSON or Excel) (see [Match Info Lists](#match-info-lists)); clear all data |
 | Triple Ball | Phase box size, highlight color, scroll speed |
 | About | App version and cache name; update toast appears automatically when a new version is cached |

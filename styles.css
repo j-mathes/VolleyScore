@@ -2420,6 +2420,117 @@ details[open] .event-log-summary::before {
   white-space: nowrap;
 }
 
+/* ---- Pre-defined Remarks editor (Setup) ---- */
+.remark-preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border);
+}
+
+.remark-preset-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="dark"] .remark-preset-row {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.remark-preset-row-editing {
+  padding: 0.3rem 0.5rem;
+}
+
+.remark-preset-input {
+  width: 100%;
+}
+
+.remark-preset-reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.remark-preset-move-btn {
+  min-width: 24px;
+  min-height: 17px;
+  padding: 0;
+  font-size: 0.6rem;
+  line-height: 1;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.remark-preset-move-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.remark-preset-text {
+  flex: 1;
+  font-size: 0.9rem;
+}
+
+.remark-preset-edit-btn,
+.remark-preset-remove-btn {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
+  border-radius: 50%;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.remark-preset-remove-btn:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.25);
+}
+
+/* ---- Pre-defined remark picker (live Remarks modal) ---- */
+.remarks-preset-toggle-btn {
+  margin-bottom: 0.6rem;
+}
+
+.remarks-preset-panel {
+  margin-bottom: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0.3rem;
+}
+
+.remarks-preset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.remarks-preset-pick-btn {
+  text-align: left;
+  background: transparent;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  white-space: normal;
+  width: 100%;
+}
+
+.remarks-preset-pick-btn:hover:not(:disabled) {
+  background: var(--brand-color-light);
+}
+
 .ml-chip-list {
   display: flex;
   flex-wrap: wrap;

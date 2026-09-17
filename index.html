@@ -932,6 +932,26 @@
     </div>
 
     <div class="setup-card">
+      <h2>Pre-defined Remarks</h2>
+      <p class="setup-hint">Common remarks you can quickly pick from when adding a remark during a live game (see <strong>Remarks</strong> on the Score page). The order below is the order they're shown there — use the arrows to move your most-used ones to the top.</p>
+      <div class="ml-add-row">
+        <input id="cfgAddRemarkPreset" type="text" placeholder="Add a pre-defined remark" autocomplete="off">
+        <button id="btnAddRemarkPreset" class="ctrl-btn" type="button">Add</button>
+      </div>
+      <div id="remarkPresetList" class="remark-preset-list"></div>
+
+      <hr class="setup-divider">
+      <p class="setup-hint">Export or import this list as JSON, Excel, or CSV. New entries from the file are merged in (duplicates skipped) &mdash; order and existing entries are left alone.</p>
+      <div class="data-actions">
+        <button id="btnExportRemarkPresetsJson" class="ctrl-btn">Export (JSON)</button>
+        <button id="btnExportRemarkPresetsXlsx" class="ctrl-btn">Export (Excel)</button>
+        <button id="btnExportRemarkPresetsCsv" class="ctrl-btn">Export (CSV)</button>
+        <button id="btnImportRemarkPresets" class="ctrl-btn">Import</button>
+        <input id="importRemarkPresetsFileInput" type="file" accept=".json,.xlsx,.csv" hidden aria-hidden="true">
+      </div>
+    </div>
+
+    <div class="setup-card">
       <h2>Data</h2>
       <p class="setup-hint">Export all saved games as a single JSON file, or import previously exported data.</p>
       <div class="data-actions">
@@ -1140,6 +1160,10 @@
       <h3 id="remarksModalTitle">Match Remarks</h3>
       <div id="remarksModalList" class="remarks-modal-list">
         <div class="remarks-modal-empty">No remarks yet.</div>
+      </div>
+      <button id="btnPickRemarkPreset" class="icon-btn remarks-preset-toggle-btn" type="button">Choose from List &#9662;</button>
+      <div id="remarksPresetPanel" class="remarks-preset-panel" hidden>
+        <div id="remarksPresetList" class="remarks-preset-list"></div>
       </div>
       <label class="setup-field remarks-modal-input-field">
         <span class="setup-field-label">Add a remark</span>
