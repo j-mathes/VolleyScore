@@ -3211,6 +3211,45 @@ input.player-num-input {
   box-shadow: 0 16px 56px rgba(0, 0, 0, 0.45);
 }
 
+/* Score + timeout diamonds for both teams, left/right matching their current
+   court side (mirrors sidesSwapped, same as the main scoreboard panels). */
+.timeout-timer-teams-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.timeout-timer-team-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.timeout-timer-team-score {
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  line-height: 1;
+}
+
+/* Colored per team (not per side), same convention as .score-val on the main
+   scoreboard — follows the team's identity even if sides are swapped. */
+.timeout-timer-score-a {
+  color: var(--team-a);
+}
+
+.timeout-timer-score-b {
+  color: var(--team-b);
+}
+
+.timeout-timer-teams-row .to-dots {
+  margin-left: 0;
+}
+
 .timeout-timer-label {
   font-size: clamp(1.1rem, 3vw, 1.6rem);
   font-weight: 800;
@@ -3239,6 +3278,13 @@ input.player-num-input {
   color: var(--danger);
 }
 
+.timeout-timer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  justify-content: center;
+}
+
 .timeout-timer-end-btn {
   font-size: clamp(1rem, 2.6vw, 1.2rem);
   font-weight: 700;
@@ -3250,6 +3296,22 @@ input.player-num-input {
 
 .timeout-timer-end-btn:hover:not(:disabled) {
   background: color-mix(in srgb, var(--brand-color) 85%, #000 15%);
+}
+
+/* Secondary action — undoing an accidentally-called timeout is less common
+   than ending it normally, so this stays visually quieter and narrower than
+   End Timeout (which comes first/left, this sits to its right). */
+.timeout-timer-undo-btn {
+  font-size: clamp(0.8rem, 1.8vw, 0.92rem);
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.timeout-timer-undo-btn:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.18);
 }
 
 /* ---- Win condition glow ---- */

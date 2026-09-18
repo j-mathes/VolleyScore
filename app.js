@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "27";
+var APP_VERSION = "28";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -3695,6 +3695,24 @@ function startTimeoutCountdown(team) {
 
   clearTimeoutCountdown();
 
+  // Score + timeout diamonds for both teams, placed left/right to match
+  // whichever side of the court each team is currently shown on (sidesSwapped
+  // mirrors the main scoreboard's panel order).
+  var activeSet = state ? state.sets.find(function (s) { return s.setNumber === state.activeSetNumber; }) : null;
+  var leftTeam = sidesSwapped ? "B" : "A";
+  var rightTeam = sidesSwapped ? "A" : "B";
+  var totalTimeouts = state ? state.effectiveTimeoutsPerSet : 0;
+  function scoreFor(t) { return activeSet ? (t === "A" ? activeSet.scoreA : activeSet.scoreB) : 0; }
+  function timeoutsUsedFor(t) { return activeSet ? (t === "A" ? activeSet.timeoutsA : activeSet.timeoutsB) : 0; }
+  var scoreLeftEl = $("timeoutTimerScoreLeft");
+  var scoreRightEl = $("timeoutTimerScoreRight");
+  scoreLeftEl.textContent = scoreFor(leftTeam);
+  scoreLeftEl.className = "timeout-timer-team-score timeout-timer-score-" + leftTeam.toLowerCase();
+  scoreRightEl.textContent = scoreFor(rightTeam);
+  scoreRightEl.className = "timeout-timer-team-score timeout-timer-score-" + rightTeam.toLowerCase();
+  renderTimeoutDots("timeoutTimerDotsLeft", "", timeoutsUsedFor(leftTeam), totalTimeouts);
+  renderTimeoutDots("timeoutTimerDotsRight", "", timeoutsUsedFor(rightTeam), totalTimeouts);
+
   var countEl = $("timeoutTimerCount");
   countEl.textContent = remaining;
   countEl.classList.remove("timeout-timer-done");
@@ -3750,8 +3768,14 @@ function wireScoreboardControls() {
   $("btnCardA").addEventListener("click", function () { openSanctionModal("A"); });
   $("btnCardB").addEventListener("click", function () { openSanctionModal("B"); });
 
-  // Timeout countdown overlay — single dismiss button
+  // Timeout countdown overlay — dismiss, or undo if it was called by accident
   $("btnEndTimeoutTimer").addEventListener("click", closeTimeoutCountdown);
+  $("btnUndoTimeoutTimer").addEventListener("click", function () {
+    if (settings.confirmUndo && !confirm("Undo the timeout?")) return;
+    controller.undo();
+    renderScoreboard();
+    closeTimeoutCountdown();
+  });
 
   // Undo / Redo
   $("btnUndo").addEventListener("click", function () {

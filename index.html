@@ -371,10 +371,23 @@
     <!-- ===== Timeout Countdown Overlay ===== -->
     <div id="timeoutTimerOverlay" class="timeout-timer-overlay" hidden role="dialog" aria-modal="true" aria-label="Timeout countdown">
       <div class="timeout-timer-card">
+        <div class="timeout-timer-teams-row">
+          <div class="timeout-timer-team-col">
+            <span class="timeout-timer-team-score" id="timeoutTimerScoreLeft">0</span>
+            <span class="to-dots" id="timeoutTimerDotsLeft" aria-hidden="true"></span>
+          </div>
+          <div class="timeout-timer-team-col">
+            <span class="timeout-timer-team-score" id="timeoutTimerScoreRight">0</span>
+            <span class="to-dots" id="timeoutTimerDotsRight" aria-hidden="true"></span>
+          </div>
+        </div>
         <div class="timeout-timer-label">Time Out</div>
         <div class="timeout-timer-team" id="timeoutTimerTeam"></div>
         <div class="timeout-timer-count" id="timeoutTimerCount">60</div>
-        <button id="btnEndTimeoutTimer" class="timeout-timer-end-btn" type="button">End Timeout</button>
+        <div class="timeout-timer-actions">
+          <button id="btnEndTimeoutTimer" class="timeout-timer-end-btn" type="button">End Timeout</button>
+          <button id="btnUndoTimeoutTimer" class="timeout-timer-undo-btn" type="button" title="Undo the timeout (e.g. if it was called by accident)">&#8617; Undo</button>
+        </div>
       </div>
     </div>
 

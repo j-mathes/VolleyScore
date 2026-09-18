@@ -1,6 +1,6 @@
 ﻿# VolleyScore
 
-**Version 27**
+**Version 28**
 
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
@@ -239,7 +239,9 @@ An optional large on-screen countdown for timeouts — off by default.
 
 - Enable it in **Setup → Game Defaults → Timeout Timer** and set the duration in seconds (default 60).
 - When on, calling a timeout for either team shows a full-screen popup with the team name and a large, bold, high-contrast countdown (the color is tuned separately for light and dark mode so it stands out either way).
-- A single **End Timeout** button lets the referee dismiss it early if the timeout ends before time is up.
+- Each team's current score and timeout diamonds (same outlined/filled style as the score screen) are shown at the top, on the side matching that team's current court side. The score is colored to match that team's color, same as the main scoreboard.
+- **End Timeout** lets the referee dismiss it early if the timeout ends before time is up.
+- **Undo Timeout** undoes the timeout entirely (in case it was called by accident) and closes the popup — equivalent to tapping the regular **Undo** button.
 - If the countdown reaches 0, the popup stays up briefly (using the **Win condition toast duration** from Setup → Scoring Defaults → Win Alert) and then disappears automatically.
 
 ---
