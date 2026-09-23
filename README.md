@@ -1,6 +1,6 @@
 ﻿# VolleyScore
 
-**Version 30**
+**Version 31**
 
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
@@ -57,7 +57,7 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Timeouts, substitutions & sanctions** — dot/diamond indicators track usage automatically; full misconduct and delay sanction system with escalation enforcement (see [Sanctions](#sanctions))
 - **Timeout Timer** — optional large countdown popup when a timeout is called, with an Undo option in case it was called by accident (see [Timeout Timer](#timeout-timer))
 - **Triple Ball** — animated 6-phase sequence indicator with directional arrows (see [Triple Ball](#triple-ball))
-- **Undo / Redo, side switching & alerts** — full action history, flexible side-swapping (manual, automatic, or prompted), and configurable win/action glows and toasts (see [Side Switching](#side-switching), [Alerts](#alerts))
+- **Undo / Redo, side switching & alerts** — full action history, flexible side-swapping (manual, automatic, or prompted), and configurable win/action glows and toasts; tapping Undo right after an accidental **Start Game** (before any set has started) becomes **Undo Start**, deleting that game in one tap instead of undoing through it (see [Side Switching](#side-switching), [Alerts](#alerts))
 - **Remarks** — a free-form, timestamped notepad per match, with pre-defined quick-pick text, live during the game or edited after (see [Remarks](#remarks))
 
 ### Match Setup & History

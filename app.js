@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "30";
+var APP_VERSION = "31";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -1184,7 +1184,13 @@ function deriveGameState(timeline) {
     setWinnerTeam: setWinnerTeam,
     pendingMatchWin: pendingMatchWin,
     cursor: timeline.cursor,
-    canUndo: timeline.cursor > 0,
+    // > 1, not > 0 — undoing all the way back to (and past) GAME_STARTED leaves
+    // deriveGameState with nothing to derive from, so it returns null; since
+    // toRecord()/persistGame() also bail out on a null state, that "undo" never
+    // actually gets saved, so a saved-then-reloaded game silently resurfaces
+    // with the undo lost. Simplest fix: don't let Undo go there in the first
+    // place — there's no real reason to "undo starting the game" anyway.
+    canUndo: timeline.cursor > 1,
     canRedo: timeline.cursor < timeline.events.length,
   };
 }
@@ -2716,6 +2722,20 @@ function showSetupPanel() {
   initGameSetupForm();
 }
 
+// Fully abandons a game that was started by accident (cursor === 1, i.e. only
+// GAME_STARTED so far, no set ever started) — deletes it outright rather than
+// leaving a "cancelled" record behind, since a plain timeline undo back past
+// GAME_STARTED can't be persisted (deriveGameState has nothing left to derive
+// a state from) and would otherwise resurface as a live game on next launch.
+async function cancelJustStartedGame() {
+  var gameId = controller.currentGameId;
+  controller.clear();
+  localStorage.removeItem(LS_CURRENT);
+  if (gameId) await dbDeleteGame(gameId);
+  showSetupPanel();
+  await renderGamesList();
+}
+
 // Apply team colors from state (or CSS vars). aOverride/bOverride let an
 // active game's per-game team colors take precedence over the global defaults.
 function updateTeamColors(aOverride, bOverride) {
@@ -3428,8 +3448,15 @@ function renderScoreboard() {
     }
   }
 
-  // Undo / Redo — Undo is disabled for completed games unless they were just ended
-  $("btnUndo").disabled = !state.canUndo || (!!state.endedAt && !_justEndedGame);
+  // Undo / Redo — Undo is disabled for completed games unless they were just ended.
+  // Special case: cursor === 1 means only GAME_STARTED has happened (no set
+  // started yet) — canUndo is false there (see deriveGameState), but the button
+  // stays enabled anyway as a one-tap "cancel this accidental Start Game" action
+  // (handled separately in the click handler) instead of a normal timeline undo.
+  var canCancelFreshGame = state.cursor === 1 && !state.endedAt;
+  $("btnUndo").disabled = (!state.canUndo && !canCancelFreshGame) || (!!state.endedAt && !_justEndedGame);
+  $("btnUndo").innerHTML = canCancelFreshGame ? "&#8617; Undo Start" : "&#8617; Undo";
+  $("btnUndo").title = canCancelFreshGame ? "Undo starting this game and return to setup" : "Undo last action";
   $("btnRedo").disabled = !state.canRedo;
 
   // Score buttons disabled when no active set or game over
@@ -3839,6 +3866,15 @@ function wireScoreboardControls() {
 
   // Undo / Redo
   $("btnUndo").addEventListener("click", function () {
+    var state = controller.getState();
+    if (state && state.cursor === 1 && !state.endedAt) {
+      // Nothing has actually happened yet (no set started) — this is an
+      // accidental "Start Game" tap, not something to undo through the
+      // normal timeline (see cancelJustStartedGame for why). No confirm()
+      // here on purpose: the whole point is a fast one-tap way back out.
+      void cancelJustStartedGame();
+      return;
+    }
     if (settings.confirmUndo && !confirm("Undo last action?")) return;
     controller.undo();
     renderScoreboard();
