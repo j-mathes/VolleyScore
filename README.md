@@ -70,6 +70,7 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Reports** — build a Match Log (a multi-game summary table) or a Game Report (an FIVB-style score sheet, one page per game) across any subset of saved games, with an in-app preview, Excel export, and print/PDF output formatted to fit letter-size pages (see [Reports](#reports))
 - **Persist New Game Data** — optionally carry every New Game field forward from your last match instead of resetting to defaults (see [Persisting New Game Data](#persisting-new-game-data))
 - **Score button layout** — choose &minus;/+ or +/&minus; order, or mirror the two team panels so the same symbol always sits toward the middle
+- **Score button size** — scale the +/&minus; buttons up to 2x from their original (smallest) size, in Setup → Appearance
 - **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable; every color picker opens a quick preset grid (with a "Custom…" option for the full picker) — see [New Game Team Colors](#new-game-team-colors) for per-game overrides
 - **Keep Screen Awake** — optional Wake Lock (iOS 16.4+ PWA, Android, desktop Chrome)
 - **PWA / offline** — installs to home screen; auto-update toast when a new version is cached
@@ -387,7 +388,7 @@ A detailed, printable score sheet modeled on the official FIVB score sheet, adap
 
 | Section | Settings |
 |---------|----------|
-| Appearance | Dark mode, font size, team colors, sidebar border, Start Set button colors, score button layout (&minus;/+ order and mirroring), Keep Screen Awake, Confirm before Undo, notch padding (side and amount — useful in landscape when the phone notch covers the sidebar) |
+| Appearance | Dark mode, font size, team colors, sidebar border, Start Set button colors, score button layout (&minus;/+ order and mirroring) and size (100%&ndash;200%), Keep Screen Awake, Confirm before Undo, notch padding (side and amount — useful in landscape when the phone notch covers the sidebar) |
 | Game Defaults | Persist New Game Data toggle (see [Persisting New Game Data](#persisting-new-game-data)); Referee Name (optional — used on reports, see [Reports](#reports)); default team names, location, gender, age category, league, scheduled start (see [Match Timing](#match-timing)), format, variation, fair play rule, side switching (see [Side Switching](#side-switching)), timeouts/set, subs/set, Timeout Timer (see [Timeout Timer](#timeout-timer)) |
 | Scoring Defaults | Win at / Cap / Win by for regular and deciding sets; Win Alert glow and toast color/duration settings; Action Alert color and duration |
 | Match Info Lists | Add/rename/remove Team Names, Locations, Age Categories, and Leagues; toggle to show/hide the rename (pencil) icons (see [Match Info Lists](#match-info-lists)) |

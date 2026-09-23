@@ -72,6 +72,9 @@
   --tb-unit: calc(var(--tb-box-sz) + 16px);
   --tb-highlight: #15803d;
 
+  /* Score +/- button size multiplier — 1 is the original/smallest size */
+  --score-btn-scale: 1;
+
   /* Notch padding (landscape mobile) */
   --notch-pad: 0px;
 
@@ -1219,10 +1222,12 @@ input.color-picker-sm {
 }
 
 .score-btn {
-  font-size: clamp(1.8rem, 5vw, 2.8rem);
+  /* --score-btn-scale (Setup → Appearance → Score Button Size) scales up from
+     this original clamp()'d size, which is treated as the smallest (100%). */
+  font-size: calc(clamp(1.8rem, 5vw, 2.8rem) * var(--score-btn-scale));
   font-weight: 700;
-  width: clamp(54px, 9vw, 86px);
-  height: clamp(54px, 9vw, 86px);
+  width: calc(clamp(54px, 9vw, 86px) * var(--score-btn-scale));
+  height: calc(clamp(54px, 9vw, 86px) * var(--score-btn-scale));
   border-radius: var(--radius);
   padding: 0;
   min-height: unset;
@@ -4341,8 +4346,8 @@ input.player-num-input {
   }
 
   .score-btn {
-    width: clamp(56px, 5vw, 80px);
-    height: clamp(56px, 5vw, 80px);
+    width: calc(clamp(56px, 5vw, 80px) * var(--score-btn-scale));
+    height: calc(clamp(56px, 5vw, 80px) * var(--score-btn-scale));
   }
 
   .page-games {
@@ -4362,8 +4367,8 @@ input.player-num-input {
   }
 
   .score-btn {
-    width: clamp(50px, 9vh, 64px);
-    height: clamp(50px, 9vh, 64px);
+    width: calc(clamp(50px, 9vh, 64px) * var(--score-btn-scale));
+    height: calc(clamp(50px, 9vh, 64px) * var(--score-btn-scale));
   }
 
   .team-stats-row {

@@ -82,6 +82,7 @@ var DEFAULT_SETTINGS = {
   notchSide: "left",
   notchPad: 50,
   scoreBtnLayout: "mirrorPlus", // minusPlus | plusMinus | mirrorPlus | mirrorMinus
+  scoreBtnSize: 100, // percent — 100 is the original/smallest size
   keepScreenAwake: false,
   confirmUndo: false,
   refereeName: "",
@@ -2739,6 +2740,7 @@ function updateTeamColors(aOverride, bOverride) {
   root.style.setProperty("--tb-box-sz", (settings.tbBoxSize || 84) + "px");
   root.style.setProperty("--tb-unit", ((settings.tbBoxSize || 84) + 16) + "px");
   root.style.setProperty("--tb-highlight", settings.tbHighlightColor || "#15803d");
+  root.style.setProperty("--score-btn-scale", (settings.scoreBtnSize || 100) / 100);
   root.style.setProperty("--win-glow-color", settings.winGlowColor || "#f59e0b");
   root.style.setProperty("--win-glow-duration", (settings.winGlowDuration || 3) + "s");
   root.style.setProperty("--action-glow-color", settings.actionGlowColor || "#a855f7");
@@ -6114,6 +6116,7 @@ function renderSetupPage() {
   if (notchSideRadio) notchSideRadio.checked = true;
   $("cfgNotchPad").textContent = settings.notchPad !== undefined ? settings.notchPad : 50;
   $("cfgScoreBtnLayout").value = settings.scoreBtnLayout || "mirrorPlus";
+  $("cfgScoreBtnSize").textContent = (settings.scoreBtnSize !== undefined ? settings.scoreBtnSize : 100) + "%";
   $("cfgKeepAwake").checked   = !!settings.keepScreenAwake;
   $("cfgConfirmUndo").checked = !!settings.confirmUndo;
   $("cfgShowMlEditIcons").checked = !!settings.showMasterListEditIcons;
@@ -6178,6 +6181,16 @@ function wireSetupPage() {
     settings.scoreBtnLayout = this.value;
     applyScoreBtnLayout();
     saveSettings();
+  });
+
+  // Score button size — 100% is the original/smallest size
+  $("btnScoreBtnSizeDown").addEventListener("click", function () {
+    var v = settings.scoreBtnSize !== undefined ? settings.scoreBtnSize : 100;
+    if (v > 100) { settings.scoreBtnSize = v - 10; $("cfgScoreBtnSize").textContent = settings.scoreBtnSize + "%"; updateTeamColors(); saveSettings(); }
+  });
+  $("btnScoreBtnSizeUp").addEventListener("click", function () {
+    var v = settings.scoreBtnSize !== undefined ? settings.scoreBtnSize : 100;
+    if (v < 200) { settings.scoreBtnSize = v + 10; $("cfgScoreBtnSize").textContent = settings.scoreBtnSize + "%"; updateTeamColors(); saveSettings(); }
   });
 
   $("cfgTeamAColor").addEventListener("input", function () {
