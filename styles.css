@@ -148,6 +148,7 @@ body {
   background: var(--bg);
   min-height: 100dvh;
   overscroll-behavior: none;
+  overflow-x: hidden; /* belt-and-suspenders: a layout bug shouldn't be able to push the whole page sideways */
 }
 
 h2, h3, h4 {
@@ -1206,6 +1207,7 @@ input.color-picker-sm {
   font-weight: 900;
   line-height: 1;
   min-width: 2.5ch;
+  flex-shrink: 0; /* the number itself must never be squeezed — only the +/- buttons give up space */
   text-align: center;
   transition: color 200ms;
   font-variant-numeric: tabular-nums;
@@ -1229,20 +1231,25 @@ input.color-picker-sm {
   /* Set via Setup → Appearance → Score Button Size, treating this original
      clamp()'d size as the smallest (100%). Width/font use the width-capped
      scale; height uses the uncapped scale so sizes beyond 200% grow taller
-     instead of wider. */
+     instead of wider. width/height are a preferred size, not a fixed one —
+     flex-shrink is allowed (with a floor) so a large size never pushes the
+     "+" button off-screen on narrow/portrait layouts where the sidebar
+     leaves less room than the vw-based math above assumes; it only shrinks
+     when the row actually doesn't have room, so normal/wide layouts are
+     unaffected. */
   font-size: calc(clamp(1.8rem, 5vw, 2.8rem) * var(--score-btn-scale-w));
   font-weight: 700;
   width: calc(clamp(54px, 9vw, 86px) * var(--score-btn-scale-w));
   height: calc(clamp(54px, 9vw, 86px) * var(--score-btn-scale-h));
   border-radius: var(--radius);
   padding: 0;
-  min-height: unset;
-  min-width: unset;
+  min-height: 40px;
+  min-width: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
-  flex-shrink: 0;
+  flex-shrink: 1;
 }
 
 .btn-score-plus {
