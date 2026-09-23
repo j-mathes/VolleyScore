@@ -23,6 +23,15 @@
   --team-b: #b91c1c;
   --team-b-light: rgba(185, 28, 28, 0.12);
 
+  /* Low-contrast team-color outline — JS (updateTeamColorContrastOutlines)
+     sets these above 0 only when a chosen team color is hard to tell apart
+     from the current theme's background, so score text/buttons stay legible
+     (e.g. a near-white color picked in light mode, or near-black in dark). */
+  --team-a-text-stroke-w: 0px;
+  --team-a-outline-w: 0px;
+  --team-b-text-stroke-w: 0px;
+  --team-b-outline-w: 0px;
+
   /* Brand accent — intentionally independent of --team-a so per-game color
      overrides on the New Game screen don't affect chrome like Start Game */
   --brand-color: #1d4ed8;
@@ -3881,6 +3890,45 @@ input.player-num-input {
   margin-top: 1.4rem;
   padding-top: 1rem;
   border-top: 3px dashed #999;
+}
+
+/* ---- Low-contrast team-color outline ----
+   See updateTeamColorContrastOutlines() in app.js — the widths below are 0px
+   (invisible) unless that function detects the chosen team color is too close
+   to the current background, in which case it bumps them up so these stay
+   legible. var(--ink) is used as the outline/stroke color since it's already
+   theme-correct (near-black in light mode, near-white in dark mode). */
+.sb-sets-a,
+.team-panel-a .team-name,
+.team-panel-a .score-val,
+.tb-a,
+.set-win-a,
+.elr-score.lead-a,
+.timeout-timer-score-a,
+.btn-score-plus {
+  -webkit-text-stroke: var(--team-a-text-stroke-w) var(--ink);
+}
+
+.sb-sets-b,
+.team-panel-b .team-name,
+.team-panel-b .score-val,
+.tb-b,
+.set-win-b,
+.elr-score.lead-b,
+.timeout-timer-score-b,
+.team-panel-b .btn-score-plus {
+  -webkit-text-stroke: var(--team-b-text-stroke-w) var(--ink);
+}
+
+/* Same idea for solid-fill buttons/chips, as a real outline instead of a text stroke. */
+.btn-score-plus,
+.serve-pick-btn[data-team="A"].active {
+  outline: var(--team-a-outline-w) solid var(--ink);
+}
+
+.team-panel-b .btn-score-plus,
+.serve-pick-btn[data-team="B"].active {
+  outline: var(--team-b-outline-w) solid var(--ink);
 }
 
 /* Print only the generated report — hide all normal app chrome explicitly

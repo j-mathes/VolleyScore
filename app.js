@@ -2743,12 +2743,65 @@ function updateTeamColors(aOverride, bOverride) {
   root.style.setProperty("--win-glow-duration", (settings.winGlowDuration || 3) + "s");
   root.style.setProperty("--action-glow-color", settings.actionGlowColor || "#a855f7");
   root.style.setProperty("--action-glow-duration", (settings.actionGlowDuration || 2) + "s");
+  updateTeamColorContrastOutlines();
 }
 
 function hexToRgb(hex) {
   var m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
   if (!m) return null;
   return parseInt(m[1], 16) + "," + parseInt(m[2], 16) + "," + parseInt(m[3], 16);
+}
+
+// ---- Low-contrast team-color outline -----------------------------------
+// WCAG relative luminance / contrast ratio, used to detect a chosen team
+// color that's too close to the current background to read comfortably.
+function relativeLuminanceHex(hex) {
+  var rgb = hexToRgb(hex);
+  if (!rgb) return null;
+  var channels = rgb.split(",").map(function (n) {
+    var c = parseInt(n, 10) / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+}
+
+function contrastRatioHex(hexA, hexB) {
+  var lA = relativeLuminanceHex(hexA);
+  var lB = relativeLuminanceHex(hexB);
+  if (lA == null || lB == null) return 21; // can't parse — assume fine, don't outline
+  var lighter = Math.max(lA, lB), darker = Math.min(lA, lB);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+var TEAM_COLOR_CONTRAST_THRESHOLD = 2.2;
+
+// Re-evaluates --team-a/--team-b against the app's actual background colors and
+// toggles thin CSS-var-driven outlines (see the "Low-contrast team-color
+// outline" rules in styles.css) when a color is hard to tell apart from the
+// current theme's background — e.g. a near-white pick in light mode, or a
+// near-black pick in dark mode. Checks both --bg and --bg-card and outlines if
+// either is a poor match, since team colors show up against both surfaces.
+function updateTeamColorContrastOutlines() {
+  var root = document.documentElement;
+  var cs = getComputedStyle(root);
+  var bg = (cs.getPropertyValue("--bg") || "").trim();
+  var bgCard = (cs.getPropertyValue("--bg-card") || "").trim();
+  var teamAHex = (cs.getPropertyValue("--team-a") || "").trim();
+  var teamBHex = (cs.getPropertyValue("--team-b") || "").trim();
+
+  function isLowContrast(teamHex) {
+    if (!teamHex) return false;
+    var ratios = [bg, bgCard].filter(Boolean).map(function (b) { return contrastRatioHex(teamHex, b); });
+    if (!ratios.length) return false;
+    return Math.min.apply(null, ratios) < TEAM_COLOR_CONTRAST_THRESHOLD;
+  }
+
+  var lowA = isLowContrast(teamAHex);
+  var lowB = isLowContrast(teamBHex);
+  root.style.setProperty("--team-a-text-stroke-w", lowA ? "0.6px" : "0px");
+  root.style.setProperty("--team-a-outline-w", lowA ? "2px" : "0px");
+  root.style.setProperty("--team-b-text-stroke-w", lowB ? "0.6px" : "0px");
+  root.style.setProperty("--team-b-outline-w", lowB ? "2px" : "0px");
 }
 
 // ---- Per-team-name remembered colors ---------------------------------
@@ -6691,6 +6744,7 @@ function applyNotchPadding() {
 
 function applyTheme() {
   document.documentElement.setAttribute("data-theme", settings.darkMode ? "dark" : "light");
+  updateTeamColorContrastOutlines(); // background colors just changed — re-check contrast
 }
 
 function applyFontSize() {

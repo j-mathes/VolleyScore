@@ -135,6 +135,10 @@ The override applies everywhere team color drives the UI — score panels, serve
 
 The app remembers the last color used for each team name. Type or pick a team that's used a color before (on the New Game form, in **Setup → Match Info Lists**, or when adding a new team name there) and its swatch auto-fills with that color; changing the color anywhere updates what's remembered for next time. In **Setup → Match Info Lists**, each Team Names chip shows a small color dot — tap the pencil (rename) icon to enter edit mode, where the dot becomes a clickable swatch you can change directly, without starting a game.
 
+### Low-Contrast Color Outline
+
+If a chosen team color is too close to the current background to read comfortably — e.g. a near-white pick in light mode, or a near-black pick in dark mode — the app automatically adds a thin outline (black in light mode, white in dark mode) to that team's score, name, and score buttons so they stay legible. This is fully automatic (based on an actual contrast check against the current theme, not just the color itself), re-evaluates whenever you switch dark mode on/off, and only kicks in for colors that are genuinely hard to see — well-contrasted colors are never outlined.
+
 ---
 
 ## Match Info Lists
