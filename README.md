@@ -1,6 +1,6 @@
 ﻿# VolleyScore
 
-**Version 28**
+**Version 29**
 
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
@@ -32,6 +32,7 @@ After installing, the app opens full-screen without browser chrome and works off
 5. **End Set** → choose who serves → **Start Set 2** (pulses green when ready)
 6. Repeat until done → **End Game** → **Done** to return to setup
 7. **Match Log** (nav bar) — full event log; tap a set number pill to filter by set
+8. **Remarks** (nav bar, next to Match Log) — jot down notes during the match, picking from your pre-defined list or typing your own (see [Remarks](#remarks))
 
 ---
 
@@ -49,31 +50,34 @@ After installing, the app opens full-screen without browser chrome and works off
 
 ## Features
 
-- **Configurable scoring** — per-game win target, win-by margin, and score cap for regular and deciding sets (see [Scoring Rules](#scoring-rules))
-- **Fair Play rules** — None / Triple Ball / Full / Partial; all timeout and sub limits enforced automatically (see [Fair Play Rules](#fair-play-rules))
-- **Scoring** — tap +/− per team; serve dot follows the last scorer automatically
-- **Timeouts** — dot indicator (filled = used); count enforced per fair play rule; blocked mid-sequence in Triple Ball
-- **Timeout Timer** — optional large full-screen countdown popup when a timeout is called, on by default (see [Timeout Timer](#timeout-timer))
-- **Substitutions** — per-team counter; fair play restrictions applied automatically
-- **Sanctions** — full misconduct and delay sanction system with escalation enforcement (see [Sanctions](#sanctions))
-- **Remarks** — a free-form, timestamped notepad per match; add numbered notes during a live game from the top nav, view or edit them from Game Detail, and see them in the Match Log and Game Report (see [Remarks](#remarks))
-- **Win & action alerts** — independently configurable glow and win-condition-toast durations; glow on the TO/sub indicator and sanction chip when actions are recorded (see [Alerts](#alerts))
-- **Win condition reminder** — current set's rules shown in the game bar during active play
+### Scoring & Live Play
+
+- **Configurable scoring** — tap +/&minus; per team, with a per-game win target, win-by margin, and score cap for regular and deciding sets across four [game formats](#game-formats) (see [Scoring Rules](#scoring-rules))
+- **Fair Play rules** — None / Triple Ball / Full / Partial, with timeout and sub limits enforced automatically (see [Fair Play Rules](#fair-play-rules))
+- **Timeouts, substitutions & sanctions** — dot/diamond indicators track usage automatically; full misconduct and delay sanction system with escalation enforcement (see [Sanctions](#sanctions))
+- **Timeout Timer** — optional large countdown popup when a timeout is called, with an Undo option in case it was called by accident (see [Timeout Timer](#timeout-timer))
 - **Triple Ball** — animated 6-phase sequence indicator with directional arrows (see [Triple Ball](#triple-ball))
-- **Set & match management** — End Set, between-sets serve picker, Start Next Set
-- **Undo / Redo** — available during play and immediately after End Game (with optional confirm)
-- **Side switching** — swap which panel each team appears on manually, automatically between sets, or via prompted coin-toss/mid-decider confirmations; Triple Ball arrows and the sets-won indicator update accordingly (see [Side Switching](#side-switching))
-- **Scheduled vs. actual start time** — pre-configure a planned start time in Game Defaults, while the moment **Start Game** is tapped is always recorded as the actual start (see [Match Timing](#match-timing))
-- **Match Info** — track Gender, Age Category, and League per game, with pick-or-type fields backed by editable master lists, plus optional League ↔ Team/Age Category/Location associations that filter those fields against each other (see [Match Info Lists](#match-info-lists))
-- **Edit match info after the fact** — correct Team A/B names, Location, Gender, Age Category, or League on any saved game — in progress or finished — from the Games page (see [Editing a Game's Match Info](#editing-a-games-match-info))
-- **Multi-game export, import & delete** — select any subset (or all) of your saved games from the Games page to export as a single JSON file or delete together; importing populates the Team Names, Locations, Age Categories, and League master lists with any new values found, in addition to restoring the games themselves (see [Selecting Games to Export or Delete](#selecting-games-to-export-or-delete))
-- **Reports** — build a Match Log (a multi-game summary table) or a Game Report (an FIVB-style score sheet, one page per game) across any subset of saved games, with an in-app preview, Excel export, and print/PDF output formatted to fit letter-size pages (see [Reports](#reports))
+- **Undo / Redo, side switching & alerts** — full action history, flexible side-swapping (manual, automatic, or prompted), and configurable win/action glows and toasts (see [Side Switching](#side-switching), [Alerts](#alerts))
+- **Remarks** — a free-form, timestamped notepad per match, with pre-defined quick-pick text, live during the game or edited after (see [Remarks](#remarks))
+
+### Match Setup & History
+
+- **Match Info tracking** — Gender, Age Category, and League per game, with editable master lists and many-to-many League associations that filter fields against each other (see [Match Info Lists](#match-info-lists))
+- **Edit info after the fact** — correct team names, location, or other match info on any saved game, in progress or finished (see [Editing a Game's Match Info](#editing-a-games-match-info))
+- **Scheduled vs. actual start time** — pre-configure a planned start time while the real moment **Start Game** is tapped is always recorded separately (see [Match Timing](#match-timing))
 - **Persist New Game Data** — optionally carry every New Game field forward from your last match instead of resetting to defaults (see [Persisting New Game Data](#persisting-new-game-data))
-- **Score button layout** — choose &minus;/+ or +/&minus; order, or mirror the two team panels so the same symbol always sits toward the middle
-- **Score button size** — scale the +/&minus; buttons up to 2x from their original (smallest) size, in Setup → Appearance
-- **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable; every color picker opens a quick preset grid (with a "Custom…" option for the full picker) — see [New Game Team Colors](#new-game-team-colors) for per-game overrides
-- **Keep Screen Awake** — optional Wake Lock (iOS 16.4+ PWA, Android, desktop Chrome)
-- **PWA / offline** — installs to home screen; auto-update toast when a new version is cached
+
+### Data, Reports & Sharing
+
+- **Save, export & import** — every game saves automatically as you play; export or import one game, a chosen subset, or your entire saved history (see [Selecting Games to Export or Delete](#selecting-games-to-export-or-delete))
+- **Reports** — build a printable/exportable Match Log (multi-game summary table) or an FIVB-style Game Report score sheet, with in-app preview, Excel export, and print/PDF output (see [Reports](#reports))
+
+### Appearance & Accessibility
+
+- **Dark mode & custom colors** — team colors, sidebar border, Start Set button, and alert colors all customizable, with automatic low-contrast outlining so score text stays legible (see [New Game Team Colors](#new-game-team-colors))
+- **Score button layout & size** — reorder the +/&minus; buttons or scale them larger to suit your device and preference
+- **Keep Screen Awake** — optional Wake Lock so the screen doesn't sleep mid-match (iOS 16.4+ PWA, Android, desktop Chrome)
+- **PWA / offline** — installs to your home screen, works without an internet connection, and shows an update toast automatically when a new version is cached
 
 ---
 
@@ -186,11 +190,7 @@ Already started or finished a game with the wrong team name, location, gender, a
 - **JSON** — the app's own round-trip format.
 - **Excel (.xlsx)** — one tab per category (Team Names, Locations, Age Categories, Leagues); Team Names also gets a Color column, and Team Names/Age Categories/Locations each get a Leagues column (comma-separated). You can edit values in Excel/Sheets/LibreOffice and import the file back in; sheets are matched by tab name, not position, so they can be in any order.
 
-Either format merges into your existing lists rather than replacing them:
-
-- New list values and new league links are added; duplicates (including ones that only differ by case) are skipped.
-- A color for a team you already have gets updated to the imported value.
-- A hand-edited file with an invalid entry (wrong type, or a league link referencing a team/league that isn't otherwise in the file) is skipped rather than breaking the whole import.
+Either format merges into your existing lists rather than replacing them — nothing is deleted or overwritten wholesale, and a bad or hand-edited entry is skipped rather than breaking the rest of the import. (Exact merge rules in [Technical Notes](#technical-notes).)
 
 ---
 
@@ -242,7 +242,7 @@ Configure color and duration in **Setup → Scoring Defaults → Action Alert** 
 
 An optional large on-screen countdown for timeouts — on by default.
 
-- Enable it in **Setup → Game Defaults → Timeout Timer** and set the duration in seconds (default 60).
+- Toggle it in **Setup → Game Defaults → Timeout Timer** and set the duration in seconds (default 60, adjustable from 10 to 300 in steps of 5).
 - When on, calling a timeout for either team shows a full-screen popup with the team name and a large, bold, high-contrast countdown (the color is tuned separately for light and dark mode so it stands out either way).
 - Each team's current score and timeout diamonds (same outlined/filled style as the score screen) are shown at the top, on the side matching that team's current court side. The score is colored to match that team's color, same as the main scoreboard.
 - **End Timeout** lets the referee dismiss it early if the timeout ends before time is up.
@@ -388,7 +388,7 @@ A detailed, printable score sheet modeled on the official FIVB score sheet, adap
 
 | Section | Settings |
 |---------|----------|
-| Appearance | Dark mode, font size, team colors, sidebar border, Start Set button colors, score button layout (&minus;/+ order and mirroring) and size (100%&ndash;200%), Keep Screen Awake, Confirm before Undo, notch padding (side and amount — useful in landscape when the phone notch covers the sidebar) |
+| Appearance | Dark mode, font size, team colors, sidebar border, Start Set button colors, score button layout (&minus;/+ order and mirroring) and size (100%&ndash;300%, height-only growth past 200%), Keep Screen Awake, Confirm before Undo, notch padding (side and amount — useful in landscape when the phone notch covers the sidebar) |
 | Game Defaults | Persist New Game Data toggle (see [Persisting New Game Data](#persisting-new-game-data)); Referee Name (optional — used on reports, see [Reports](#reports)); default team names, location, gender, age category, league, scheduled start (see [Match Timing](#match-timing)), format, variation, fair play rule, side switching (see [Side Switching](#side-switching)), timeouts/set, subs/set, Timeout Timer (see [Timeout Timer](#timeout-timer)) |
 | Scoring Defaults | Win at / Cap / Win by for regular and deciding sets; Win Alert glow and toast color/duration settings; Action Alert color and duration |
 | Match Info Lists | Add/rename/remove Team Names, Locations, Age Categories, and Leagues; toggle to show/hide the rename (pencil) icons (see [Match Info Lists](#match-info-lists)) |
@@ -399,7 +399,17 @@ A detailed, printable score sheet modeled on the official FIVB score sheet, adap
 
 ---
 
-## Tech
+## Technical Notes
+
+Implementation details that aren't necessary for everyday use — useful if you're troubleshooting, hand-editing an exported file, or just curious how things work under the hood.
+
+### Match Info Lists import merge rules
+
+- New list values and new league links are added; duplicates (including ones that only differ by case) are skipped.
+- A color for a team you already have gets updated to the imported value.
+- A hand-edited file with an invalid entry (wrong type, or a league link referencing a team/league that isn't otherwise in the file) is skipped rather than breaking the whole import.
+
+### Stack
 
 Vanilla JavaScript — no frameworks, no build step. Files: `app.js`, `styles.css`, `index.html`, `manifest.json`, `sw.js` (service worker), `icons/`.
 

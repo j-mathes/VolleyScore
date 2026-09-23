@@ -72,8 +72,12 @@
   --tb-unit: calc(var(--tb-box-sz) + 16px);
   --tb-highlight: #15803d;
 
-  /* Score +/- button size multiplier — 1 is the original/smallest size */
-  --score-btn-scale: 1;
+  /* Score +/- button size multipliers — 1 is the original/smallest size.
+     Width/font stop growing at 2x (-w) so the buttons never get too wide for
+     the row; height keeps growing beyond that (-h) so sizes past 200% make
+     the buttons taller instead of wider (bigger tap target, same row width). */
+  --score-btn-scale-w: 1;
+  --score-btn-scale-h: 1;
 
   /* Notch padding (landscape mobile) */
   --notch-pad: 0px;
@@ -1222,12 +1226,14 @@ input.color-picker-sm {
 }
 
 .score-btn {
-  /* --score-btn-scale (Setup → Appearance → Score Button Size) scales up from
-     this original clamp()'d size, which is treated as the smallest (100%). */
-  font-size: calc(clamp(1.8rem, 5vw, 2.8rem) * var(--score-btn-scale));
+  /* Set via Setup → Appearance → Score Button Size, treating this original
+     clamp()'d size as the smallest (100%). Width/font use the width-capped
+     scale; height uses the uncapped scale so sizes beyond 200% grow taller
+     instead of wider. */
+  font-size: calc(clamp(1.8rem, 5vw, 2.8rem) * var(--score-btn-scale-w));
   font-weight: 700;
-  width: calc(clamp(54px, 9vw, 86px) * var(--score-btn-scale));
-  height: calc(clamp(54px, 9vw, 86px) * var(--score-btn-scale));
+  width: calc(clamp(54px, 9vw, 86px) * var(--score-btn-scale-w));
+  height: calc(clamp(54px, 9vw, 86px) * var(--score-btn-scale-h));
   border-radius: var(--radius);
   padding: 0;
   min-height: unset;
@@ -4373,8 +4379,8 @@ input.player-num-input {
   }
 
   .score-btn {
-    width: calc(clamp(56px, 5vw, 80px) * var(--score-btn-scale));
-    height: calc(clamp(56px, 5vw, 80px) * var(--score-btn-scale));
+    width: calc(clamp(56px, 5vw, 80px) * var(--score-btn-scale-w));
+    height: calc(clamp(56px, 5vw, 80px) * var(--score-btn-scale-h));
   }
 
   .page-games {
@@ -4394,8 +4400,8 @@ input.player-num-input {
   }
 
   .score-btn {
-    width: calc(clamp(50px, 9vh, 64px) * var(--score-btn-scale));
-    height: calc(clamp(50px, 9vh, 64px) * var(--score-btn-scale));
+    width: calc(clamp(50px, 9vh, 64px) * var(--score-btn-scale-w));
+    height: calc(clamp(50px, 9vh, 64px) * var(--score-btn-scale-h));
   }
 
   .team-stats-row {

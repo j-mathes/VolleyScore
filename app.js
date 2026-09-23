@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "28";
+var APP_VERSION = "29";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -2740,7 +2740,12 @@ function updateTeamColors(aOverride, bOverride) {
   root.style.setProperty("--tb-box-sz", (settings.tbBoxSize || 84) + "px");
   root.style.setProperty("--tb-unit", ((settings.tbBoxSize || 84) + 16) + "px");
   root.style.setProperty("--tb-highlight", settings.tbHighlightColor || "#15803d");
-  root.style.setProperty("--score-btn-scale", (settings.scoreBtnSize || 100) / 100);
+  // Width/font stop growing at 200% so the +/- buttons never get too wide for
+  // the row; height keeps scaling past that so larger sizes make them taller
+  // (bigger tap target) instead of wider.
+  var scoreBtnPct = settings.scoreBtnSize || 100;
+  root.style.setProperty("--score-btn-scale-w", Math.min(scoreBtnPct, 200) / 100);
+  root.style.setProperty("--score-btn-scale-h", scoreBtnPct / 100);
   root.style.setProperty("--win-glow-color", settings.winGlowColor || "#f59e0b");
   root.style.setProperty("--win-glow-duration", (settings.winGlowDuration || 3) + "s");
   root.style.setProperty("--action-glow-color", settings.actionGlowColor || "#a855f7");
@@ -6183,14 +6188,17 @@ function wireSetupPage() {
     saveSettings();
   });
 
-  // Score button size — 100% is the original/smallest size
+  // Score button size — 100% is the original/smallest size; steps of 25% for
+  // speed. Past 200% only the button's height keeps growing (see
+  // updateTeamColors), so the max here is higher than the point where width
+  // stops scaling.
   $("btnScoreBtnSizeDown").addEventListener("click", function () {
     var v = settings.scoreBtnSize !== undefined ? settings.scoreBtnSize : 100;
-    if (v > 100) { settings.scoreBtnSize = v - 10; $("cfgScoreBtnSize").textContent = settings.scoreBtnSize + "%"; updateTeamColors(); saveSettings(); }
+    if (v > 100) { settings.scoreBtnSize = v - 25; $("cfgScoreBtnSize").textContent = settings.scoreBtnSize + "%"; updateTeamColors(); saveSettings(); }
   });
   $("btnScoreBtnSizeUp").addEventListener("click", function () {
     var v = settings.scoreBtnSize !== undefined ? settings.scoreBtnSize : 100;
-    if (v < 200) { settings.scoreBtnSize = v + 10; $("cfgScoreBtnSize").textContent = settings.scoreBtnSize + "%"; updateTeamColors(); saveSettings(); }
+    if (v < 300) { settings.scoreBtnSize = v + 25; $("cfgScoreBtnSize").textContent = settings.scoreBtnSize + "%"; updateTeamColors(); saveSettings(); }
   });
 
   $("cfgTeamAColor").addEventListener("input", function () {
