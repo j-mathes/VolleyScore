@@ -121,7 +121,7 @@ var DEFAULT_SETTINGS = {
   actionGlowColor: "#a855f7",
   actionGlowDuration: 2,
   // Timeout countdown popup
-  timeoutTimerEnabled: false,
+  timeoutTimerEnabled: true,
   timeoutTimerDuration: 60,
 };
 

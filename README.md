@@ -53,7 +53,7 @@ After installing, the app opens full-screen without browser chrome and works off
 - **Fair Play rules** — None / Triple Ball / Full / Partial; all timeout and sub limits enforced automatically (see [Fair Play Rules](#fair-play-rules))
 - **Scoring** — tap +/− per team; serve dot follows the last scorer automatically
 - **Timeouts** — dot indicator (filled = used); count enforced per fair play rule; blocked mid-sequence in Triple Ball
-- **Timeout Timer** — optional large full-screen countdown popup when a timeout is called, off by default (see [Timeout Timer](#timeout-timer))
+- **Timeout Timer** — optional large full-screen countdown popup when a timeout is called, on by default (see [Timeout Timer](#timeout-timer))
 - **Substitutions** — per-team counter; fair play restrictions applied automatically
 - **Sanctions** — full misconduct and delay sanction system with escalation enforcement (see [Sanctions](#sanctions))
 - **Remarks** — a free-form, timestamped notepad per match; add numbered notes during a live game from the top nav, view or edit them from Game Detail, and see them in the Match Log and Game Report (see [Remarks](#remarks))
@@ -240,7 +240,7 @@ Configure color and duration in **Setup → Scoring Defaults → Action Alert** 
 
 ## Timeout Timer
 
-An optional large on-screen countdown for timeouts — off by default.
+An optional large on-screen countdown for timeouts — on by default.
 
 - Enable it in **Setup → Game Defaults → Timeout Timer** and set the duration in seconds (default 60).
 - When on, calling a timeout for either team shows a full-screen popup with the team name and a large, bold, high-contrast countdown (the color is tuned separately for light and dark mode so it stands out either way).

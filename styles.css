@@ -3314,18 +3314,34 @@ input.player-num-input {
 
 /* Secondary action — undoing an accidentally-called timeout is less common
    than ending it normally, so this stays visually quieter and narrower than
-   End Timeout (which comes first/left, this sits to its right). */
+   End Timeout (which comes first/left, this sits to its right). Border
+   doubles as an outline so the button reads clearly even where the
+   background/text contrast alone is weak (e.g. dark mode). */
 .timeout-timer-undo-btn {
   font-size: clamp(0.8rem, 1.8vw, 0.92rem);
   font-weight: 600;
   padding: 0.75rem 1rem;
   border-radius: var(--radius);
+  border: 1.5px solid var(--danger);
   background: var(--danger-light);
   color: var(--danger);
 }
 
 .timeout-timer-undo-btn:hover:not(:disabled) {
   background: rgba(220, 38, 38, 0.18);
+}
+
+/* Plain --danger/--danger-light are too muted against the dark card
+   background — swap in the same lighter red already used for --team-b in
+   dark mode, which is proven readable there. */
+[data-theme="dark"] .timeout-timer-undo-btn {
+  border-color: #f87171;
+  background: rgba(248, 113, 113, 0.16);
+  color: #f87171;
+}
+
+[data-theme="dark"] .timeout-timer-undo-btn:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.26);
 }
 
 /* ---- Win condition glow ---- */
