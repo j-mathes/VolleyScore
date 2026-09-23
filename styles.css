@@ -3902,27 +3902,38 @@ input.player-num-input {
    (invisible) unless that function detects the chosen team color is too close
    to the current background, in which case it bumps them up so these stay
    legible. var(--ink) is used as the outline/stroke color since it's already
-   theme-correct (near-black in light mode, near-white in dark mode). */
-.sb-sets-a,
+   theme-correct (near-black in light mode, near-white in dark mode).
+   Split into two groups by font size — a stroke width tuned for the big score
+   numbers looks disproportionately thick on small text (sets-won indicator,
+   event log, etc.), so those get half the width instead of the full amount. */
 .team-panel-a .team-name,
 .team-panel-a .score-val,
-.tb-a,
-.set-win-a,
-.elr-score.lead-a,
 .timeout-timer-score-a,
 .btn-score-plus {
   -webkit-text-stroke: var(--team-a-text-stroke-w) var(--ink);
 }
 
-.sb-sets-b,
 .team-panel-b .team-name,
 .team-panel-b .score-val,
-.tb-b,
-.set-win-b,
-.elr-score.lead-b,
 .timeout-timer-score-b,
 .team-panel-b .btn-score-plus {
   -webkit-text-stroke: var(--team-b-text-stroke-w) var(--ink);
+}
+
+.sb-sets-a,
+.tb-a,
+.set-win-a,
+.elr-score.lead-a {
+  -webkit-text-stroke-width: calc(var(--team-a-text-stroke-w) * 0.5);
+  -webkit-text-stroke-color: var(--ink);
+}
+
+.sb-sets-b,
+.tb-b,
+.set-win-b,
+.elr-score.lead-b {
+  -webkit-text-stroke-width: calc(var(--team-b-text-stroke-w) * 0.5);
+  -webkit-text-stroke-color: var(--ink);
 }
 
 /* Same idea for solid-fill buttons/chips, as a real outline instead of a text stroke. */
