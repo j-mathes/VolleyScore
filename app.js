@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "32";
+var APP_VERSION = "33";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -4755,7 +4755,7 @@ function buildEventLogHtml(state, timeline, filterSetNumber) {
         '</div>');
     } else if (ev.type === "REMARK_ADDED") {
       remarkNum++;
-      rows.push('<div class="event-log-row event-log-system">' +
+      rows.push('<div class="event-log-row event-log-system event-log-remark">' +
         '<span class="elr-time">' + esc(time) + '</span>' +
         '<span class="elr-score">' + (ev.scoreA || 0) + ' \u2013 ' + (ev.scoreB || 0) + '</span>' +
         '<span class="elr-desc">Remark ' + remarkNum + '</span>' +

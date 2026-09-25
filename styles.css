@@ -1776,6 +1776,23 @@ details[open] .event-log-summary::before {
   text-align: right;
 }
 
+/* Remark rows hold arbitrarily long free-text, unlike every other event's
+   short fixed detail phrase — force onto its own full-width wrapped line
+   instead of the usual single-line/nowrap/right-aligned/auto-width layout,
+   which otherwise lets long remarks bleed off the right edge on mobile. */
+.event-log-row.event-log-remark {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 0.15rem;
+}
+
+.event-log-row.event-log-remark .elr-detail {
+  flex: 1 1 100%;
+  white-space: normal;
+  text-align: left;
+  overflow-wrap: break-word;
+}
+
 /* ---- Remarks (live notepad modal + Game Detail section) ---- */
 .remarks-edit-btn {
   margin-left: auto;
