@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "31";
+var APP_VERSION = "32";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -247,6 +247,64 @@ function moveRemarkPreset(index, delta) {
   list[newIndex] = tmp;
   settings.remarkPresets = list;
   saveSettings();
+}
+
+// ---- Remark preset placeholders ({TEAM}/{SET}/{SCORE}/{PLAYER}/{STAFF}) --
+// Lets a preset like "TEAM {TEAM} captain change, SET {SET}, SCORE ({SCORE}),
+// {PLAYER} -> {PLAYER}" auto-fill what the live game already knows and only
+// prompt for the rest, instead of the referee typing it all out live.
+// {PLAYER} only ever prompts for a jersey number (no staff roles) — use it
+// where only a player could plausibly be involved; {STAFF} prompts for a
+// jersey number OR a staff role (Head Coach/Asst. Coach/Trainer/Medical),
+// same picker as a sanction — use it where a staff member is also possible.
+var REMARK_PERSON_TOKEN_RE = /\{PLAYER\}|\{STAFF\}/g;
+
+// {TEAM}/{PLAYER}/{STAFF} need an explicit pick from the referee (team + who);
+// {SET}/{SCORE} never need a prompt, they always come straight from the game.
+function remarkPresetNeedsFillIn(text) {
+  return /\{TEAM\}|\{PLAYER\}|\{STAFF\}/.test(text || "");
+}
+
+// Replaces {SET}/{SCORE}/{TEAM} using live game context. chosenTeam (if given)
+// is which team the referee picked for this remark: {SCORE} then lists THAT
+// team's score first (matches how the referee would say/write it aloud), and
+// {TEAM} becomes that team's real name; with no chosenTeam (preset had no
+// {TEAM} token), everything defaults to Team A's perspective.
+function resolveAutoRemarkTokens(text, state, chosenTeam) {
+  var ctx = currentRemarkContext(state);
+  var scoreStr = chosenTeam === "B" ? (ctx.scoreB + " - " + ctx.scoreA) : (ctx.scoreA + " - " + ctx.scoreB);
+  var teamName = chosenTeam === "B" ? (state ? state.teamB : "Team B") : (state ? state.teamA : "Team A");
+  return (text || "")
+    .replace(/\{SET\}/g, String(ctx.setNumber))
+    .replace(/\{SCORE\}/g, scoreStr)
+    .replace(/\{TEAM\}/g, teamName);
+}
+
+// Replaces {PLAYER}/{STAFF} tokens in true left-to-right order (regardless of
+// which of the two appears where) using the matching entry in `players`
+// ({role, number}) — a numbered player becomes "#4", a staff role becomes its
+// label (e.g. "Head Coach"), same as a sanction.
+function resolvePlayerRemarkTokens(text, players) {
+  var list = players || [];
+  var i = 0;
+  return (text || "").replace(REMARK_PERSON_TOKEN_RE, function () {
+    var p = list[i++];
+    if (!p) return "";
+    return p.role === "player" ? ("#" + (p.number || "?")) : (ROLE_LABEL[p.role] || p.role);
+  });
+}
+
+// Inserts literal text at the current cursor position of an <input>/<textarea>
+// (used by the Setup token-insert toolbar) — falls back to appending at the
+// end if nothing is selected/focused.
+function insertTokenAtCursor(el, token) {
+  if (!el) return;
+  var start = el.selectionStart != null ? el.selectionStart : el.value.length;
+  var end = el.selectionEnd != null ? el.selectionEnd : el.value.length;
+  el.value = el.value.slice(0, start) + token + el.value.slice(end);
+  var newPos = start + token.length;
+  el.focus();
+  el.setSelectionRange(newPos, newPos);
 }
 
 // ---- League ↔ Team / Age Category associations -----------------------
@@ -505,6 +563,14 @@ function renderRemarkPresetList() {
       // otherwise silently commit or lose the in-progress edit.
       return '<div class="remark-preset-row remark-preset-row-editing">' +
         '<textarea class="remark-preset-input" data-index="' + i + '">' + esc(text) + '</textarea>' +
+        '<div class="remark-token-toolbar">' +
+        '<span class="remark-token-hint">Insert:</span>' +
+        '<button type="button" class="remark-token-btn" data-token="{TEAM}">Team</button>' +
+        '<button type="button" class="remark-token-btn" data-token="{SET}">Set</button>' +
+        '<button type="button" class="remark-token-btn" data-token="{SCORE}">Score</button>' +
+        '<button type="button" class="remark-token-btn" data-token="{PLAYER}">Player</button>' +
+        '<button type="button" class="remark-token-btn" data-token="{STAFF}">Staff</button>' +
+        '</div>' +
         '<div class="remark-preset-edit-actions">' +
         '<button type="button" class="remark-preset-save-btn ctrl-btn" data-index="' + i + '">Save</button>' +
         '<button type="button" class="remark-preset-cancel-btn" data-index="' + i + '">Cancel</button>' +
@@ -4781,6 +4847,141 @@ function closeRemarksModal() {
   $("remarksModal").hidden = true;
 }
 
+// ---- Remark Fill-In modal (resolves {TEAM}/{PLAYER}/{STAFF} placeholders) -
+var _remarkFillRawText = "";
+var _remarkFillTeam = null;
+var _remarkFillPlayers = []; // [{role:"player", number:""}, ...] one per {PLAYER}/{STAFF} occurrence, in order
+
+// tokenTypes: array of "PLAYER" | "STAFF", one per occurrence in the preset,
+// in the order they appear — {PLAYER} sections skip the role picker entirely
+// (jersey number only); {STAFF} sections show the full role picker.
+function buildRemarkFillPlayersHtml(tokenTypes) {
+  var digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+  var totalOfType = { PLAYER: 0, STAFF: 0 };
+  tokenTypes.forEach(function (t) { totalOfType[t]++; });
+  var seenOfType = { PLAYER: 0, STAFF: 0 };
+  var html = "";
+  tokenTypes.forEach(function (type, i) {
+    seenOfType[type]++;
+    var baseLabel = type === "STAFF" ? "Staff" : "Player";
+    var label = totalOfType[type] > 1 ? (baseLabel + " " + seenOfType[type]) : baseLabel;
+    var showRoles = type === "STAFF";
+    html += '<div class="modal-section">' +
+      '<h4 class="modal-section-title">' + esc(label) + '</h4>';
+    if (showRoles) {
+      html += '<div class="role-btns rf-role-btns">' +
+        '<button type="button" class="role-btn rf-role-btn active" data-role="player" data-player-index="' + i + '">Player</button>' +
+        '<button type="button" class="role-btn rf-role-btn" data-role="head_coach" data-player-index="' + i + '">Head Coach</button>' +
+        '<button type="button" class="role-btn rf-role-btn" data-role="asst_coach" data-player-index="' + i + '">Asst. Coach</button>' +
+        '<button type="button" class="role-btn rf-role-btn" data-role="trainer" data-player-index="' + i + '">Trainer</button>' +
+        '<button type="button" class="role-btn rf-role-btn" data-role="medical" data-player-index="' + i + '">Medical</button>' +
+        '</div>';
+    }
+    html += '<div class="player-num-pad rf-num-pad" data-player-index="' + i + '">' +
+      '<div class="num-pad-header"><span class="num-pad-label">' + (showRoles ? "Player #" : "Number") + '</span>' +
+      '<span class="num-pad-display rf-num-display" data-player-index="' + i + '">\u2014</span></div>' +
+      '<div class="num-pad-buttons">' +
+      digits.map(function (d) {
+        return '<button type="button" class="npb rf-npb" data-digit="' + d + '" data-player-index="' + i + '">' + d + '</button>';
+      }).join("") +
+      '<button type="button" class="npb npb-del rf-npb-del" data-player-index="' + i + '" aria-label="Delete digit">&#x232B;</button>' +
+      '</div></div></div>';
+  });
+  return html;
+}
+
+function updateRemarkFillPlayerDisplay(idx) {
+  var el = document.querySelector('.rf-num-display[data-player-index="' + idx + '"]');
+  if (el) el.textContent = _remarkFillPlayers[idx].number || "\u2014";
+}
+
+function updateRemarkFillInsertEnabled() {
+  var needsTeam = _remarkFillRawText.indexOf("{TEAM}") !== -1;
+  var teamOk = !needsTeam || !!_remarkFillTeam;
+  var playersOk = _remarkFillPlayers.every(function (p) { return p.role !== "player" || p.number.length > 0; });
+  $("btnRemarkFillInsert").disabled = !(teamOk && playersOk);
+}
+
+function openRemarkFillModal(rawText) {
+  _remarkFillRawText = rawText;
+  _remarkFillTeam = null;
+  var state = controller.getState();
+  var needsTeam = rawText.indexOf("{TEAM}") !== -1;
+  $("remarkFillTeamSection").hidden = !needsTeam;
+  $("rfTeamBtnA").textContent = state ? state.teamA : "Team A";
+  $("rfTeamBtnB").textContent = state ? state.teamB : "Team B";
+  document.querySelectorAll(".rf-team-btn").forEach(function (b) { b.classList.remove("active"); });
+
+  var tokenTypes = (rawText.match(REMARK_PERSON_TOKEN_RE) || []).map(function (m) { return m === "{STAFF}" ? "STAFF" : "PLAYER"; });
+  _remarkFillPlayers = tokenTypes.map(function () { return { role: "player", number: "" }; });
+  $("remarkFillPlayersContainer").innerHTML = buildRemarkFillPlayersHtml(tokenTypes);
+
+  updateRemarkFillInsertEnabled();
+  $("remarkFillModal").removeAttribute("hidden");
+}
+
+function closeRemarkFillModal() {
+  $("remarkFillModal").hidden = true;
+}
+
+function insertRemarkFill() {
+  var state = controller.getState();
+  var resolved = resolveAutoRemarkTokens(_remarkFillRawText, state, _remarkFillTeam);
+  resolved = resolvePlayerRemarkTokens(resolved, _remarkFillPlayers);
+  var input = $("remarksModalInput");
+  input.value = resolved;
+  closeRemarkFillModal();
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
+}
+
+function wireRemarkFillModal() {
+  $("btnCloseRemarkFillModal").addEventListener("click", closeRemarkFillModal);
+  $("remarkFillModal").addEventListener("click", function (e) {
+    if (e.target === $("remarkFillModal")) { closeRemarkFillModal(); return; }
+
+    var teamBtn = e.target.closest(".rf-team-btn");
+    if (teamBtn) {
+      _remarkFillTeam = teamBtn.getAttribute("data-team");
+      document.querySelectorAll(".rf-team-btn").forEach(function (b) { b.classList.toggle("active", b === teamBtn); });
+      updateRemarkFillInsertEnabled();
+      return;
+    }
+    var roleBtn = e.target.closest(".rf-role-btn");
+    if (roleBtn) {
+      var idx = parseInt(roleBtn.getAttribute("data-player-index"), 10);
+      _remarkFillPlayers[idx].role = roleBtn.getAttribute("data-role");
+      roleBtn.closest(".rf-role-btns").querySelectorAll(".rf-role-btn").forEach(function (b) { b.classList.toggle("active", b === roleBtn); });
+      var numPad = document.querySelector('.rf-num-pad[data-player-index="' + idx + '"]');
+      if (numPad) numPad.hidden = _remarkFillPlayers[idx].role !== "player";
+      updateRemarkFillInsertEnabled();
+      return;
+    }
+    var digitBtn = e.target.closest(".rf-npb[data-digit]");
+    if (digitBtn) {
+      var idx2 = parseInt(digitBtn.getAttribute("data-player-index"), 10);
+      if (_remarkFillPlayers[idx2].number.length < 2) {
+        _remarkFillPlayers[idx2].number += digitBtn.getAttribute("data-digit");
+        updateRemarkFillPlayerDisplay(idx2);
+        updateRemarkFillInsertEnabled();
+      }
+      return;
+    }
+    var delBtn = e.target.closest(".rf-npb-del");
+    if (delBtn) {
+      var idx3 = parseInt(delBtn.getAttribute("data-player-index"), 10);
+      _remarkFillPlayers[idx3].number = _remarkFillPlayers[idx3].number.slice(0, -1);
+      updateRemarkFillPlayerDisplay(idx3);
+      updateRemarkFillInsertEnabled();
+      return;
+    }
+  });
+  $("btnRemarkFillInsert").addEventListener("click", insertRemarkFill);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !$("remarkFillModal").hidden) closeRemarkFillModal();
+  });
+}
+
 // Renders the pick-a-preset panel inside the live Remarks modal (not the Setup editor).
 function renderRemarksPresetPickerList() {
   var container = $("remarksPresetList");
@@ -4829,9 +5030,13 @@ function wireRemarksModal() {
     var presets = settings.remarkPresets || [];
     var text = presets[parseInt(btn.getAttribute("data-index"), 10)];
     if (text === undefined) return;
-    var input = $("remarksModalInput");
-    input.value = text;
     $("remarksPresetPanel").hidden = true;
+    if (remarkPresetNeedsFillIn(text)) {
+      openRemarkFillModal(text);
+      return;
+    }
+    var input = $("remarksModalInput");
+    input.value = resolveAutoRemarkTokens(text, controller.getState(), null);
     input.focus();
     input.setSelectionRange(input.value.length, input.value.length);
   });
@@ -6732,6 +6937,13 @@ function wireSetupPage() {
     if (removeBtn) {
       removeRemarkPreset(parseInt(removeBtn.getAttribute("data-index"), 10));
       renderRemarkPresetList();
+      return;
+    }
+    var tokenBtn = e.target.closest(".remark-token-btn");
+    if (tokenBtn) {
+      var editingRow = tokenBtn.closest(".remark-preset-row-editing");
+      var target = editingRow ? editingRow.querySelector(".remark-preset-input") : $("cfgAddRemarkPreset");
+      insertTokenAtCursor(target, tokenBtn.getAttribute("data-token"));
     }
   });
   document.addEventListener("keydown", function (e) {
@@ -6955,6 +7167,7 @@ async function init() {
   wireScoreboardControls();
   wireSanctionModal();
   wireRemarksModal();
+  wireRemarkFillModal();
   wireGamesPage();
   wireSetupPage();
   wireReportsPage();

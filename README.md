@@ -1,6 +1,6 @@
 ﻿# VolleyScore
 
-**Version 31**
+**Version 32**
 
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
@@ -336,6 +336,11 @@ A free-form, timestamped notepad for each match — for anything the structured 
 
 - While a game is live, a **Remarks** button appears in the top nav next to **Match Log**. Tap it to open a popup, type a note, and tap **Add Remark**.
 - Common situations come up again and again, so you can pre-define remark text in **Setup → Pre-defined Remarks** and pick from that list instead of typing it out each time — tap **Choose from List** in the popup, pick one, and it fills the text box (still editable before you tap **Add Remark**, so you can tweak or add detail first). The order you arrange them in Setup (use the ▲▼ arrows) is the order they're listed in that picker. Ships with one default: "Game delayed due to previous match."
+- **Placeholders** let a pre-defined remark auto-fill or prompt for details instead of you typing them out live — handy for things like "GAME CAPTAIN RE-DESIGNATED - TEAM {TEAM}, SET {SET}, SCORE ({SCORE}), {PLAYER} -> {PLAYER}". In Setup, tap the **Insert placeholder** buttons to add one at the cursor instead of typing the braces yourself:
+  - `{SET}` and `{SCORE}` always auto-fill from the game in progress, no prompt.
+  - `{TEAM}` prompts you to pick Team A or B when you use the remark — picking a team also puts **that team's score first** in `{SCORE}` (e.g. Team B leading 12-9 becomes "12 - 9" instead of "9 - 12").
+  - `{PLAYER}` prompts for a jersey number only. `{STAFF}` prompts for a jersey number **or** a staff role (Head Coach, Asst. Coach, Trainer, Medical) — exactly like picking who a sanction applies to; use it only where a staff member could plausibly be involved. Use either more than once in the same remark (e.g. two `{PLAYER}` for an outgoing/incoming substitution) and each occurrence gets its own prompt.
+  - Picking a preset with any `{TEAM}`/`{PLAYER}`/`{STAFF}` placeholders opens a small **Fill In Remark Details** popup first; the finished text then fills the box exactly like today, still editable before you tap **Add Remark**. A preset with only `{SET}`/`{SCORE}` (or no placeholders at all) fills in immediately with no extra popup.
 - The pre-defined remarks list can be exported/imported separately as JSON, Excel, or CSV (Setup → Pre-defined Remarks) — importing merges in any new entries (duplicates skipped) without touching your existing list or its order.
 - You never number remarks yourself — each one is numbered automatically (1, 2, 3, ...) in the order it was added.
 - Every remark also records the time, set, and score at the moment it was added, e.g. `Set 2 – (A) 15 - 12 (B)`. Before the first set starts, or between sets, the score is always 0-0 and the set number reflects how many sets have been completed so far (`Set 0` before Set 1 has started, `Set 1` between Sets 1 and 2, and so on).

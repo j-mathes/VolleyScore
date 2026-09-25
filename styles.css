@@ -1,3 +1,4 @@
+@charset "UTF-8";
 /* ============================================================
    VolleyScore — styles.css
    Mobile-landscape primary layout.
@@ -2394,6 +2395,39 @@ details[open] .event-log-summary::before {
   line-height: 1.5;
 }
 
+.setup-hint-details {
+  margin-bottom: 0.6rem;
+}
+
+.setup-hint-summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  list-style: none;
+}
+
+.setup-hint-summary::-webkit-details-marker {
+  display: none;
+}
+
+.setup-hint-summary::before {
+  content: "▶";
+  font-size: 0.6rem;
+  transition: transform 150ms;
+}
+
+.setup-hint-details[open] > .setup-hint-summary::before {
+  transform: rotate(90deg);
+}
+
+.setup-hint-details .setup-hint {
+  margin-top: 0.4rem;
+}
+
 .data-actions {
   display: flex;
   gap: 0.5rem;
@@ -2535,6 +2569,31 @@ details[open] .event-log-summary::before {
 .remark-preset-text {
   flex: 1;
   font-size: 0.9rem;
+}
+
+.remark-token-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0.6rem;
+}
+
+.remark-token-hint {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
+.remark-token-btn {
+  font-size: 0.78rem;
+  padding: 0.25rem 0.6rem;
+  min-height: unset;
+  min-width: unset;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .remark-token-btn {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .remark-preset-edit-btn,
@@ -2802,6 +2861,12 @@ details[open] .event-log-summary::before {
   overflow-y: auto;
 }
 
+/* Can be opened on top of the live Remarks modal (to resolve {TEAM}/{PLAYER}
+   placeholders) — needs to stack above it regardless of DOM order. */
+#remarkFillModal {
+  z-index: 210;
+}
+
 .modal-card {
   background: var(--bg-card);
   border-radius: var(--radius-lg);
@@ -2966,6 +3031,13 @@ details[open] .event-log-summary::before {
 
 .role-btn.active,
 .role-btn.active:hover:not(:disabled) {
+  background: var(--brand-color);
+  color: #fff;
+  border-color: transparent;
+}
+
+.rf-team-btn.active,
+.rf-team-btn.active:hover:not(:disabled) {
   background: var(--brand-color);
   color: #fff;
   border-color: transparent;
@@ -4336,6 +4408,11 @@ input.player-num-input {
 }
 [data-theme="dark"] .role-btn.active,
 [data-theme="dark"] .role-btn.active:hover:not(:disabled) {
+  background: var(--brand-color);
+  color: #fff;
+}
+[data-theme="dark"] .rf-team-btn.active,
+[data-theme="dark"] .rf-team-btn.active:hover:not(:disabled) {
   background: var(--brand-color);
   color: #fff;
 }
