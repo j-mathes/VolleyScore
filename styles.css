@@ -1856,9 +1856,27 @@ details[open] .event-log-summary::before {
   font-size: 0.85rem;
 }
 
-.remark-save-btn {
-  align-self: flex-end;
+.remark-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
   margin-top: 0.3rem;
+}
+
+.remark-add-postmatch {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+
+.remark-add-postmatch textarea {
+  width: 100%;
+  font-size: 0.85rem;
+  min-height: 2.6rem;
 }
 
 /* ---- Remarks modal (live game) ---- */

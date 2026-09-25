@@ -983,9 +983,15 @@ function deriveGameState(timeline) {
         break;
       }
       case "REMARK_ADDED": {
+        // setNumber is explicitly null for post-match remarks (added after the
+        // game ended, no set/score context applies) — preserve that distinction
+        // rather than defaulting it to 0 like a real "before Set 1" remark.
+        var remarkHasContext = ev.setNumber !== null && ev.setNumber !== undefined;
         remarks.push({
           id: ev.remarkId, text: ev.text, timestamp: ev.timestamp,
-          setNumber: ev.setNumber || 0, scoreA: ev.scoreA || 0, scoreB: ev.scoreB || 0,
+          setNumber: remarkHasContext ? ev.setNumber : null,
+          scoreA: remarkHasContext ? (ev.scoreA || 0) : null,
+          scoreB: remarkHasContext ? (ev.scoreB || 0) : null,
         });
         break;
       }
@@ -4714,7 +4720,20 @@ function currentRemarkContext(state) {
 }
 
 function remarkContextLabel(setNumber, scoreA, scoreB) {
+  if (setNumber === null || setNumber === undefined) return "Post-Match";
   return "Set " + setNumber + " \u2013 (A) " + scoreA + " - " + scoreB + " (B)";
+}
+
+// Post-match remarks (added well after the match itself) show the date
+// alongside the time, since they aren't necessarily same-day; live in-match
+// remarks only need the time. timeFormatter is whichever time-only formatter
+// the caller already uses (formatTime / formatTime24).
+function remarkTimeLabel(r, timeFormatter) {
+  var timeStr = timeFormatter(r.timestamp);
+  if (r.setNumber === null || r.setNumber === undefined) {
+    return formatDateYMD(r.timestamp) + " " + timeStr;
+  }
+  return timeStr;
 }
 
 function addRemark(text) {
@@ -4737,7 +4756,7 @@ function buildRemarksModalListHtml(remarks) {
   return remarks.map(function (r, i) {
     return '<div class="remark-row">' +
       '<span class="remark-num">' + (i + 1) + '.</span>' +
-      '<span class="remark-time">' + esc(formatTime(r.timestamp)) + '</span>' +
+      '<span class="remark-time">' + esc(remarkTimeLabel(r, formatTime)) + '</span>' +
       '<span class="remark-context">' + esc(remarkContextLabel(r.setNumber, r.scoreA, r.scoreB)) + '</span>' +
       '<span class="remark-text">' + esc(r.text) + '</span>' +
       '</div>';
@@ -5112,6 +5131,8 @@ function renderDetailRemarks(state) {
   var remarks = (state && state.remarks) || [];
   var editBtn = $("btnEditRemarks");
   if (editBtn) editBtn.classList.toggle("active", _detailRemarksEditMode);
+  var addBox = $("detailRemarksAdd");
+  if (addBox) addBox.hidden = !(state && state.endedAt && _detailRemarksEditMode);
 
   if (!remarks.length) {
     body.innerHTML = '<div class="event-log-empty">No remarks recorded.</div>';
@@ -5120,7 +5141,7 @@ function renderDetailRemarks(state) {
 
   body.innerHTML = remarks.map(function (r, i) {
     var num = (i + 1) + ".";
-    var time = esc(formatTime(r.timestamp));
+    var time = esc(remarkTimeLabel(r, formatTime));
     var context = esc(remarkContextLabel(r.setNumber, r.scoreA, r.scoreB));
     if (_detailRemarksEditMode) {
       return '<div class="remark-row remark-row-editing">' +
@@ -5128,7 +5149,10 @@ function renderDetailRemarks(state) {
         '<span class="remark-time">' + time + '</span>' +
         '<span class="remark-context">' + context + '</span>' +
         '<textarea class="remark-edit-input" data-remark-id="' + esc(r.id) + '">' + esc(r.text) + '</textarea>' +
+        '<div class="remark-edit-actions">' +
+        '<button class="remark-delete-btn ctrl-btn danger-btn" type="button" data-remark-id="' + esc(r.id) + '">Delete</button>' +
         '<button class="remark-save-btn ctrl-btn" type="button" data-remark-id="' + esc(r.id) + '">Save</button>' +
+        '</div>' +
         '</div>';
     }
     return '<div class="remark-row">' +
@@ -5140,23 +5164,71 @@ function renderDetailRemarks(state) {
   }).join("");
 }
 
-// Edits a remark's text in place (post-hoc correction, mirrors saveMatchInfoEdits)
+// Adds a remark after the fact (typically once a game has ended) — no set/score
+// context applies, so setNumber/scoreA/scoreB are left null; remarkContextLabel
+// renders that as "Post-Match" instead of a set/score line. Timestamp is always
+// the real moment the remark is added, same as a live in-game remark.
+async function addPostMatchRemark(gameId, text) {
+  var trimmed = (text || "").trim();
+  if (!trimmed || !gameId) return;
+  var newEvent = {
+    type: "REMARK_ADDED",
+    remarkId: crypto.randomUUID(),
+    text: trimmed,
+    timestamp: new Date().toISOString(),
+    setNumber: null,
+    scoreA: null,
+    scoreB: null,
+  };
+  // Always mutate a fresh disk load (not controller.timeline directly) so this
+  // can never silently overwrite events that exist on disk but not yet in an
+  // out-of-sync in-memory controller (e.g. after an import); re-hydrate the
+  // controller afterward if this happens to be the active game, to match.
+  var record = await dbLoadGame(gameId);
+  if (!record) return;
+  var events = record.events || [];
+  var cursor = record.cursor != null ? record.cursor : events.length;
+  var kept = events.slice(0, cursor);
+  kept.push(newEvent);
+  record.events = kept;
+  record.cursor = kept.length;
+  await dbSaveGame(record);
+  if (gameId === controller.currentGameId) controller.hydrate(record);
+  if (selectedDetailGameId === gameId) await selectDetailGame(gameId);
+}
+
+// Edits a remark's text in place (post-hoc correction, mirrors saveMatchInfoEdits).
+// Deliberately does NOT re-render the Game Detail panel itself — the caller
+// controls that timing so a brief "Saved!" confirmation can stay on screen.
 async function saveRemarkEdit(gameId, remarkId, newText) {
   function applyEdit(events) {
     var ev = events.find(function (e) { return e.type === "REMARK_ADDED" && e.remarkId === remarkId; });
     if (ev) ev.text = newText;
   }
-  if (gameId === controller.currentGameId) {
-    applyEdit(controller.timeline.events);
-    controller._state = deriveGameState(controller.timeline);
-    await persistGame();
-  } else {
-    var record = await dbLoadGame(gameId);
-    if (record) {
-      applyEdit(record.events || []);
-      await dbSaveGame(record);
-    }
-  }
+  var record = await dbLoadGame(gameId);
+  if (!record) return;
+  applyEdit(record.events || []);
+  await dbSaveGame(record);
+  if (gameId === controller.currentGameId) controller.hydrate(record);
+}
+
+// Removes a REMARK_ADDED event outright; shifts cursor down by 1 if the
+// deleted event was at or before it, so undo/redo positioning stays correct.
+function deleteRemarkFromEvents(events, cursor, remarkId) {
+  var idx = events.findIndex(function (e) { return e.type === "REMARK_ADDED" && e.remarkId === remarkId; });
+  if (idx === -1) return cursor;
+  events.splice(idx, 1);
+  return idx < cursor ? cursor - 1 : cursor;
+}
+
+// Deletes a remark entirely (post-hoc correction, e.g. added by mistake)
+async function deleteRemark(gameId, remarkId) {
+  var record = await dbLoadGame(gameId);
+  if (!record) return;
+  record.events = record.events || [];
+  record.cursor = deleteRemarkFromEvents(record.events, record.cursor != null ? record.cursor : record.events.length, remarkId);
+  await dbSaveGame(record);
+  if (gameId === controller.currentGameId) controller.hydrate(record);
   if (selectedDetailGameId === gameId) await selectDetailGame(gameId);
 }
 
@@ -5865,7 +5937,7 @@ function buildGrRemarksBoxHtml(state) {
     bodyHtml = remarks.map(function (r, i) {
       return '<div class="gr-remark-row">' +
         '<span class="gr-remark-num">' + (i + 1) + ".</span>" +
-        '<span class="gr-remark-time">' + esc(formatTime24(r.timestamp)) + '</span>' +
+        '<span class="gr-remark-time">' + esc(remarkTimeLabel(r, formatTime24)) + '</span>' +
         '<span class="gr-remark-context">' + esc(remarkContextLabel(r.setNumber, r.scoreA, r.scoreB)) + '</span>' +
         '<span class="gr-remark-text">' + esc(r.text) + '</span>' +
         '</div>';
@@ -5994,7 +6066,7 @@ function exportGameReportXlsx() {
       rows.push(["None"]);
     } else {
       remarks.forEach(function (r, i) {
-        rows.push([(i + 1) + ".", formatTime24(r.timestamp), remarkContextLabel(r.setNumber, r.scoreA, r.scoreB), r.text]);
+        rows.push([(i + 1) + ".", remarkTimeLabel(r, formatTime24), remarkContextLabel(r.setNumber, r.scoreA, r.scoreB), r.text]);
       });
     }
 
@@ -6058,14 +6130,39 @@ function wireGamesPage() {
     renderDetailRemarks(_detailState);
   });
   $("detailRemarksBody").addEventListener("click", function (e) {
-    var btn = e.target.closest(".remark-save-btn");
-    if (!btn || !selectedDetailGameId) return;
-    var row = btn.closest(".remark-row");
-    var textarea = row ? row.querySelector(".remark-edit-input") : null;
-    if (!textarea) return;
-    var newText = textarea.value.trim();
-    if (!newText) return;
-    void saveRemarkEdit(selectedDetailGameId, btn.getAttribute("data-remark-id"), newText);
+    var saveBtn = e.target.closest(".remark-save-btn");
+    if (saveBtn && selectedDetailGameId) {
+      var row = saveBtn.closest(".remark-row");
+      var textarea = row ? row.querySelector(".remark-edit-input") : null;
+      if (!textarea) return;
+      var newText = textarea.value.trim();
+      if (!newText) return;
+      // Brief "Saved!" flash so it's clear the click did something, without
+      // hiding the row's edit controls (pencil stays on for every remark).
+      saveBtn.textContent = "Saved!";
+      saveBtn.disabled = true;
+      var remarkId = saveBtn.getAttribute("data-remark-id");
+      var gid = selectedDetailGameId;
+      void (async function () {
+        await saveRemarkEdit(gid, remarkId, newText);
+        await new Promise(function (r) { setTimeout(r, 500); });
+        if (selectedDetailGameId === gid) await selectDetailGame(gid);
+      })();
+      return;
+    }
+    var deleteBtn = e.target.closest(".remark-delete-btn");
+    if (deleteBtn && selectedDetailGameId) {
+      if (!confirm("Delete this remark? This cannot be undone.")) return;
+      void deleteRemark(selectedDetailGameId, deleteBtn.getAttribute("data-remark-id"));
+    }
+  });
+  $("btnDetailAddRemark").addEventListener("click", function () {
+    if (!selectedDetailGameId) return;
+    var input = $("detailRemarksAddInput");
+    if (!input.value.trim()) return;
+    void addPostMatchRemark(selectedDetailGameId, input.value).then(function () {
+      input.value = "";
+    });
   });
 
   // Import button
