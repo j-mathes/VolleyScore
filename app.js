@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "33";
+var APP_VERSION = "34";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -2991,6 +2991,39 @@ var COLOR_PRESET_SWATCHES = [
 ];
 
 var _colorPopoverInput = null; // the hidden <input type=color> currently being edited
+var _customColorInputHome = null; // {parent, next} — where to restore the input after borrowing it for "Custom…"
+
+// Temporarily reparents `input` onto the "Custom…" label so a real tap lands on
+// it directly (required for mobile browsers to open the native color picker —
+// see the comment on .color-input-custom-label-target in styles.css).
+function moveInputIntoCustomLabel(input) {
+  var label = $("btnColorPresetCustom");
+  _customColorInputHome = { parent: input.parentNode, next: input.nextSibling };
+  input.classList.remove("color-input-visually-hidden");
+  input.classList.add("color-input-custom-label-target");
+  label.appendChild(input);
+  input.addEventListener("change", onCustomColorPicked);
+}
+
+function onCustomColorPicked() {
+  restoreInputFromCustomLabel(); // put the input back next to its swatch button first
+  syncColorSwatchButtons(); // ...so this can find it via btn.nextElementSibling
+  closeColorPresetPopover();
+}
+
+function restoreInputFromCustomLabel() {
+  if (!_customColorInputHome) return;
+  var label = $("btnColorPresetCustom");
+  var input = label.firstElementChild;
+  if (input) {
+    input.removeEventListener("change", onCustomColorPicked);
+    input.classList.remove("color-input-custom-label-target");
+    input.classList.add("color-input-visually-hidden");
+    if (_customColorInputHome.next) _customColorInputHome.parent.insertBefore(input, _customColorInputHome.next);
+    else _customColorInputHome.parent.appendChild(input);
+  }
+  _customColorInputHome = null;
+}
 
 // Replaces a native color input's visible control with a swatch button that
 // opens a shared preset-grid popover; the original input stays for "Custom…".
@@ -3008,7 +3041,8 @@ function enhanceColorInput(inputId) {
   btn.setAttribute("aria-label", label);
 
   input.insertAdjacentElement("beforebegin", btn);
-  // Visually hidden (not display:none) so .click() can still open the native picker
+  // Visually hidden; shown again (via .color-input-custom-label-target) only
+  // while borrowed by the "Custom…" label in the popover, see moveInputIntoCustomLabel.
   input.classList.add("color-input-visually-hidden");
   input.tabIndex = -1;
 
@@ -3050,9 +3084,11 @@ function openColorPresetPopover(input, anchorBtn) {
   var pop = $("colorPresetPopover");
   pop.hidden = false;
   positionColorPopover(pop, anchorBtn);
+  moveInputIntoCustomLabel(input);
 }
 
 function closeColorPresetPopover() {
+  restoreInputFromCustomLabel();
   $("colorPresetPopover").hidden = true;
   _colorPopoverInput = null;
 }
@@ -3084,12 +3120,6 @@ function wireColorPresetPopover() {
     "cfgWinGlowColor", "cfgActionGlowColor",
     "cfgTeamAColorOverride", "cfgTeamBColorOverride", "cfgAddTeamNameColor",
   ].forEach(enhanceColorInput);
-
-  $("btnColorPresetCustom").addEventListener("click", function () {
-    var input = _colorPopoverInput;
-    closeColorPresetPopover();
-    if (input) input.click(); // opens the native OS color picker
-  });
 
   document.addEventListener("click", function (e) {
     var pop = $("colorPresetPopover");

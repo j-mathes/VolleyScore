@@ -2305,17 +2305,37 @@ details[open] .event-log-summary::before {
 }
 
 .color-preset-custom-btn {
+  position: relative; /* anchors the real <input type=color> overlaid on top, see below */
+  display: block;
   width: 100%;
   padding: 0.35rem;
   font-size: 0.85rem;
+  text-align: center;
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--border-strong);
   background: var(--bg-card);
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .color-preset-custom-btn:hover {
   background: rgba(0, 0, 0, 0.06);
+}
+
+/* While the popover is open, the real color input is reparented on top of the
+   "Custom…" label so a tap lands directly on it — mobile browsers only open the
+   native color picker from a genuine direct tap on the input, not a script-
+   triggered .click() on a hidden/offscreen element (that only works on desktop). */
+.color-input-custom-label-target {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
 [data-theme="dark"] .color-preset-custom-btn:hover {
