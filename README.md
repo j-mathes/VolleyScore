@@ -10,16 +10,26 @@ Browser-based volleyball scorekeeper. No install, no build step — open `index.
 
 ## Installing as a PWA
 
-VolleyScore is a Progressive Web App. Install it for a full-screen, offline-capable experience.
+VolleyScore is a Progressive Web App. Install it for a full-screen, offline-capable experience. There is nothing to download from an app store — you install it straight from the website.
+
+**Step 1 — Open the app in your browser first.** On the device you want to install it on, open the browser listed in the table below and go to:
+
+**[https://j-mathes.github.io/VolleyScore/](https://j-mathes.github.io/VolleyScore/)**
+
+Wait for the page to finish loading. The install options only appear once you are viewing the app itself, not this README or a link preview inside another app (e.g. Messages, email, or social media — if you tapped a link there, open it in Safari/Chrome instead).
+
+**Step 2 — Install it** using the steps for your device:
 
 | Platform | Steps |
 |----------|-------|
-| **iOS — Safari** | Share ⎙ → Add to Home Screen → Add. On iOS 17.4+, choose "As Web App" when prompted. |
-| **iOS — Chrome / Edge (17+)** | Share ⎙ in the URL bar → Add to Home Screen → Add. |
-| **Android — Chrome** | ⋮ menu → Add to Home Screen (or tap the install banner) → Add. |
-| **Desktop — Chrome / Edge** | Click the install icon ⊕ in the address bar → Install. |
+| **iPhone / iPad — Safari** | Tap the **Share** button ⎙ (the square with an arrow pointing up — at the bottom of the screen on iPhone, top on iPad). Scroll down the menu and tap **Add to Home Screen** (if you don't see it, scroll further or tap **Edit Actions** and add it). On iOS 17.4+, leave **Open as Web App** switched on. Tap **Add** in the top-right corner. |
+| **iPhone / iPad — Chrome / Edge (iOS 17+)** | Tap the **Share** button ⎙ in the address bar (top right on iPhone, or the ⋯ menu → Share). Tap **Add to Home Screen**, then tap **Add**. |
+| **Android — Chrome** | Tap the **⋮** menu (top right). Tap **Install app** or **Add to Home Screen**, then tap **Install** / **Add** and confirm. You may also see an install banner at the bottom of the screen — tapping it does the same thing. |
+| **Desktop — Chrome / Edge** | Click the install icon ⊕ at the right end of the address bar (or the ⋮ / ⋯ menu → **Install VolleyScore** / **Apps → Install this site as an app**), then click **Install**. |
 
-After installing, the app opens full-screen without browser chrome and works offline.
+**Step 3 — Launch it from your home screen (or Start menu / Applications folder on desktop)** using the new VolleyScore icon, just like any other app. It opens full-screen without browser chrome and works offline.
+
+> **iPhone/iPad note:** Installing only works from a browser — Safari is the most reliable choice. Once installed, you can close the browser tab; the home-screen icon is all you need.
 
 ---
 
