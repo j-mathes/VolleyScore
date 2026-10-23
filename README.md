@@ -1,6 +1,6 @@
 ﻿# VolleyScore
 
-**Version 34**
+**Version 35**
 
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
@@ -258,6 +258,7 @@ An optional large on-screen countdown for timeouts — on by default.
 - **End Timeout** lets the referee dismiss it early if the timeout ends before time is up.
 - **Undo Timeout** undoes the timeout entirely (in case it was called by accident) and closes the popup — equivalent to tapping the regular **Undo** button.
 - If the countdown reaches 0, the popup stays up briefly (using the **Win condition toast duration** from Setup → Scoring Defaults → Win Alert) and then disappears automatically.
+- **Count up after timeout ends** (Setup → Game Defaults → Timeout Timer, off by default, only available while the Timeout Timer is on): instead of auto-closing at 0, the timer keeps counting up with a minus sign (−1, −2, …) in red, pulsing with a glow on every tick (0.75 s), so you can see how long a team is taking to return to the court. It only closes when you tap **End Timeout** (or **Undo**).
 
 ---
 
@@ -335,6 +336,7 @@ If the wrong team is picked to serve, a compact "Set N serve: Team X" chip stays
 
 - Tap **⇄ Sides** anytime to swap which panel each team appears on; Triple Ball arrows and the sets-won indicator update immediately, including before the first set starts.
 - **Setup → Game Defaults → Auto-switch sides between sets** does this automatically at the end of every set instead.
+- **Setup → Game Defaults → Start match with sides swapped** (off by default) starts every new match with Team B on the left and Team A on the right.
 - Deciding sets always get a fresh coin-toss prompt for serve and side, regardless of that setting — real matches call for a new toss there.
 - **Setup → Game Defaults → Prompt to switch sides at 8 pts (deciding set)** (on by default) additionally asks to switch once the first team reaches 8 points in the deciding set; Triple Ball waits for the current 3-ball sequence to finish first, so it may fire at 8, 9, or 10 points. Leave it off to switch manually with **⇄ Sides** whenever you judge best.
 

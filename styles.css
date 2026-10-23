@@ -2381,6 +2381,15 @@ details[open] .event-log-summary::before {
 }
 
 /* Toggle switch */
+.setting-row-disabled {
+  opacity: 0.5;
+}
+
+.setting-row-disabled .toggle-switch,
+.setting-row-disabled .toggle-switch input {
+  cursor: not-allowed;
+}
+
 .toggle-switch {
   position: relative;
   display: inline-block;
@@ -3430,6 +3439,21 @@ input.player-num-input {
 
 .timeout-timer-count.timeout-timer-done {
   color: var(--danger);
+}
+
+.timeout-timer-count.timeout-timer-pulse {
+  animation: timeout-timer-pulse 0.75s ease-out;
+}
+
+@keyframes timeout-timer-pulse {
+  0% {
+    transform: scale(1.08);
+    text-shadow: 0 0 0.35em var(--danger), 0 0 0.7em var(--danger);
+  }
+  100% {
+    transform: scale(1);
+    text-shadow: 0 0 0 transparent;
+  }
 }
 
 .timeout-timer-actions {

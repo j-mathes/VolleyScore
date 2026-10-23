@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "34";
+var APP_VERSION = "35";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -75,6 +75,7 @@ var DEFAULT_SETTINGS = {
   defaultVariation: "standard",
   defaultFairPlay: "none",
   autoSwitchSidesBetweenSets: false,
+  startMatchSidesSwapped: false,
   promptSwitchSidesMidDecider: true,
   defaultTimeouts: 2,
   defaultSubs: 6,
@@ -122,6 +123,7 @@ var DEFAULT_SETTINGS = {
   actionGlowDuration: 2,
   // Timeout countdown popup
   timeoutTimerEnabled: true,
+  timeoutTimerCountUp: false,
   timeoutTimerDuration: 60,
 };
 
@@ -2701,7 +2703,7 @@ async function startNewGame() {
   controller.clear();
   controller.currentGameId = gameId;
   selectedLogSetFilter = null; // reset filter for new game
-  sidesSwapped = false;        // reset side layout for new game
+  sidesSwapped = !!settings.startMatchSidesSwapped;
   _tbPrevPhase = -1;           // reset triple ball animation state
   _setWinKey = null;           // reset win condition alert state
   _matchWinKey = null;
@@ -3873,6 +3875,13 @@ function showToast(message, duration, extraClass) {
 
 // ---- Timeout Countdown Overlay ---------------------------
 
+// Count-up only makes sense while the countdown timer itself is on.
+function updateTimeoutTimerCountUpEnabled() {
+  var on = !!settings.timeoutTimerEnabled;
+  $("cfgTimeoutTimerCountUp").disabled = !on;
+  $("rowTimeoutTimerCountUp").classList.toggle("setting-row-disabled", !on);
+}
+
 var _timeoutTimerInterval = null;
 var _timeoutTimerAutoHideTimer = null;
 
@@ -3904,15 +3913,25 @@ function startTimeoutCountdown(team) {
 
   var countEl = $("timeoutTimerCount");
   countEl.textContent = remaining;
-  countEl.classList.remove("timeout-timer-done");
+  countEl.classList.remove("timeout-timer-done", "timeout-timer-pulse");
   $("timeoutTimerTeam").textContent = teamName;
   $("timeoutTimerOverlay").removeAttribute("hidden");
 
+  var overtime = 0;
   _timeoutTimerInterval = setInterval(function () {
+    if (remaining <= 0) {
+      overtime++;
+      countEl.textContent = "\u2212" + overtime;
+      countEl.classList.remove("timeout-timer-pulse");
+      void countEl.offsetWidth; // restart the CSS animation on every tick
+      countEl.classList.add("timeout-timer-pulse");
+      return;
+    }
     remaining--;
     if (remaining <= 0) {
       countEl.textContent = 0;
       countEl.classList.add("timeout-timer-done");
+      if (settings.timeoutTimerCountUp) return;
       clearInterval(_timeoutTimerInterval);
       _timeoutTimerInterval = null;
       var hideMs = (settings.winToastDuration || 3) * 1000;
@@ -6478,10 +6497,13 @@ function renderSetupPage() {
   if (defVarRadio) defVarRadio.checked = true;
   $("cfgDefFairPlay").value = settings.defaultFairPlay || "none";
   $("cfgAutoSwitchSidesBetweenSets").checked = !!settings.autoSwitchSidesBetweenSets;
+  $("cfgStartSidesSwapped").checked = !!settings.startMatchSidesSwapped;
   $("cfgPromptSwitchSidesMidDecider").checked = !!settings.promptSwitchSidesMidDecider;
   $("cfgDefTimeouts").textContent = settings.defaultTimeouts;
   $("cfgDefSubs").textContent = settings.defaultSubs;
   $("cfgTimeoutTimerEnabled").checked = !!settings.timeoutTimerEnabled;
+  $("cfgTimeoutTimerCountUp").checked = !!settings.timeoutTimerCountUp;
+  updateTimeoutTimerCountUpEnabled();
   $("cfgTimeoutTimerDuration").textContent = settings.timeoutTimerDuration !== undefined ? settings.timeoutTimerDuration : 60;
   $("cfgNotchEnabled").checked = !!settings.notchEnabled;
   $("notchOptions").hidden = !settings.notchEnabled;
@@ -6636,6 +6658,11 @@ function wireSetupPage() {
     saveSettings();
   });
 
+  $("cfgStartSidesSwapped").addEventListener("change", function () {
+    settings.startMatchSidesSwapped = this.checked;
+    saveSettings();
+  });
+
   $("cfgAutoSwitchSidesBetweenSets").addEventListener("change", function () {
     settings.autoSwitchSidesBetweenSets = this.checked;
     saveSettings();
@@ -6663,8 +6690,13 @@ function wireSetupPage() {
   });
 
   // Timeout countdown timer
+  $("cfgTimeoutTimerCountUp").addEventListener("change", function () {
+    settings.timeoutTimerCountUp = this.checked;
+    saveSettings();
+  });
   $("cfgTimeoutTimerEnabled").addEventListener("change", function () {
     settings.timeoutTimerEnabled = this.checked;
+    updateTimeoutTimerCountUpEnabled();
     saveSettings();
   });
   $("btnTimeoutTimerDurDown").addEventListener("click", function () {
