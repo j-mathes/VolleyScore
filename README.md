@@ -6,9 +6,14 @@ Browser-based volleyball scorekeeper. No install, no build step — open `index.
 
 **[https://j-mathes.github.io/VolleyScore/](https://j-mathes.github.io/VolleyScore/)**
 
+**Jump to:** [Quickstart](#quickstart) · [Features](#features) · [Install as an app](#installing-as-a-pwa) · [Reference](#reference) · [Setup options](#setup)
+
 ---
 
 ## Installing as a PWA
+
+<details>
+<summary>Show install steps (iPhone, Android, desktop)</summary>
 
 VolleyScore is a Progressive Web App. Install it for a full-screen, offline-capable experience. There is nothing to download from an app store — you install it straight from the website.
 
@@ -31,18 +36,71 @@ Wait for the page to finish loading. The install options only appear once you ar
 
 > **iPhone/iPad note:** Installing only works from a browser — Safari is the most reliable choice. Once installed, you can close the browser tab; the home-screen icon is all you need.
 
+</details>
+
 ---
 
 ## Quickstart
 
-1. **Score page** — enter team names, pick a format, fair play rule, and first server → **Start Game**. The generic `Team A` and `Team B` values clear when focused; saved custom defaults remain available. Each team name has a color swatch to override that team's color for this match only (see [New Game Team Colors](#new-game-team-colors))
-2. Confirm (or change) who serves → **Start Set 1** — the same serve picker used before every set, not just Set 1
-3. Tap **+** to score a point; the serve indicator updates automatically. Picked the wrong server? A "Set N serve" chip stays in the game bar until the first point of that set is scored — tap it to correct (see [Match Timing](#match-timing))
-4. Sidebar buttons: **TO** (timeout), **Sub** (substitution), card icon (sanctions)
-5. **End Set** → choose who serves → **Start Set 2** (pulses green when ready)
-6. Repeat until done → **End Game** → **Done** to return to setup
-7. **Match Log** (nav bar) — full event log; tap a set number pill to filter by set
-8. **Remarks** (nav bar, next to Match Log) — jot down notes during the match, picking from your pre-defined list or typing your own (see [Remarks](#remarks))
+A whole match, start to finish. Each step links to the section with the full details. (Screenshots use sample match data; the live-game shots are taken with the phone in landscape, which is the best way to use the Score page.)
+
+### 1. Set up the game
+
+<img src="images/01-new-game.jpg" alt="The New Game form" width="300">
+
+On the **Score** page, fill in the **New Game** form:
+
+- **League** first, if you use them — it narrows the team, age category, and location suggestions (see [League Associations](#league-associations)).
+- **Team A / Team B** names (each has a color swatch for this match only — see [New Game Team Colors](#new-game-team-colors)), plus location, scheduled start, gender, and age category (see [Match Info Lists](#match-info-lists)).
+- **Game format**, **variation**, and **fair play** rule (see [Game Formats](#game-formats), [Triple Ball](#triple-ball), [Fair Play Rules](#fair-play-rules)), then timeouts, subs, and the win-at / win-by / cap [scoring rules](#scoring-rules).
+- **First Serve**, then **Start Game**.
+
+Tired of retyping? Set your usual values once under **Setup → Game Defaults**, or turn on [Persist New Game Data](#persisting-new-game-data) to carry over the last match.
+
+### 2. Start the first set
+
+Confirm (or change) who serves, then tap **Start Set 1**. Picked the wrong server? A "Set N serve" chip stays in the game bar until the first point is scored — tap it to fix (see [Match Timing](#match-timing)). **⇄ Sides** swaps which side each team is shown on, or you can have it [switch automatically](#side-switching).
+
+### 3. Score the match
+
+<img src="images/02-scoreboard.jpg" alt="The live scoreboard in landscape" width="640">
+
+- Tap **+** to score a point; the serve indicator follows along. **−** removes one.
+- The sidebars hold **TO** (timeout), **Sub** (substitution), and the card icon for [sanctions](#sanctions). Dots and counters track what each team has left, and fair play rules enforce the limits for you.
+- Playing Triple Ball? The [sequence indicator](#triple-ball) keeps the 3-ball rotation straight.
+- When a team reaches the set-win condition the **End Set** button glows and a toast appears — the app never ends a set for you (see [Alerts](#alerts)). Made a mistake? **↩ Undo** and **↪ Redo** step through every action.
+
+### 4. Handle timeouts
+
+<img src="images/03-timeout-timer.jpg" alt="The timeout countdown popup" width="640">
+
+Tapping **TO** can open a large countdown with both teams' score and timeouts used. **End Timeout** closes it early and **Undo** takes the timeout back if it was an accident. Optionally let it count up past zero (with a Pause button) to see how late a team is returning — see [Timeout Timer](#timeout-timer).
+
+### 5. End the set, then the match
+
+**End Set** → pick who serves → **Start Set 2** (it pulses green when ready), and so on. The deciding set gets a fresh coin-toss prompt for serve and side, and can prompt you to switch sides at 8 points (see [Side Switching](#side-switching)). When the match is decided, **End Game** glows → **Done** returns you to the New Game form.
+
+### 6. Review the Match Log and add remarks
+
+<img src="images/04-match-log.jpg" alt="The Match Log" width="640">
+
+**Match Log** (nav bar) shows the set summary and every event in order — tap a set number to filter by set. **Remarks** (next to it) is a timestamped notepad for anything else that happened, with quick-pick text you define in Setup (see [Remarks](#remarks)).
+
+### 7. Find, fix, and share games later
+
+<img src="images/05-games-list.jpg" alt="The Games page" width="640">
+
+Every game saves automatically. On the **Games** page you can resume a game in progress, open any game's details, **Edit Info** to fix a team name or location afterward, and **Select** several to export or delete (see [Data & Storage](#data--storage) and [Editing a Game's Match Info](#editing-a-games-match-info)). Export on one device and import on another to move your history.
+
+### 8. Print or export reports
+
+<img src="images/06-game-report.jpg" alt="A Game Report score sheet" width="640">
+
+On the **Reports** page, tick one or more games and build a **Match Log** summary table or a full FIVB-style **Game Report** score sheet — one page per game, with sanctions, results, and remarks. **Preview** it on screen, **Export Excel**, or **Print / PDF** (see [Reports](#reports)).
+
+### 9. Make it yours
+
+The **Setup** tab holds appearance and dark mode, game and scoring defaults, alert colors, your Match Info Lists, pre-defined remarks, and data tools (see [Setup](#setup)).
 
 ---
 
@@ -88,6 +146,12 @@ Wait for the page to finish loading. The install options only appear once you ar
 - **Score button layout & size** — reorder the +/&minus; buttons or scale them larger to suit your device and preference
 - **Keep Screen Awake** — optional Wake Lock so the screen doesn't sleep mid-match (iOS 16.4+ PWA, Android, desktop Chrome)
 - **PWA / offline** — installs to your home screen, works without an internet connection, and shows an update toast automatically when a new version is cached
+
+---
+
+## Reference
+
+Detailed documentation for every feature. The [Quickstart](#quickstart) above links into these sections.
 
 ---
 

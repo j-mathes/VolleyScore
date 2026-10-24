@@ -1,3 +1,6 @@
+# Local sample data used for README screenshots (not tracked)
+sample/
+
 # OS / filesystem
 .DS_Store
 .DS_Store?
