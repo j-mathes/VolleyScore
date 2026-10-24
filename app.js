@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "35";
+var APP_VERSION = "36";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -3884,6 +3884,15 @@ function updateTimeoutTimerCountUpEnabled() {
 
 var _timeoutTimerInterval = null;
 var _timeoutTimerAutoHideTimer = null;
+var _timeoutTimerPaused = false;
+
+function setTimeoutTimerPaused(paused) {
+  _timeoutTimerPaused = paused;
+  var btn = $("btnPauseTimeoutTimer");
+  btn.textContent = paused ? "Resume" : "Pause";
+  btn.classList.toggle("active", paused);
+  btn.setAttribute("aria-pressed", String(paused));
+}
 
 function startTimeoutCountdown(team) {
   if (!settings.timeoutTimerEnabled) return;
@@ -3914,12 +3923,15 @@ function startTimeoutCountdown(team) {
   var countEl = $("timeoutTimerCount");
   countEl.textContent = remaining;
   countEl.classList.remove("timeout-timer-done", "timeout-timer-pulse");
+  setTimeoutTimerPaused(false);
+  $("btnPauseTimeoutTimer").hidden = true;
   $("timeoutTimerTeam").textContent = teamName;
   $("timeoutTimerOverlay").removeAttribute("hidden");
 
   var overtime = 0;
   _timeoutTimerInterval = setInterval(function () {
     if (remaining <= 0) {
+      if (_timeoutTimerPaused) return;
       overtime++;
       countEl.textContent = "\u2212" + overtime;
       countEl.classList.remove("timeout-timer-pulse");
@@ -3931,7 +3943,10 @@ function startTimeoutCountdown(team) {
     if (remaining <= 0) {
       countEl.textContent = 0;
       countEl.classList.add("timeout-timer-done");
-      if (settings.timeoutTimerCountUp) return;
+      if (settings.timeoutTimerCountUp) {
+        $("btnPauseTimeoutTimer").hidden = false;
+        return;
+      }
       clearInterval(_timeoutTimerInterval);
       _timeoutTimerInterval = null;
       var hideMs = (settings.winToastDuration || 3) * 1000;
@@ -3978,6 +3993,9 @@ function wireScoreboardControls() {
 
   // Timeout countdown overlay — dismiss, or undo if it was called by accident
   $("btnEndTimeoutTimer").addEventListener("click", closeTimeoutCountdown);
+  $("btnPauseTimeoutTimer").addEventListener("click", function () {
+    setTimeoutTimerPaused(!_timeoutTimerPaused);
+  });
   $("btnUndoTimeoutTimer").addEventListener("click", function () {
     if (settings.confirmUndo && !confirm("Undo the timeout?")) return;
     controller.undo();

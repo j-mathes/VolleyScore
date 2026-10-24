@@ -3476,6 +3476,40 @@ input.player-num-input {
   background: color-mix(in srgb, var(--brand-color) 85%, #000 15%);
 }
 
+/* Pause/Resume for the count-up phase; glows while paused. */
+.timeout-timer-pause-btn {
+  font-size: clamp(0.8rem, 1.8vw, 0.92rem);
+  font-weight: 700;
+  padding: 0.75rem 1.1rem;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--timeout-timer-color);
+  background: transparent;
+  color: var(--timeout-timer-color);
+}
+
+.timeout-timer-pause-btn[hidden] {
+  display: none;
+}
+
+.timeout-timer-pause-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--timeout-timer-color) 18%, transparent);
+}
+
+.timeout-timer-pause-btn.active {
+  background: var(--timeout-timer-color);
+  color: #fff;
+  animation: timeout-pause-glow 1.5s ease-in-out infinite;
+}
+
+.timeout-timer-pause-btn.active:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--timeout-timer-color) 85%, #000 15%);
+}
+
+@keyframes timeout-pause-glow {
+  0%, 100% { box-shadow: 0 0 4px 1px var(--timeout-timer-color); }
+  50%      { box-shadow: 0 0 18px 6px var(--timeout-timer-color); }
+}
+
 /* Secondary action — undoing an accidentally-called timeout is less common
    than ending it normally, so this stays visually quieter and narrower than
    End Timeout (which comes first/left, this sits to its right). Border

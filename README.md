@@ -1,6 +1,6 @@
 ﻿# VolleyScore
 
-**Version 35**
+**Version 36**
 
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
@@ -259,6 +259,7 @@ An optional large on-screen countdown for timeouts — on by default.
 - **Undo Timeout** undoes the timeout entirely (in case it was called by accident) and closes the popup — equivalent to tapping the regular **Undo** button.
 - If the countdown reaches 0, the popup stays up briefly (using the **Win condition toast duration** from Setup → Scoring Defaults → Win Alert) and then disappears automatically.
 - **Count up after timeout ends** (Setup → Game Defaults → Timeout Timer, off by default, only available while the Timeout Timer is on): instead of auto-closing at 0, the timer keeps counting up with a minus sign (−1, −2, …) in red, pulsing with a glow on every tick (0.75 s), so you can see how long a team is taking to return to the court. It only closes when you tap **End Timeout** (or **Undo**).
+- While counting up, a **Pause** button appears between **End Timeout** and **Undo**. Tap it to freeze the count (the button changes to **Resume** and glows while paused); tap again to continue. **End Timeout** and **Undo** still work while paused. There's no pause button during the normal countdown.
 
 ---
 
