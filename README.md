@@ -1,6 +1,6 @@
 ﻿# VolleyScore
 
-**Version 36**
+**Version 37**
 
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
@@ -68,7 +68,7 @@ Confirm (or change) who serves, then tap **Start Set 1**. Picked the wrong serve
 - Tap **+** to score a point; the serve indicator follows along. **−** removes one.
 - The sidebars hold **TO** (timeout), **Sub** (substitution), and the card icon for [sanctions](#sanctions). Dots and counters track what each team has left, and fair play rules enforce the limits for you.
 - Playing Triple Ball? The [sequence indicator](#triple-ball) keeps the 3-ball rotation straight.
-- When a team reaches the set-win condition the **End Set** button glows and a toast appears — the app never ends a set for you (see [Alerts](#alerts)). Made a mistake? **↩ Undo** and **↪ Redo** step through every action.
+- When a team reaches the set-win condition the **End Set** button glows and a toast appears — the app never ends a set for you (see [Alerts](#alerts)). Made a mistake? **↩ Undo** and **↪ Redo** step through every action. Need to check the 8-second serve limit? The orange **8 🕗** button in the nav bar starts a quick count-up (see [Serve Timer](#serve-timer)).
 
 ### 4. Handle timeouts
 
@@ -124,6 +124,7 @@ The **Setup** tab holds appearance and dark mode, game and scoring defaults, ale
 - **Fair Play rules** — None / Triple Ball / Full / Partial, with timeout and sub limits enforced automatically (see [Fair Play Rules](#fair-play-rules))
 - **Timeouts, substitutions & sanctions** — dot/diamond indicators track usage automatically; full misconduct and delay sanction system with escalation enforcement (see [Sanctions](#sanctions))
 - **Timeout Timer** — optional large countdown popup when a timeout is called, with an Undo option in case it was called by accident (see [Timeout Timer](#timeout-timer))
+- **Serve Timer** — an orange "8 🕗" button in the nav bar that counts up the 8-second serve limit as a quick reference, green until 8 and a pulsing red after (see [Serve Timer](#serve-timer))
 - **Triple Ball** — animated 6-phase sequence indicator with directional arrows (see [Triple Ball](#triple-ball))
 - **Undo / Redo, side switching & alerts** — full action history, flexible side-swapping (manual, automatic, or prompted), and configurable win/action glows and toasts; tapping Undo right after an accidental **Start Game** (before any set has started) becomes **Undo Start**, deleting that game in one tap instead of undoing through it (see [Side Switching](#side-switching), [Alerts](#alerts))
 - **Remarks** — a free-form, timestamped notepad per match, with pre-defined quick-pick text, live during the game or edited after (see [Remarks](#remarks))
@@ -324,6 +325,18 @@ An optional large on-screen countdown for timeouts — on by default.
 - If the countdown reaches 0, the popup stays up briefly (using the **Win condition toast duration** from Setup → Scoring Defaults → Win Alert) and then disappears automatically.
 - **Count up after timeout ends** (Setup → Game Defaults → Timeout Timer, off by default, only available while the Timeout Timer is on): instead of auto-closing at 0, the timer keeps counting up with a minus sign (−1, −2, …) in red, pulsing with a glow on every tick (0.75 s), so you can see how long a team is taking to return to the court. It only closes when you tap **End Timeout** (or **Undo**).
 - While counting up, a **Pause** button appears between **End Timeout** and **Undo**. Tap it to freeze the count (the button changes to **Resume** and glows while paused); tap again to continue. **End Timeout** and **Undo** still work while paused. There's no pause button during the normal countdown.
+
+---
+
+## Serve Timer
+
+A quick on-screen reference for the 8-second serve limit. It is never recorded in the match data.
+
+- The orange **8 🕗** button sits to the left of **Match Log** in the nav bar. It is only enabled while a set is in progress.
+- Tap it to open a large count-up that starts at **1** (the way a referee counts in their head) and adds a second every second. The number is **green** through 8.
+- From 9 on it turns **red** and pulses on every tick, with no minus sign.
+- **Pause** freezes the count (the button changes to **Resume** and glows); tap again to continue. **End Count** closes it.
+- If it reaches 20 it dismisses itself, in case the referee is busy with the game and not the app. A paused timer does not auto-dismiss.
 
 ---
 

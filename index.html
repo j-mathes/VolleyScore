@@ -23,6 +23,8 @@
       <button class="nav-btn" data-page="reports" aria-label="Reports">Reports</button>
       <button class="nav-btn" data-page="setup" aria-label="App settings">Setup</button>
     </div>
+    <!-- Serve Timer button — only visible during an active game; opens an 8-second serve count-up overlay (reference only, nothing is recorded) -->
+    <button id="navServeTimerBtn" class="nav-btn-log nav-btn-serve" aria-label="Serve timer (8 seconds)" type="button" hidden>8 &#128343;</button>
     <!-- Match Log button — only visible during an active game -->
     <button id="navLogBtn" class="nav-btn nav-btn-log" data-page="log" aria-label="Match log" hidden>Match Log</button>
     <!-- Remarks button — only visible during an active game; opens a popup notepad instead of navigating -->
@@ -388,6 +390,18 @@
           <button id="btnEndTimeoutTimer" class="timeout-timer-end-btn" type="button">End Timeout</button>
           <button id="btnPauseTimeoutTimer" class="timeout-timer-pause-btn" type="button" aria-pressed="false" hidden>Pause</button>
           <button id="btnUndoTimeoutTimer" class="timeout-timer-undo-btn" type="button" title="Undo the timeout (e.g. if it was called by accident)">&#8617; Undo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Serve Timer Overlay ===== -->
+    <div id="serveTimerOverlay" class="timeout-timer-overlay" hidden role="dialog" aria-modal="true" aria-label="Serve timer">
+      <div class="timeout-timer-card">
+        <div class="timeout-timer-label">Serve Timer</div>
+        <div class="timeout-timer-count serve-timer-count serve-timer-ok" id="serveTimerCount">1</div>
+        <div class="timeout-timer-actions">
+          <button id="btnEndServeTimer" class="timeout-timer-end-btn" type="button">End Count</button>
+          <button id="btnPauseServeTimer" class="timeout-timer-pause-btn" type="button" aria-pressed="false">Pause</button>
         </div>
       </div>
     </div>

@@ -342,6 +342,19 @@ details summary::-webkit-details-marker { display: none; }
   background: rgba(37, 99, 235, 0.32);
 }
 
+/* Serve Timer nav button — same layout as Match Log, orange */
+.nav-btn-serve {
+  background: rgba(234, 88, 12, 0.20);
+  color: #fb923c;
+  border-color: rgba(234, 88, 12, 0.35);
+  width: 6.55em; /* matches the Match Log button's width, scales with font size */
+  text-align: center;
+}
+
+.nav-btn-serve:hover:not(:disabled) {
+  background: rgba(234, 88, 12, 0.32);
+}
+
 .nav-links {
   display: flex;
   align-items: center;
@@ -3439,6 +3452,11 @@ input.player-num-input {
 
 .timeout-timer-count.timeout-timer-done {
   color: var(--danger);
+}
+
+/* Serve timer: green until the 8 s limit, then it takes .timeout-timer-done (red) + pulse */
+.timeout-timer-count.serve-timer-ok {
+  color: var(--serve-color);
 }
 
 .timeout-timer-count.timeout-timer-pulse {

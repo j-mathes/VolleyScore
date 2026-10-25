@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "36";
+var APP_VERSION = "37";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -2311,6 +2311,10 @@ function showPage(page) {
   $("setupPage").hidden  = page !== "setup";
   $("logPage").hidden    = page !== "log";
 
+  // Serve Timer is only for the live score screen, not other pages
+  if (page !== "score") closeServeTimer();
+  $("navServeTimerBtn").hidden = page !== "score" || $("scoreboard").hidden;
+
   document.querySelectorAll(".nav-btn").forEach(function (btn) {
     btn.classList.toggle("active", btn.getAttribute("data-page") === page);
   });
@@ -2786,6 +2790,8 @@ function showSetupPanel() {
   $("gameSetupPanel").hidden = false;
   $("navLogBtn").hidden = true;
   $("navRemarksBtn").hidden = true;
+  $("navServeTimerBtn").hidden = true;
+  closeServeTimer();
   closeTimeoutCountdown(); // don't leave a stale countdown showing after leaving the game
   _justEndedGame = false; // navigating away clears the undo window
   _tbPrevPhase = -1;
@@ -3581,6 +3587,9 @@ function renderScoreboard() {
   // Show/hide the Match Log / Remarks nav buttons
   $("navLogBtn").hidden = false;
   $("navRemarksBtn").hidden = false;
+  $("navServeTimerBtn").hidden = currentPage !== "score";
+  $("navServeTimerBtn").disabled = !hasActiveSet || isGameOver;
+  if (!hasActiveSet || isGameOver) closeServeTimer();
 
   // ---- Win condition glow -----------------------------------------------
   var winA = !isGameOver && state.setWinConditionMet && state.setWinnerTeam === "A";
@@ -3966,6 +3975,50 @@ function clearTimeoutCountdown() {
 function closeTimeoutCountdown() {
   clearTimeoutCountdown();
   var overlay = $("timeoutTimerOverlay");
+  if (overlay) overlay.hidden = true;
+}
+
+// ---- Serve Timer (reference only — nothing is recorded) ----
+
+var SERVE_TIMER_LIMIT = 8;
+var SERVE_TIMER_AUTO_DISMISS = 20;
+var _serveTimerInterval = null;
+var _serveTimerPaused = false;
+
+function setServeTimerPaused(paused) {
+  _serveTimerPaused = paused;
+  var btn = $("btnPauseServeTimer");
+  btn.textContent = paused ? "Resume" : "Pause";
+  btn.classList.toggle("active", paused);
+  btn.setAttribute("aria-pressed", String(paused));
+}
+
+function startServeTimer() {
+  closeServeTimer();
+  setServeTimerPaused(false);
+  var count = 1; // a referee's count starts at 1, not 0
+  var countEl = $("serveTimerCount");
+  countEl.textContent = count;
+  countEl.className = "timeout-timer-count serve-timer-count serve-timer-ok";
+  $("serveTimerOverlay").hidden = false;
+
+  _serveTimerInterval = setInterval(function () {
+    if (_serveTimerPaused) return;
+    count++;
+    if (count >= SERVE_TIMER_AUTO_DISMISS) { closeServeTimer(); return; }
+    countEl.textContent = count;
+    if (count > SERVE_TIMER_LIMIT) {
+      countEl.classList.remove("serve-timer-ok", "timeout-timer-pulse");
+      countEl.classList.add("timeout-timer-done");
+      void countEl.offsetWidth; // restart the CSS animation on every tick
+      countEl.classList.add("timeout-timer-pulse");
+    }
+  }, 1000);
+}
+
+function closeServeTimer() {
+  if (_serveTimerInterval) { clearInterval(_serveTimerInterval); _serveTimerInterval = null; }
+  var overlay = $("serveTimerOverlay");
   if (overlay) overlay.hidden = true;
 }
 
@@ -5064,6 +5117,11 @@ function renderRemarksPresetPickerList() {
 
 function wireRemarksModal() {
   $("navRemarksBtn").addEventListener("click", openRemarksModal);
+  $("navServeTimerBtn").addEventListener("click", startServeTimer);
+  $("btnEndServeTimer").addEventListener("click", closeServeTimer);
+  $("btnPauseServeTimer").addEventListener("click", function () {
+    setServeTimerPaused(!_serveTimerPaused);
+  });
   $("btnCloseRemarksModal").addEventListener("click", closeRemarksModal);
   $("remarksModal").addEventListener("click", function (e) {
     if (e.target === $("remarksModal")) closeRemarksModal();
