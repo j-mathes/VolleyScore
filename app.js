@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "37";
+var APP_VERSION = "38";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -2882,6 +2882,61 @@ function contrastRatioHex(hexA, hexB) {
 
 var TEAM_COLOR_CONTRAST_THRESHOLD = 2.2;
 
+function hexToHsl(hex) {
+  var rgb = hexToRgb(hex);
+  if (!rgb) return null;
+  var c = rgb.split(",").map(function (n) { return parseInt(n, 10) / 255; });
+  var max = Math.max(c[0], c[1], c[2]), min = Math.min(c[0], c[1], c[2]);
+  var l = (max + min) / 2, d = max - min, h = 0, s = 0;
+  if (d) {
+    s = d / (1 - Math.abs(2 * l - 1));
+    if (max === c[0]) h = ((c[1] - c[2]) / d) % 6;
+    else if (max === c[1]) h = (c[2] - c[0]) / d + 2;
+    else h = (c[0] - c[1]) / d + 4;
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+  return { h: h, s: s, l: l };
+}
+
+function hslToHex(h, s, l) {
+  h = ((h % 360) + 360) % 360;
+  var a = s * Math.min(l, 1 - l);
+  function f(n) {
+    var k = (n + h / 30) % 12;
+    var v = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    return Math.round(v * 255).toString(16).padStart(2, "0");
+  }
+  return "#" + f(0) + f(8) + f(4);
+}
+
+// Picks white or near-black text for a button filled with the given color, so the
+// "+" glyph stays readable on any team color (e.g. a white team in dark mode).
+function pickTextOnColor(fillHex) {
+  var white = contrastRatioHex("#ffffff", fillHex);
+  var dark = contrastRatioHex("#111111", fillHex);
+  return white >= 3 || white >= dark ? "#ffffff" : "#111111";
+}
+
+// Picks a vivid glow color that contrasts with the team color AND the current
+// theme's backgrounds: tries the complement (and split complements) of the team
+// hue at several lightness levels and keeps the one with the best worst-case
+// contrast, so it holds up in both light and dark mode.
+function pickPointGlowColor(teamHex, backgrounds) {
+  var hsl = hexToHsl(teamHex);
+  var baseHue = hsl && hsl.s > 0.15 ? hsl.h : 200; // near-gray team color: no hue to oppose
+  var against = [teamHex].concat(backgrounds).filter(Boolean);
+  var best = null, bestScore = -1;
+  [180, 150, 210].forEach(function (offset, oi) {
+    [0.35, 0.5, 0.65, 0.8].forEach(function (light) {
+      var cand = hslToHex(baseHue + offset, 0.95, light);
+      var score = Math.min.apply(null, against.map(function (o) { return contrastRatioHex(cand, o); })) - oi * 0.05;
+      if (score > bestScore) { bestScore = score; best = cand; }
+    });
+  });
+  return best;
+}
+
 // Re-evaluates --team-a/--team-b against the app's actual background colors and
 // toggles thin CSS-var-driven outlines (see the "Low-contrast team-color
 // outline" rules in styles.css) when a color is hard to tell apart from the
@@ -2909,6 +2964,16 @@ function updateTeamColorContrastOutlines() {
   root.style.setProperty("--team-a-outline-w", lowA ? "2px" : "0px");
   root.style.setProperty("--team-b-text-stroke-w", lowB ? "0.6px" : "0px");
   root.style.setProperty("--team-b-outline-w", lowB ? "2px" : "0px");
+
+  var backgrounds = [bg, bgCard].filter(Boolean);
+  if (teamAHex) {
+    root.style.setProperty("--team-a-point-glow", pickPointGlowColor(teamAHex, backgrounds));
+    root.style.setProperty("--team-a-on-color", pickTextOnColor(teamAHex));
+  }
+  if (teamBHex) {
+    root.style.setProperty("--team-b-point-glow", pickPointGlowColor(teamBHex, backgrounds));
+    root.style.setProperty("--team-b-on-color", pickTextOnColor(teamBHex));
+  }
 }
 
 // ---- Per-team-name remembered colors ---------------------------------
@@ -3402,6 +3467,7 @@ function applyWinGlow(elementId, apply) {
 // Restarts the animation if called again while already glowing.
 function applyActionGlow(el) {
   if (!el) return;
+  el.style.removeProperty("--glow-color"); // a win/action glow uses the Action Alert color
   el.classList.remove("action-glow");
   void el.offsetWidth; // force reflow to restart animation
   el.classList.add("action-glow");
@@ -3411,8 +3477,19 @@ function applyActionGlow(el) {
   }, duration + 100);
 }
 
-// ---- Main scoreboard render ----
+// Short one-shot glow on a team's score digit and the +/- button just pressed.
+function applyPointGlow(team, delta) {
+  [$("scoreVal" + team), $("btnScore" + team + (delta > 0 ? "Plus" : "Minus"))].forEach(function (el) {
+    if (!el) return;
+    el.style.setProperty("--glow-color", "var(--team-" + team.toLowerCase() + "-point-glow)");
+    el.classList.remove("point-glow");
+    void el.offsetWidth; // force reflow to restart animation
+    el.classList.add("point-glow");
+    setTimeout(function () { el.classList.remove("point-glow"); }, 900);
+  });
+}
 
+// ---- Main scoreboard render ----
 function renderScoreboard() {
   var state = controller.getState();
 
@@ -4244,7 +4321,7 @@ function dispatchPoint(team, delta) {
   if (!state || !state.activeSetNumber) return;
   // In triple ball, − reverses the sequence via undo rather than directly subtracting a point
   if (delta < 0 && state.variation === "triplebal") {
-    if (state.canUndo) { controller.undo(); renderScoreboard(); }
+    if (state.canUndo) { controller.undo(); renderScoreboard(); applyPointGlow(team, delta); }
     return;
   }
   // Don't allow score below 0
@@ -4262,6 +4339,7 @@ function dispatchPoint(team, delta) {
     delta: delta,
     timestamp: new Date().toISOString(),
   });
+  applyPointGlow(team, delta);
   // Notify referee when partial fair play unlocks substitutions
   var stateAfter = controller.getState();
   if (!subsBefore && stateAfter && stateAfter.subsAllowedInActiveSet && stateAfter.fairPlay === "standard-partial") {

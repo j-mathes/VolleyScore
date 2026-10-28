@@ -650,11 +650,11 @@ input.color-picker-sm {
 }
 .serve-pick-btn[data-team="A"].active {
   background: var(--team-a);
-  color: #fff;
+  color: var(--team-a-on-color, #fff);
 }
 .serve-pick-btn[data-team="A"].active:hover:not(:disabled) {
   background: color-mix(in srgb, var(--team-a) 82%, #000 18%);
-  color: #fff;
+  color: var(--team-a-on-color, #fff);
 }
 
 /* Team B serve pick — muted hover, solid active */
@@ -664,11 +664,11 @@ input.color-picker-sm {
 }
 .serve-pick-btn[data-team="B"].active {
   background: var(--team-b);
-  color: #fff;
+  color: var(--team-b-on-color, #fff);
 }
 .serve-pick-btn[data-team="B"].active:hover:not(:disabled) {
   background: color-mix(in srgb, var(--team-b) 82%, #000 18%);
-  color: #fff;
+  color: var(--team-b-on-color, #fff);
 }
 
 .start-game-btn {
@@ -1268,11 +1268,12 @@ input.color-picker-sm {
 
 .btn-score-plus {
   background: var(--team-a);
-  color: #fff;
+  color: var(--team-a-on-color, #fff);
 }
 
 .team-panel-b .btn-score-plus {
   background: var(--team-b);
+  color: var(--team-b-on-color, #fff);
 }
 
 .btn-score-plus:hover:not(:disabled) {
@@ -3633,14 +3634,43 @@ input.player-num-input {
 
 /* ---- Action glow (timeouts, subs, sanctions) ---- */
 @keyframes action-glow-pulse {
-  0%   { box-shadow: 0 0 0 2px var(--action-glow-color); outline: 2px solid var(--action-glow-color); outline-offset: 2px; }
-  35%  { box-shadow: 0 0 14px 5px var(--action-glow-color); outline: 3px solid var(--action-glow-color); outline-offset: 3px; }
+  0%   { box-shadow: 0 0 0 2px var(--glow-color, var(--action-glow-color)); outline: 2px solid var(--glow-color, var(--action-glow-color)); outline-offset: 2px; }
+  35%  { box-shadow: 0 0 14px 5px var(--glow-color, var(--action-glow-color)); outline: 3px solid var(--glow-color, var(--action-glow-color)); outline-offset: 3px; }
   100% { box-shadow: none; outline: 2px solid transparent; outline-offset: 2px; }
+}
+
+/* Short glow on the score digit and the +/- button just pressed; declared before .action-glow so a win glow on the same element takes over */
+.point-glow {
+  animation: action-glow-pulse 0.8s ease forwards;
 }
 
 .action-glow {
   animation: action-glow-pulse var(--action-glow-duration) ease forwards;
   border-radius: var(--radius-sm);
+}
+
+/* .score-val.score-high already sets an animation with higher specificity, so
+   the score digit needs its glow combined with that pulse or it never shows.
+   The digit glows via text-shadow (a box ring would draw a rectangle around it). */
+@keyframes score-text-glow {
+  0%   { text-shadow: 0 0 0.08em var(--glow-color, var(--action-glow-color)), 0 0 0.2em var(--glow-color, var(--action-glow-color)); }
+  35%  { text-shadow: 0 0 0.12em var(--glow-color, var(--action-glow-color)), 0 0 0.3em var(--glow-color, var(--action-glow-color)), 0 0 0.6em var(--glow-color, var(--action-glow-color)); }
+  100% { text-shadow: 0 0 0 transparent; }
+}
+
+/* Narrower version for the quick glow on every +/- press */
+@keyframes score-text-point-glow {
+  0%   { text-shadow: 0 0 0.05em var(--glow-color), 0 0 0.12em var(--glow-color); }
+  35%  { text-shadow: 0 0 0.07em var(--glow-color), 0 0 0.16em var(--glow-color), 0 0 0.3em var(--glow-color); }
+  100% { text-shadow: 0 0 0 transparent; }
+}
+
+.score-val.point-glow {
+  animation: score-pulse 400ms ease, score-text-point-glow 0.8s ease forwards;
+}
+
+.score-val.action-glow {
+  animation: score-pulse 400ms ease, score-text-glow var(--action-glow-duration) ease forwards;
 }
 
 /* ---- Scrollbars (thin) ---- */
