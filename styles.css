@@ -2158,6 +2158,97 @@ details[open] .event-log-summary::before {
   margin-top: 1rem;
 }
 
+#editMatchInfoModal .modal-card {
+  max-width: 560px;
+}
+
+.emi-section {
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.emi-section h4 {
+  font-size: 0.9rem;
+}
+
+.emi-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.emi-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.emi-row-text {
+  flex: 1 1 auto;
+}
+
+.emi-remove-btn {
+  flex-shrink: 0;
+  min-width: 2rem;
+  min-height: 2rem;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--danger);
+  background: var(--danger-light);
+}
+
+.emi-edit-btn {
+  flex-shrink: 0;
+  min-width: 2rem;
+  min-height: 2rem;
+  border-radius: 50%;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--ink-soft);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.emi-san-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.emi-san-form .edit-match-info-actions {
+  margin-top: 0;
+}
+
+.emi-add-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.emi-score-pair {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.emi-score-pair input {
+  width: 100%;
+  min-width: 0;
+}
+
 .detail-event-log-card {
   background: var(--bg-card);
   border-radius: var(--radius);

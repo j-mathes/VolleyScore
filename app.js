@@ -3192,6 +3192,7 @@ function wireColorPresetPopover() {
     "cfgStartSetColor", "cfgStartSetPulseColor", "cfgTbHighlight",
     "cfgWinGlowColor", "cfgActionGlowColor",
     "cfgTeamAColorOverride", "cfgTeamBColorOverride", "cfgAddTeamNameColor",
+    "emiTeamAColor", "emiTeamBColor",
   ].forEach(enhanceColorInput);
 
   document.addEventListener("click", function (e) {
@@ -5643,23 +5644,320 @@ async function deleteRemark(gameId, remarkId) {
 // ---- Edit Match Info (post-hoc correction for finished/in-progress games) --
 
 var _emiGameId = null; // gameId currently open in the Edit Match Info modal
+var _emiRecord = null; // record loaded fresh from storage when the modal opened
+var _emiEvents = null; // working copy of its events (up to the cursor); edited here, written on Save
+var _emiEventsDirty = false;
 
-function openEditMatchInfoModal(gameId) {
-  var state = (gameId === controller.currentGameId) ? controller.getState() : _detailState;
+var EMI_KIND_LABEL = {
+  yellow: "Warning", red: "Penalty", expulsion: "Expulsion", disqualification: "Disqualification",
+  "delay-warning": "Delay Warning", "delay-penalty": "Delay Penalty", improper: "Improper Request",
+};
+
+function emiState() {
+  return deriveGameState({ events: _emiEvents, cursor: _emiEvents.length });
+}
+
+function emiTeamName(team) {
+  var raw = $(team === "A" ? "emiTeamA" : "emiTeamB").value.trim();
+  return raw || ("Team " + team);
+}
+
+async function openEditMatchInfoModal(gameId) {
+  var record = await dbLoadGame(gameId);
+  if (!record) return;
+  var cursor = record.cursor != null ? record.cursor : (record.events || []).length;
+  var events = JSON.parse(JSON.stringify((record.events || []).slice(0, cursor)));
+  var state = deriveGameState({ events: events, cursor: events.length });
   if (!state) return;
   _emiGameId = gameId;
+  _emiRecord = record;
+  _emiEvents = events;
+  _emiEventsDirty = false;
   $("emiTeamA").value = state.teamA || "";
   $("emiTeamB").value = state.teamB || "";
   $("emiLocation").value = state.location || "";
   $("emiGender").value = state.gender || "";
   $("emiAgeCategory").value = state.ageCategory || "";
   $("emiLeague").value = state.league || "";
+  $("emiTeamAColor").value = state.teamAColor || settings.teamAColor;
+  $("emiTeamBColor").value = state.teamBColor || settings.teamBColor;
+  syncColorSwatchButtons();
+  $("emiStartedAt").value = state.startedAt ? toLocalDatetimeValue(new Date(state.startedAt)) : "";
+  $("emiNewRemark").value = "";
+  renderEmiRemarks();
+  populateEmiSanctionForm();
+  renderEmiSanctions();
   $("editMatchInfoModal").removeAttribute("hidden");
 }
 
 function closeEditMatchInfoModal() {
   _emiGameId = null;
+  _emiRecord = null;
+  _emiEvents = null;
+  _emiEventsDirty = false;
   $("editMatchInfoModal").hidden = true;
+}
+
+// ---- Edit Match Info: remarks ----
+
+function renderEmiRemarks() {
+  var rows = [];
+  _emiEvents.forEach(function (ev) {
+    if (ev.type !== "REMARK_ADDED") return;
+    var hasCtx = ev.setNumber !== null && ev.setNumber !== undefined;
+    var time = remarkTimeLabel({ timestamp: ev.timestamp, setNumber: ev.setNumber }, formatTime);
+    var ctx = remarkContextLabel(hasCtx ? ev.setNumber : null, ev.scoreA || 0, ev.scoreB || 0);
+    rows.push(
+      '<div class="remark-row remark-row-editing">' +
+      '<span class="remark-time">' + esc(time) + ' &middot; ' + esc(ctx) + '</span>' +
+      '<textarea class="remark-edit-input emi-remark-text" rows="2" data-remark-id="' + esc(ev.remarkId) + '">' + esc(ev.text) + '</textarea>' +
+      '<div class="remark-edit-actions"><button class="remark-delete-btn ctrl-btn danger-btn emi-remark-delete" type="button" data-remark-id="' + esc(ev.remarkId) + '">Delete</button></div>' +
+      '</div>');
+  });
+  $("emiRemarksList").innerHTML = rows.join("") || '<div class="event-log-empty">No remarks recorded.</div>';
+}
+
+function addEmiRemark() {
+  var text = $("emiNewRemark").value.trim();
+  if (!text) return;
+  var state = emiState();
+  // Same convention as the Game Detail "add after the match" box: once the game has ended there's no set/score to attach.
+  var ctx = state.endedAt ? { setNumber: null, scoreA: null, scoreB: null } : currentRemarkContext(state);
+  _emiEvents.push({
+    type: "REMARK_ADDED",
+    remarkId: crypto.randomUUID(),
+    text: text,
+    timestamp: new Date().toISOString(),
+    setNumber: ctx.setNumber,
+    scoreA: ctx.scoreA,
+    scoreB: ctx.scoreB,
+  });
+  _emiEventsDirty = true;
+  $("emiNewRemark").value = "";
+  renderEmiRemarks();
+}
+
+// ---- Edit Match Info: sanctions ----
+
+// Walks the working events, tracking each set's running score, and lists every sanction-type event.
+function emiSanctionRows() {
+  var scores = {};
+  var rows = [];
+  _emiEvents.forEach(function (ev, idx) {
+    if (ev.type === "SET_STARTED") {
+      scores[ev.setNumber] = { a: 0, b: 0 };
+    } else if (ev.type === "POINT_SCORED") {
+      var s = scores[ev.setNumber] || (scores[ev.setNumber] = { a: 0, b: 0 });
+      if (ev.team === "A") s.a = Math.max(0, s.a + ev.delta);
+      else s.b = Math.max(0, s.b + ev.delta);
+    } else if (ev.type === "SANCTION" || ev.type === "DELAY_SANCTION" || ev.type === "IMPROPER_REQUEST") {
+      var cur = scores[ev.setNumber] || { a: 0, b: 0 };
+      rows.push({ idx: idx, ev: ev, a: cur.a, b: cur.b });
+    }
+  });
+  return rows;
+}
+
+function emiSanctionLabel(ev) {
+  var kind;
+  if (ev.type === "SANCTION") kind = EMI_KIND_LABEL[ev.sanctionType] || ev.sanctionType;
+  else if (ev.type === "DELAY_SANCTION") kind = ev.sanctionType === "penalty" ? "Delay Penalty" : "Delay Warning";
+  else kind = "Improper Request";
+  var who = "";
+  if (ev.type === "SANCTION") {
+    who = " \u2014 " + (ROLE_LABEL[ev.role] || "Player") + (ev.role === "player" && ev.playerNumber ? " #" + ev.playerNumber : "");
+  }
+  return kind + who;
+}
+
+function renderEmiSanctions() {
+  var rows = emiSanctionRows().map(function (r) {
+    var team = r.ev.team === "A" ? emiTeamName("A") : emiTeamName("B");
+    return '<div class="emi-row">' +
+      '<span class="emi-row-text"><strong>' + esc(team) + '</strong> \u2014 ' + esc(emiSanctionLabel(r.ev)) +
+      ' <span class="remark-context">(Set ' + esc(r.ev.setNumber) + ', ' + r.a + '\u2013' + r.b + ')</span></span>' +
+      '<button class="emi-edit-btn" type="button" data-idx="' + r.idx + '" aria-label="Edit this sanction" title="Edit this sanction">&#9998;</button>' +
+      '<button class="emi-remove-btn" type="button" data-idx="' + r.idx + '" aria-label="Remove this sanction" title="Remove this sanction">&times;</button>' +
+      '</div>';
+  });
+  $("emiSanctionsList").innerHTML = rows.join("") || '<div class="event-log-empty">No sanctions recorded.</div>';
+  var teamSel = $("emiSanTeam");
+  var chosen = teamSel.value || "A";
+  teamSel.innerHTML = '<option value="A">' + esc(emiTeamName("A")) + '</option><option value="B">' + esc(emiTeamName("B")) + '</option>';
+  teamSel.value = chosen;
+}
+
+function updateEmiSanctionFormVisibility() {
+  var kind = $("emiSanKind").value;
+  var misconduct = kind === "yellow" || kind === "red" || kind === "expulsion" || kind === "disqualification";
+  $("emiSanRole").hidden = !misconduct;
+  $("emiSanPlayer").hidden = !misconduct || $("emiSanRole").value !== "player";
+}
+
+var _emiEditingSanIdx = null; // index in _emiEvents of the sanction being edited, or null when adding
+
+// Resets and hides the sanction form; "Add Sanction" is only usable once a set has started.
+function populateEmiSanctionForm() {
+  _emiEditingSanIdx = null;
+  $("emiSanForm").hidden = true;
+  $("btnEmiAddSanction").hidden = false;
+  $("btnEmiAddSanction").disabled = !emiState().sets.length;
+}
+
+// idx === null opens a blank form (score 0–0 so it's obvious the user must set it);
+// otherwise loads that sanction into the form for editing.
+function openEmiSanctionForm(idx) {
+  var state = emiState();
+  _emiEditingSanIdx = idx;
+  renderEmiSanctions();
+  $("emiSanSet").innerHTML = state.sets.map(function (s) {
+    return '<option value="' + s.setNumber + '">Set ' + s.setNumber + '</option>';
+  }).join("");
+
+  if (idx === null) {
+    $("emiSanTeam").value = "A";
+    $("emiSanKind").value = "yellow";
+    $("emiSanRole").value = "player";
+    $("emiSanPlayer").value = "";
+    $("emiSanSet").value = String(state.sets[state.sets.length - 1].setNumber);
+    $("emiSanScoreA").value = 0;
+    $("emiSanScoreB").value = 0;
+  } else {
+    var ev = _emiEvents[idx];
+    var row = emiSanctionRows().find(function (r) { return r.idx === idx; });
+    $("emiSanTeam").value = ev.team;
+    if (ev.type === "SANCTION") $("emiSanKind").value = ev.sanctionType;
+    else if (ev.type === "DELAY_SANCTION") $("emiSanKind").value = "delay-" + ev.sanctionType;
+    else $("emiSanKind").value = "improper";
+    $("emiSanRole").value = ev.role || "player";
+    $("emiSanPlayer").value = ev.playerNumber || "";
+    $("emiSanSet").value = String(ev.setNumber);
+    $("emiSanScoreA").value = row ? row.a : 0;
+    $("emiSanScoreB").value = row ? row.b : 0;
+  }
+  $("btnEmiSaveSanction").textContent = idx === null ? "Add" : "Update";
+  updateEmiSanctionFormVisibility();
+  $("emiSanForm").hidden = false;
+  $("btnEmiAddSanction").hidden = true;
+}
+
+// Where to put a new sanction so the Game Report/Match Log show it at the right score:
+// right after the point that made the set score a–b, else at the end of that set.
+function emiFindSanctionInsertion(setNumber, a, b) {
+  var scoreA = 0, scoreB = 0, matchIdx = -1, endIdx = -1, lastIdx = -1;
+  _emiEvents.forEach(function (ev, i) {
+    if (ev.setNumber !== setNumber) return;
+    lastIdx = i;
+    if (ev.type === "SET_STARTED") {
+      scoreA = 0; scoreB = 0;
+    } else if (ev.type === "POINT_SCORED") {
+      if (ev.team === "A") scoreA = Math.max(0, scoreA + ev.delta);
+      else scoreB = Math.max(0, scoreB + ev.delta);
+    } else if (ev.type === "SET_ENDED") {
+      endIdx = i;
+    }
+    if (matchIdx === -1 && ev.type !== "SET_ENDED" && scoreA === a && scoreB === b) matchIdx = i;
+  });
+  if (matchIdx !== -1) return { index: matchIdx + 1, timestamp: _emiEvents[matchIdx].timestamp, exact: true };
+  if (endIdx !== -1) return { index: endIdx, timestamp: _emiEvents[endIdx].timestamp, exact: false };
+  return { index: lastIdx + 1, timestamp: lastIdx >= 0 ? _emiEvents[lastIdx].timestamp : new Date().toISOString(), exact: false };
+}
+
+function saveEmiSanction() {
+  var editIdx = _emiEditingSanIdx;
+  // Rules are checked against every sanction except the one being edited.
+  var baseEvents = editIdx === null ? _emiEvents : _emiEvents.filter(function (e, i) { return i !== editIdx; });
+  var state = deriveGameState({ events: baseEvents, cursor: baseEvents.length });
+  var team = $("emiSanTeam").value || "A";
+  var kind = $("emiSanKind").value;
+  var setNumber = parseInt($("emiSanSet").value, 10);
+  var scoreA = Math.max(0, parseInt($("emiSanScoreA").value, 10) || 0);
+  var scoreB = Math.max(0, parseInt($("emiSanScoreB").value, 10) || 0);
+  if (!setNumber) return;
+
+  var ev;
+  if (kind === "improper") {
+    if (team === "A" ? state.improperRequestA : state.improperRequestB) {
+      alert("This team has already used its improper request.");
+      return;
+    }
+    ev = { type: "IMPROPER_REQUEST", team: team, setNumber: setNumber };
+  } else if (kind === "delay-warning" || kind === "delay-penalty") {
+    if (kind === "delay-warning" && !canIssueDelayWarning(team, state)) {
+      alert("This team has already received a delay warning. Use a delay penalty.");
+      return;
+    }
+    ev = { type: "DELAY_SANCTION", team: team, sanctionType: kind === "delay-warning" ? "warning" : "penalty", setNumber: setNumber };
+  } else {
+    var role = $("emiSanRole").value;
+    var player = role === "player" ? ($("emiSanPlayer").value.trim() || null) : null;
+    var avail = getMisconductAvailability(team, role, player || "", state);
+    if (!avail[kind]) {
+      alert("That sanction isn't allowed here: an earlier sanction for this team or person means it must be a higher level (or the team already has its one warning).");
+      return;
+    }
+    ev = { type: "SANCTION", team: team, sanctionType: kind, role: role, playerNumber: player, setNumber: setNumber };
+  }
+
+  var oldRow = editIdx === null ? null : emiSanctionRows().find(function (r) { return r.idx === editIdx; });
+  if (oldRow && oldRow.ev.setNumber === setNumber && oldRow.a === scoreA && oldRow.b === scoreB) {
+    // Same set and score: keep its place in the log, just replace the details.
+    ev.timestamp = oldRow.ev.timestamp;
+    _emiEvents[editIdx] = ev;
+  } else {
+    var removed = editIdx === null ? null : _emiEvents.splice(editIdx, 1)[0];
+    var spot = emiFindSanctionInsertion(setNumber, scoreA, scoreB);
+    if (!spot.exact && !confirm("The score " + scoreA + "\u2013" + scoreB + " doesn't appear in the log for Set " + setNumber + ". Put the sanction at the end of that set instead?")) {
+      if (removed) _emiEvents.splice(editIdx, 0, removed);
+      return;
+    }
+    ev.timestamp = spot.timestamp;
+    _emiEvents.splice(spot.index, 0, ev);
+  }
+  _emiEventsDirty = true;
+  populateEmiSanctionForm();
+  renderEmiSanctions();
+}
+
+function removeEmiSanction(idx) {
+  var ev = _emiEvents[idx];
+  if (!ev || !(ev.type === "SANCTION" || ev.type === "DELAY_SANCTION" || ev.type === "IMPROPER_REQUEST")) return;
+  if (!confirm("Remove this sanction? This only removes the sanction record, not any point it awarded.")) return;
+  _emiEvents.splice(idx, 1);
+  _emiEventsDirty = true;
+  populateEmiSanctionForm(); // indices shifted, so close any open edit
+  renderEmiSanctions();
+}
+
+function wireEditMatchInfoExtras() {
+  ["emiTeamA", "emiTeamB"].forEach(function (id) {
+    $(id).addEventListener("input", renderEmiSanctions);
+  });
+  $("btnEmiAddRemark").addEventListener("click", addEmiRemark);
+  $("emiRemarksList").addEventListener("input", function (e) {
+    var ta = e.target.closest(".emi-remark-text");
+    if (!ta) return;
+    var ev = _emiEvents.find(function (x) { return x.type === "REMARK_ADDED" && x.remarkId === ta.getAttribute("data-remark-id"); });
+    if (ev) { ev.text = ta.value; _emiEventsDirty = true; }
+  });
+  $("emiRemarksList").addEventListener("click", function (e) {
+    var btn = e.target.closest(".emi-remark-delete");
+    if (!btn) return;
+    if (!confirm("Delete this remark? This cannot be undone.")) return;
+    var i = _emiEvents.findIndex(function (x) { return x.type === "REMARK_ADDED" && x.remarkId === btn.getAttribute("data-remark-id"); });
+    if (i !== -1) { _emiEvents.splice(i, 1); _emiEventsDirty = true; renderEmiRemarks(); }
+  });
+  $("emiSanctionsList").addEventListener("click", function (e) {
+    var editBtn = e.target.closest(".emi-edit-btn");
+    if (editBtn) { openEmiSanctionForm(parseInt(editBtn.getAttribute("data-idx"), 10)); return; }
+    var btn = e.target.closest(".emi-remove-btn");
+    if (btn) removeEmiSanction(parseInt(btn.getAttribute("data-idx"), 10));
+  });
+  $("emiSanKind").addEventListener("change", updateEmiSanctionFormVisibility);
+  $("emiSanRole").addEventListener("change", updateEmiSanctionFormVisibility);
+  $("btnEmiAddSanction").addEventListener("click", function () { openEmiSanctionForm(null); });
+  $("btnEmiSaveSanction").addEventListener("click", saveEmiSanction);
+  $("btnEmiCancelSanction").addEventListener("click", populateEmiSanctionForm);
 }
 
 async function saveMatchInfoEdits() {
@@ -5686,33 +5984,57 @@ async function saveMatchInfoEdits() {
   renderMasterListEditors();
   renderDefaultPickerOptions();
 
-  function applyToStartEvent(events) {
-    var startEv = events.find(function (e) { return e.type === "GAME_STARTED"; });
-    if (!startEv) return;
-    startEv.gameName = gameName;
-    startEv.teamA = teamA;
-    startEv.teamB = teamB;
-    startEv.location = location;
-    startEv.gender = gender;
-    startEv.ageCategory = ageCategory;
-    startEv.league = league;
+  var teamAColor = $("emiTeamAColor").value || settings.teamAColor;
+  var teamBColor = $("emiTeamBColor").value || settings.teamBColor;
+  rememberTeamColor(teamA, teamAColor);
+  rememberTeamColor(teamB, teamBColor);
+
+  var record = _emiRecord;
+  if (!record) return;
+  // Only replace the stored events when remarks/sanctions were actually edited, so
+  // a plain info edit never drops redo-able events past the cursor.
+  var events = _emiEventsDirty ? _emiEvents : (record.events || []);
+  var startEv = events.find(function (e) { return e.type === "GAME_STARTED"; });
+  if (!startEv) return;
+
+  var startedAtValue = $("emiStartedAt").value;
+  var startChanged = startedAtValue && startedAtValue !== toLocalDatetimeValue(new Date(startEv.timestamp));
+  var newStartIso = startChanged ? new Date(startedAtValue).toISOString() : startEv.timestamp;
+  if (newStartIso !== startEv.timestamp) {
+    var earliestOther = events.filter(function (e) { return e !== startEv && e.timestamp; })
+      .reduce(function (min, e) { return !min || e.timestamp < min ? e.timestamp : min; }, null);
+    if (earliestOther && newStartIso > earliestOther) {
+      alert("The start time can't be later than the first recorded event (" + formatDateTime(earliestOther) + ").");
+      return;
+    }
   }
 
+  startEv.gameName = gameName;
+  startEv.teamA = teamA;
+  startEv.teamB = teamB;
+  startEv.location = location;
+  startEv.gender = gender;
+  startEv.ageCategory = ageCategory;
+  startEv.league = league;
+  startEv.teamAColor = teamAColor;
+  startEv.teamBColor = teamBColor;
+  startEv.timestamp = newStartIso;
+
+  if (_emiEventsDirty) {
+    record.events = events;
+    record.cursor = events.length;
+  }
+  record.gameName = gameName;
+  record.teamA = teamA;
+  record.teamB = teamB;
+  record.location = location;
+  record.createdAt = newStartIso;
+  await dbSaveGame(record);
+
   if (gameId === controller.currentGameId) {
-    applyToStartEvent(controller.timeline.events);
-    controller._state = deriveGameState(controller.timeline);
-    await persistGame();
+    controller.hydrate(record);
+    updateTeamColors(teamAColor, teamBColor);
     renderScoreboard();
-  } else {
-    var record = await dbLoadGame(gameId);
-    if (record) {
-      applyToStartEvent(record.events || []);
-      record.gameName = gameName;
-      record.teamA = teamA;
-      record.teamB = teamB;
-      record.location = location;
-      await dbSaveGame(record);
-    }
   }
 
   closeEditMatchInfoModal();
@@ -6522,6 +6844,7 @@ function wireGamesPage() {
     void saveMatchInfoEdits();
   });
   $("btnCloseEditMatchInfoModal").addEventListener("click", closeEditMatchInfoModal);
+  wireEditMatchInfoExtras();
   $("editMatchInfoModal").addEventListener("click", function (e) {
     if (e.target === $("editMatchInfoModal")) closeEditMatchInfoModal();
   });

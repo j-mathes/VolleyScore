@@ -1313,6 +1313,70 @@
           <input id="emiAgeCategory" type="text" autocomplete="off" spellcheck="false">
         </label>
       </div>
+      <div class="setup-optional-row">
+        <label class="setup-field">
+          <span class="setup-field-label">Team A color</span>
+          <input id="emiTeamAColor" type="color" value="#1d4ed8" class="color-picker color-picker-sm" title="Team A color">
+        </label>
+        <label class="setup-field">
+          <span class="setup-field-label">Team B color</span>
+          <input id="emiTeamBColor" type="color" value="#b91c1c" class="color-picker color-picker-sm" title="Team B color">
+        </label>
+      </div>
+      <div class="setup-optional-row">
+        <label class="setup-field">
+          <span class="setup-field-label">Actual start time</span>
+          <input id="emiStartedAt" type="datetime-local">
+        </label>
+      </div>
+
+      <div class="emi-section">
+        <h4>Remarks</h4>
+        <div id="emiRemarksList" class="emi-list"></div>
+        <textarea id="emiNewRemark" class="remark-edit-input" rows="2" placeholder="Add a remark" aria-label="New remark"></textarea>
+        <button id="btnEmiAddRemark" class="ctrl-btn" type="button">Add Remark</button>
+      </div>
+
+      <div class="emi-section">
+        <h4>Sanctions</h4>
+        <p class="setup-hint">Adding or removing a sanction here only changes the sanction record. It never changes the score, so correct the score separately if a penalty point was wrong.</p>
+        <div id="emiSanctionsList" class="emi-list"></div>
+        <div id="emiSanForm" class="emi-san-form" hidden>
+          <div class="emi-add-grid">
+            <select id="emiSanTeam" aria-label="Team"></select>
+            <select id="emiSanKind" aria-label="Sanction type">
+              <option value="yellow">Warning</option>
+              <option value="red">Penalty</option>
+              <option value="expulsion">Expulsion</option>
+              <option value="disqualification">Disqualification</option>
+              <option value="delay-warning">Delay Warning</option>
+              <option value="delay-penalty">Delay Penalty</option>
+              <option value="improper">Improper Request</option>
+            </select>
+            <select id="emiSanRole" aria-label="Recipient">
+              <option value="player">Player</option>
+              <option value="head_coach">Head Coach</option>
+              <option value="asst_coach">Asst. Coach</option>
+              <option value="trainer">Trainer</option>
+              <option value="medical">Medical</option>
+            </select>
+            <input id="emiSanPlayer" type="text" inputmode="numeric" maxlength="3" placeholder="Player #" aria-label="Player number" autocomplete="off">
+            <select id="emiSanSet" aria-label="Set"></select>
+            <span class="emi-score-pair">
+              <input id="emiSanScoreA" type="number" min="0" aria-label="Team A score at the time">
+              <span>&ndash;</span>
+              <input id="emiSanScoreB" type="number" min="0" aria-label="Team B score at the time">
+            </span>
+          </div>
+          <p class="setup-hint">Set the score to what it was when the sanction happened.</p>
+          <div class="edit-match-info-actions">
+            <button id="btnEmiSaveSanction" class="ctrl-btn" type="button">Add</button>
+            <button id="btnEmiCancelSanction" class="modal-close-btn" type="button">Cancel</button>
+          </div>
+        </div>
+        <button id="btnEmiAddSanction" class="ctrl-btn" type="button">Add Sanction</button>
+      </div>
+
       <div class="edit-match-info-actions">
         <button id="btnSaveMatchInfo" class="ctrl-btn">Save</button>
         <button id="btnCloseEditMatchInfoModal" class="modal-close-btn">Cancel</button>
