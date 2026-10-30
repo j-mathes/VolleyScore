@@ -1,6 +1,6 @@
 ﻿# VolleyScore
 
-**Version 38**
+**Version 39**
 
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
@@ -51,7 +51,7 @@ A whole match, start to finish. Each step links to the section with the full det
 On the **Score** page, fill in the **New Game** form:
 
 - **League** first, if you use them — it narrows the team, age category, and location suggestions (see [League Associations](#league-associations)).
-- **Team A / Team B** names (each has a color swatch for this match only — see [New Game Team Colors](#new-game-team-colors)), plus location, scheduled start, gender, and age category (see [Match Info Lists](#match-info-lists)).
+- **Team A / Team B** names (each has a color swatch for this match only — see [New Game Team Colors](#new-game-team-colors)), plus location, scheduled start, gender, and age category (see [Match Info Lists](#match-info-lists)). Tick the **Loc** box beside a team name to use that team's name as the location (see [Match Info Lists](#match-info-lists)).
 - **Game format**, **variation**, and **fair play** rule (see [Game Formats](#game-formats), [Triple Ball](#triple-ball), [Fair Play Rules](#fair-play-rules)), then timeouts, subs, and the win-at / win-by / cap [scoring rules](#scoring-rules).
 - **First Serve**, then **Start Game**.
 
@@ -132,7 +132,7 @@ The **Setup** tab holds appearance and dark mode, game and scoring defaults, ale
 ### Match Setup & History
 
 - **Match Info tracking** — Gender, Age Category, and League per game, with editable master lists and many-to-many League associations that filter fields against each other (see [Match Info Lists](#match-info-lists))
-- **Edit info after the fact** — correct team names, location, or other match info on any saved game, in progress or finished (see [Editing a Game's Match Info](#editing-a-games-match-info))
+- **Edit info after the fact** — correct team names, location, team colors, start time, remarks, or sanctions on any saved game, in progress or finished (see [Editing a Game's Match Info](#editing-a-games-match-info))
 - **Scheduled vs. actual start time** — pre-configure a planned start time while the real moment **Start Game** is tapped is always recorded separately (see [Match Timing](#match-timing))
 - **Persist New Game Data** — optionally carry every New Game field forward from your last match instead of resetting to defaults (see [Persisting New Game Data](#persisting-new-game-data))
 
@@ -235,6 +235,8 @@ The New Game screen tracks four extra pieces of match info, each backed by a mas
 
 Team Name, Location, Age Category, and League fields are pick-or-type: tap the field to see a dropdown of existing values, keep typing to filter it, or type something new. Anything new you type is saved to that field's master list automatically **once you actually start the game** (or save an Edit Info change, or add it directly in Setup) — typing into the New Game form alone doesn't add anything to Setup → Match Info Lists until then, so an abandoned/unstarted game leaves no trace there.
 
+**Using a team name as the location:** many matches are played at one of the two schools, so each team name has a **Loc** checkbox (to the left of its color swatch). Check one and the Location field fills with that team's name, greys out, and follows the name as you type or change it. Checking the other team's box moves the selection; unchecking leaves both clear (the default) and unlocks the field. The choice is remembered for the next match when **Persist New Game Data** is on.
+
 ### League Associations
 
 Leagues can be linked to specific Team Names, Age Categories, and Locations (many-to-many — a team, age category, or location can belong to multiple leagues). Once a League is picked on the New Game form (or Edit Info), the Team A/B, Age Category, and Location fields only suggest entries already linked to that league — but you can still freely type a brand-new value regardless. Picking a Team A/B, Age Category, or Location *first* narrows the League suggestions the same way, in reverse.
@@ -256,7 +258,15 @@ Each list also has a filter box (type to narrow down a long list instead of scro
 
 ### Editing a Game's Match Info
 
-Already started or finished a game with the wrong team name, location, gender, age category, or league? **Games → select the game → Edit Info** opens a form pre-filled with that game's current values for just those five fields. Saving updates the saved game record (and the live scoreboard/Match Log too, if it's the game currently in progress); scores, sets, and event history are untouched. New values you type are added to the relevant master list, same as the New Game form.
+Already started or finished a game with something wrong or missing? **Games → select the game → Edit Info** opens a form pre-filled with that game's current values. Nothing is saved until you press **Save**; **Cancel** throws all changes away.
+
+- **Match info:** team names, location, gender, age category, and league. New values you type are added to the relevant master list, same as the New Game form.
+- **Team colors:** change either team's color (also remembered for that team name).
+- **Actual start time:** correct when **Start Game** was really tapped. It can't be set later than the first recorded event.
+- **Remarks:** edit or delete any remark, or add a new one. A new remark on a finished game is labeled Post-Match; on a game still in progress it records the current set and score.
+- **Sanctions:** each sanction is listed with its team, type, recipient, set, and score. Use ✎ to edit one or × to remove it, or **Add Sanction** to open a short form (team, type, recipient, set, and the score when it happened, starting at 0–0). A sanction is placed in the log right after the point that made that score. The usual rules still apply (one warning per team, escalation per person, one improper request).
+
+Sanction changes only change the sanction record. They never change the score, so if a penalty point was wrong, the score has to be corrected separately. Saving updates the saved game (and the live scoreboard/Match Log too, if it's the game currently in progress); sets and points are otherwise untouched.
 
 ### Export / Import
 
@@ -310,6 +320,10 @@ A one-shot glow (no toast) flashes on the relevant indicator for each action:
 Only the chip just added glows — existing chips are not re-glowed. Rapid repeat actions restart the animation.
 
 Configure color and duration in **Setup → Scoring Defaults → Action Alert** (default: purple, 2 s).
+
+### Score Change Glow
+
+Pressing **+** or **−** gives a quick 0.8 s glow on that team's score number and on the button you pressed, so it's easy to confirm the right team scored. The color is picked automatically for each team: it contrasts with the team's color and with the current background, and is re-chosen when you switch between light and dark mode. The **+** symbol also switches between white and dark automatically so it stays readable on any team color (for example a white team in dark mode). There is no setting for this glow.
 
 ---
 
