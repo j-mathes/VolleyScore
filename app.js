@@ -2351,6 +2351,9 @@ function initGameSetupForm() {
   $("cfgGender").value = last ? last.gender : (settings.defaultGender || "");
   $("cfgAgeCategory").value = last ? last.ageCategory : (settings.defaultAgeCategory || "");
   $("cfgLeague").value = last ? last.league : (settings.defaultLeague || "");
+  $("cfgLocFromTeamA").checked = !!last && last.locationFromTeam === "A";
+  $("cfgLocFromTeamB").checked = !!last && last.locationFromTeam === "B";
+  syncLocationFromTeam();
   // Per-game color override — reset to the current global defaults each time,
   // unless persisting, in which case reuse the last game's override colors. A
   // remembered per-team-name color (if any) takes priority over both of those.
@@ -2522,22 +2525,44 @@ function updateFirstServeBtnLabels() {
 
 function clearGenericTeamNameOnFocus(input, genericName) {
   input.addEventListener("focus", function () {
-    if (input.value === genericName) input.value = "";
+    if (input.value === genericName) {
+      input.value = "";
+      syncLocationFromTeam();
+    }
   });
+}
+
+// When a "Loc" box is checked, the location is locked to that team's name and follows it as it changes.
+function syncLocationFromTeam() {
+  var fromA = $("cfgLocFromTeamA").checked;
+  var fromB = $("cfgLocFromTeamB").checked;
+  var source = fromA ? $("cfgTeamA") : (fromB ? $("cfgTeamB") : null);
+  var loc = $("cfgLocation");
+  loc.disabled = !!source;
+  if (source) loc.value = source.value.trim();
 }
 
 function wireGameSetupForm() {
   clearGenericTeamNameOnFocus($("cfgTeamA"), "Team A");
   clearGenericTeamNameOnFocus($("cfgTeamB"), "Team B");
+  // Checking one "Loc" box unchecks the other; unchecking leaves neither selected.
+  [["cfgLocFromTeamA", "cfgLocFromTeamB"], ["cfgLocFromTeamB", "cfgLocFromTeamA"]].forEach(function (pair) {
+    $(pair[0]).addEventListener("change", function () {
+      if (this.checked) $(pair[1]).checked = false;
+      syncLocationFromTeam();
+    });
+  });
   // Also auto-fill that team's remembered color (if any) when its name changes,
   // whether typed to an exact match or picked from the dropdown.
   $("cfgTeamA").addEventListener("input", function () {
     updateFirstServeBtnLabels();
     applyRememberedTeamColor("A");
+    syncLocationFromTeam();
   });
   $("cfgTeamB").addEventListener("input", function () {
     updateFirstServeBtnLabels();
     applyRememberedTeamColor("B");
+    syncLocationFromTeam();
   });
 
   // Live-preview the per-game color override on the First Serve buttons (and
@@ -2667,7 +2692,8 @@ async function startNewGame() {
   var teamB = $("cfgTeamB").value.trim() || "Team B";
   var teamAColor = $("cfgTeamAColorOverride").value || settings.teamAColor;
   var teamBColor = $("cfgTeamBColorOverride").value || settings.teamBColor;
-  var location = $("cfgLocation").value.trim();
+  var locationFromTeam = $("cfgLocFromTeamA").checked ? "A" : ($("cfgLocFromTeamB").checked ? "B" : null);
+  var location = locationFromTeam ? (locationFromTeam === "A" ? teamA : teamB) : $("cfgLocation").value.trim();
   var gender = $("cfgGender").value;
   var ageCategory = $("cfgAgeCategory").value.trim();
   var league = $("cfgLeague").value.trim();
@@ -2697,6 +2723,7 @@ async function startNewGame() {
   settings.lastGameSetup = {
     teamA: teamA, teamB: teamB, teamAColor: teamAColor, teamBColor: teamBColor,
     location: location, gender: gender, ageCategory: ageCategory, league: league,
+    locationFromTeam: locationFromTeam,
     gameFormat: gameFormat, variation: variation, fairPlay: fairPlay,
     timeoutsPerSet: setupTimeouts, subsPerSet: setupSubs, firstServer: setupFirstServer,
     setWinScore: setupSetWinScore, setWinBy: setupSetWinBy, setWinCap: setupSetWinCap,
