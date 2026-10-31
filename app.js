@@ -4030,12 +4030,23 @@ var _timeoutTimerInterval = null;
 var _timeoutTimerAutoHideTimer = null;
 var _timeoutTimerPaused = false;
 
-function setTimeoutTimerPaused(paused) {
-  _timeoutTimerPaused = paused;
-  var btn = $("btnPauseTimeoutTimer");
+// Shared by the timeout and serve timer overlays.
+function syncPauseButton(btnId, paused) {
+  var btn = $(btnId);
   btn.textContent = paused ? "Resume" : "Pause";
   btn.classList.toggle("active", paused);
   btn.setAttribute("aria-pressed", String(paused));
+}
+
+function restartPulse(countEl) {
+  countEl.classList.remove("timeout-timer-pulse");
+  void countEl.offsetWidth; // restart the CSS animation on every tick
+  countEl.classList.add("timeout-timer-pulse");
+}
+
+function setTimeoutTimerPaused(paused) {
+  _timeoutTimerPaused = paused;
+  syncPauseButton("btnPauseTimeoutTimer", paused);
 }
 
 function startTimeoutCountdown(team) {
@@ -4078,9 +4089,7 @@ function startTimeoutCountdown(team) {
       if (_timeoutTimerPaused) return;
       overtime++;
       countEl.textContent = "\u2212" + overtime;
-      countEl.classList.remove("timeout-timer-pulse");
-      void countEl.offsetWidth; // restart the CSS animation on every tick
-      countEl.classList.add("timeout-timer-pulse");
+      restartPulse(countEl);
       return;
     }
     remaining--;
@@ -4122,10 +4131,7 @@ var _serveTimerPaused = false;
 
 function setServeTimerPaused(paused) {
   _serveTimerPaused = paused;
-  var btn = $("btnPauseServeTimer");
-  btn.textContent = paused ? "Resume" : "Pause";
-  btn.classList.toggle("active", paused);
-  btn.setAttribute("aria-pressed", String(paused));
+  syncPauseButton("btnPauseServeTimer", paused);
 }
 
 function startServeTimer() {
@@ -4143,10 +4149,9 @@ function startServeTimer() {
     if (count >= SERVE_TIMER_AUTO_DISMISS) { closeServeTimer(); return; }
     countEl.textContent = count;
     if (count > SERVE_TIMER_LIMIT) {
-      countEl.classList.remove("serve-timer-ok", "timeout-timer-pulse");
+      countEl.classList.remove("serve-timer-ok");
       countEl.classList.add("timeout-timer-done");
-      void countEl.offsetWidth; // restart the CSS animation on every tick
-      countEl.classList.add("timeout-timer-pulse");
+      restartPulse(countEl);
     }
   }, 1000);
 }
