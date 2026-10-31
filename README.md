@@ -1,6 +1,6 @@
 ﻿# VolleyScore
 
-**Version 41**
+**Version 42**
 
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
@@ -520,7 +520,7 @@ Implementation details that aren't necessary for everyday use — useful if you'
 
 ### Stack
 
-Vanilla JavaScript — no frameworks, no build step. Files: `app.js`, `styles.css`, `index.html`, `manifest.json`, `sw.js` (service worker), `icons/`.
+Vanilla JavaScript — no frameworks, no build step. Files: `index.html`, `styles.css`, `js/` (plain classic scripts, loaded in order by `index.html` and listed in `sw.js`, so the app still works opened straight from a folder), `manifest.json`, `sw.js` (service worker), `icons/`.
 
 ---
 

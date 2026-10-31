@@ -1182,11 +1182,24 @@ input.color-picker-sm {
   color: var(--danger);
 }
 
-/* Card icons inside sidebar sanction button */
+/* Card icons inside sidebar sanction button. They shrink (keeping their shape) when the
+   button is narrower than two cards, e.g. the 60px sidebar on short landscape screens. */
 .side-cards {
   display: flex;
   gap: 4px;
   align-items: center;
+  justify-content: center;
+  --side-card-w: 24px;
+  width: calc(var(--side-card-w) * 2 + 4px);
+  max-width: 100%;
+}
+
+.side-cards .card-icon {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  height: auto;
+  aspect-ratio: 24 / 34;
 }
 
 /* Team status indicators: TO dots, sub count, sanction chips — below team name */
@@ -4330,7 +4343,7 @@ input.player-num-input {
 }
 
 /* ---- Low-contrast team-color outline ----
-   See updateTeamColorContrastOutlines() in app.js — the widths below are 0px
+   See updateTeamColorContrastOutlines() in js/shared-ui.js — the widths below are 0px
    (invisible) unless that function detects the chosen team color is too close
    to the current background, in which case it bumps them up so these stay
    legible. var(--ink) is used as the outline/stroke color since it's already
@@ -4870,6 +4883,10 @@ input.player-num-input {
   .card-icon {
     width: 14px;
     height: 20px;
+  }
+
+  .side-cards {
+    --side-card-w: 14px;
   }
 
   .card-small {

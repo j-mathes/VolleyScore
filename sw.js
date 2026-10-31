@@ -6,14 +6,27 @@
 
 "use strict";
 
-var CACHE_VERSION = "v41";
+var CACHE_VERSION = "v42";
 var CACHE_NAME    = "volleyscore-" + CACHE_VERSION;
 
 var CORE_ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
-  "./app.js",
+  "./js/core.js",
+  "./js/lists.js",
+  "./js/storage.js",
+  "./js/engine.js",
+  "./js/export-import.js",
+  "./js/ui-utils.js",
+  "./js/game-setup.js",
+  "./js/shared-ui.js",
+  "./js/scoreboard.js",
+  "./js/game-controls.js",
+  "./js/games.js",
+  "./js/reports.js",
+  "./js/setup-page.js",
+  "./js/main.js",
   "./manifest.json",
   "./icons/icon.svg",
 ];
