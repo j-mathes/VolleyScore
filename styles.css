@@ -456,6 +456,25 @@ details summary::-webkit-details-marker { display: none; }
   gap: 0.4rem;
 }
 
+/* Portrait phones: one team per row so the name field (and its dropdown) keeps a usable width
+   next to the Loc box and color swatch. */
+@media (orientation: portrait) and (max-width: 600px) {
+  #gameSetupPanel .setup-team-row {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  #gameSetupPanel .setup-team-row .setup-field,
+  #editMatchInfoModal .setup-team-row .setup-field {
+    flex: 0 0 auto;
+  }
+
+  #editMatchInfoModal .setup-team-row {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+}
+
 .setup-team-name-row input[type="text"] {
   flex: 1;
   min-width: 0;

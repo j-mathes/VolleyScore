@@ -1,6 +1,6 @@
 ﻿# VolleyScore
 
-**Version 39**
+**Version 40**
 
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
@@ -235,7 +235,7 @@ The New Game screen tracks four extra pieces of match info, each backed by a mas
 
 Team Name, Location, Age Category, and League fields are pick-or-type: tap the field to see a dropdown of existing values, keep typing to filter it, or type something new. Anything new you type is saved to that field's master list automatically **once you actually start the game** (or save an Edit Info change, or add it directly in Setup) — typing into the New Game form alone doesn't add anything to Setup → Match Info Lists until then, so an abandoned/unstarted game leaves no trace there.
 
-**Using a team name as the location:** many matches are played at one of the two schools, so each team name has a **Loc** checkbox (to the left of its color swatch). Check one and the Location field fills with that team's name, greys out, and follows the name as you type or change it. Checking the other team's box moves the selection; unchecking leaves both clear (the default) and unlocks the field. The choice is remembered for the next match when **Persist New Game Data** is on.
+**Using a team name as the location:** many matches are played at one of the two schools, so each team name has a **Loc** checkbox (to the left of its color swatch). Check one and the Location field fills with that team's name, greys out, and follows the name as you type or change it. Checking the other team's box moves the selection; unchecking leaves both clear (the default) and unlocks the field. The choice is remembered for the next match when **Persist New Game Data** is on. On a phone held in portrait, Team A and Team B are stacked one per row so each name field (and its dropdown) stays wide enough to read.
 
 ### League Associations
 
@@ -261,7 +261,7 @@ Each list also has a filter box (type to narrow down a long list instead of scro
 Already started or finished a game with something wrong or missing? **Games → select the game → Edit Info** opens a form pre-filled with that game's current values. Nothing is saved until you press **Save**; **Cancel** throws all changes away.
 
 - **Match info:** team names, location, gender, age category, and league. New values you type are added to the relevant master list, same as the New Game form.
-- **Team colors:** change either team's color (also remembered for that team name).
+- **Team colors:** change either team's color with the swatch beside its name (also remembered for that team name). On a portrait phone the two teams stack one per row here too.
 - **Actual start time:** correct when **Start Game** was really tapped. It can't be set later than the first recorded event.
 - **Remarks:** edit or delete any remark, or add a new one. A new remark on a finished game is labeled Post-Match; on a game still in progress it records the current set and score.
 - **Sanctions:** each sanction is listed with its team, type, recipient, set, and score. Use ✎ to edit one or × to remove it, or **Add Sanction** to open a short form (team, type, recipient, set, and the score when it happened, starting at 0–0). A sanction is placed in the log right after the point that made that score. The usual rules still apply (one warning per team, escalation per person, one improper request).
