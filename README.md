@@ -1,6 +1,6 @@
 ﻿# VolleyScore
 
-**Version 40**
+**Version 41**
 
 Browser-based volleyball scorekeeper. No install, no build step — open `index.html` in any modern browser or use the hosted version:
 
@@ -133,7 +133,7 @@ The **Setup** tab holds appearance and dark mode, game and scoring defaults, ale
 
 - **Match Info tracking** — Gender, Age Category, and League per game, with editable master lists and many-to-many League associations that filter fields against each other (see [Match Info Lists](#match-info-lists))
 - **Edit info after the fact** — correct team names, location, team colors, start time, remarks, or sanctions on any saved game, in progress or finished (see [Editing a Game's Match Info](#editing-a-games-match-info))
-- **Scheduled vs. actual start time** — pre-configure a planned start time while the real moment **Start Game** is tapped is always recorded separately (see [Match Timing](#match-timing))
+- **Scheduled vs. actual start time** — pre-configure a planned start time, and set up the game in advance: the match's actual start time is the moment **Set 1 starts**, not when **Start Game** was tapped (see [Match Timing](#match-timing))
 - **Persist New Game Data** — optionally carry every New Game field forward from your last match instead of resetting to defaults (see [Persisting New Game Data](#persisting-new-game-data))
 
 ### Data, Reports & Sharing
@@ -262,7 +262,7 @@ Already started or finished a game with something wrong or missing? **Games → 
 
 - **Match info:** team names, location, gender, age category, and league. New values you type are added to the relevant master list, same as the New Game form.
 - **Team colors:** change either team's color with the swatch beside its name (also remembered for that team name). On a portrait phone the two teams stack one per row here too.
-- **Actual start time:** correct when **Start Game** was really tapped. It can't be set later than the first recorded event.
+- **Actual start time:** correct when Set 1 really started (or, for a game with no set started yet, when **Start Game** was tapped). It can't be set later than the next recorded event.
 - **Remarks:** edit or delete any remark, or add a new one. A new remark on a finished game is labeled Post-Match; on a game still in progress it records the current set and score.
 - **Sanctions:** each sanction is listed with its team, type, recipient, set, and score. Use ✎ to edit one or × to remove it, or **Add Sanction** to open a short form (team, type, recipient, set, and the score when it happened, starting at 0–0). A sanction is placed in the log right after the point that made that score. The usual rules still apply (one warning per team, escalation per person, one improper request).
 
@@ -418,7 +418,7 @@ A Red card or Delay Penalty awards a point and advances the sequence. A toast id
 
 The **Scheduled Start** field (Score page setup, optional) lets you pre-configure a match for a planned time — useful when setting up a game ahead of the actual first serve. It has no effect on match logic.
 
-Separately, the app always records the real-world moment **Start Game** is tapped as the match's actual start time. Wherever a single date/time is shown (Recent Games, Games list), the actual start time is used. In the **Game Detail** view and **Match Log** header, if the scheduled time and actual start differ, both are shown — e.g. `Scheduled Sep 9 19:00 · Started Sep 9 19:12`.
+Separately, the match's actual start time is the real-world moment **Set 1 starts** (**Start Set 1**), so you can set up the game and prepare the app in advance without that waiting time counting as part of the match. Until Set 1 starts, the moment **Start Game** was tapped stands in. Wherever a single date/time is shown (Recent Games, Games list) and in the reports (Match Starting Time and durations), the actual start time is used. In the **Game Detail** view and **Match Log** header, if the scheduled time and actual start differ, both are shown — e.g. `Scheduled Sep 9 19:00 · Started Sep 9 19:12`. Games saved before this change use their Set 1 start in reports, but may keep showing their Start Game time in the Games list until they're next saved.
 
 ### Fixing the First Server
 

@@ -43,7 +43,7 @@ var LS_CURRENT = "vs_current";    // ID of current/last active game
 var LS_SETTINGS = "vs_settings";  // user settings
 
 // App version — bump this (and CACHE_VERSION in sw.js) with every deployment
-var APP_VERSION = "40";
+var APP_VERSION = "41";
 
 var GITHUB_URL = "https://github.com/j-mathes/VolleyScore";
 
@@ -835,6 +835,10 @@ function removeIndexEntry(gameId) {
 }
 
 function indexEntryFromRecord(record) {
+  var derived = null;
+  try {
+    derived = deriveGameState({ events: record.events || [], cursor: record.cursor != null ? record.cursor : (record.events || []).length });
+  } catch (e) { /* fall back to createdAt */ }
   return {
     gameId: record.gameId,
     gameName: record.gameName,
@@ -844,6 +848,7 @@ function indexEntryFromRecord(record) {
     variation: record.variation,
     scheduledAt: record.scheduledAt,
     createdAt: record.createdAt,
+    startedAt: derived ? derived.startedAt : record.createdAt,
     updatedAt: record.updatedAt,
     endedAt: record.endedAt,
     storage: record._storage || "ls",
@@ -893,12 +898,12 @@ async function dbLoadGame(gameId) {
 }
 
 // List all games (uses index)
-// Sorted by when the game actually happened (createdAt), not when its record was
-// last saved — otherwise editing a completed game's info would bump it to the top.
+// Sorted by when the game actually happened (first set start, else createdAt), not when its
+// record was last saved — otherwise editing a completed game's info would bump it to the top.
 function dbListGames() {
   return loadIndex().sort(function (a, b) {
-    var da = new Date(a.createdAt || a.scheduledAt || a.updatedAt).getTime();
-    var db2 = new Date(b.createdAt || b.scheduledAt || b.updatedAt).getTime();
+    var da = new Date(a.startedAt || a.createdAt || a.scheduledAt || a.updatedAt).getTime();
+    var db2 = new Date(b.startedAt || b.createdAt || b.scheduledAt || b.updatedAt).getTime();
     return db2 - da; // newest first
   });
 }
@@ -1160,6 +1165,11 @@ function deriveGameState(timeline) {
     }
   }
 
+  // The match "starts" when its first set starts, so a game can be set up in advance;
+  // until then (or for a game with no sets) it falls back to when Start Game was tapped.
+  var firstStartedSet = setsArray.find(function (s) { return s.startedAt; });
+  var matchStartedAt = firstStartedSet ? firstStartedSet.startedAt : startEv.timestamp;
+
   // Triple ball: timeouts only at end of a 3-ball sequence (before a serve)
   // Phase 0 = before A serves, Phase 3 = before B serves — those are the only valid moments
   var timeoutAllowedInTripleBall = true;
@@ -1224,7 +1234,7 @@ function deriveGameState(timeline) {
     timeoutsPerSet: startEv.timeoutsPerSet || 2,
     subsPerSet: effectiveSubsPerSet,
     firstServer: startEv.firstServer || "A",
-    startedAt: startEv.timestamp,
+    startedAt: matchStartedAt,
     endedAt: endedAt,
     activeSetNumber: activeSetNumber,
     sets: setsArray,
@@ -5324,8 +5334,8 @@ function renderRecentGames() {
   games.forEach(function (g) {
     var isActive = !g.endedAt;
     var meta = [g.teamA, "vs", g.teamB, "·", formatLabel(g.gameFormat)].join(" ");
-    // Actual start (createdAt) takes priority over the pre-configured scheduled time
-    var dateStr = formatDateTimeShort(g.createdAt || g.scheduledAt || g.updatedAt);
+    // Actual start (first set's start) takes priority over the pre-configured scheduled time
+    var dateStr = formatDateTimeShort(g.startedAt || g.createdAt || g.scheduledAt || g.updatedAt);
     html += '<div class="recent-game-item" data-id="' + esc(g.gameId) + '">' +
       '<span class="recent-game-name">' + esc(g.gameName || meta) + '</span>' +
       '<span class="recent-game-meta">' + esc(dateStr) + '</span>' +
@@ -5398,8 +5408,8 @@ async function renderGamesList() {
 
     var isActive = !g.endedAt;
     var meta = (g.teamA || "?") + " vs " + (g.teamB || "?") + " · " + formatLabel(g.gameFormat || "best3");
-    // Actual start (createdAt) takes priority over the pre-configured scheduled time
-    var dateStr = formatDateTimeShort(g.createdAt || g.scheduledAt || g.updatedAt);
+    // Actual start (first set's start) takes priority over the pre-configured scheduled time
+    var dateStr = formatDateTimeShort(g.startedAt || g.createdAt || g.scheduledAt || g.updatedAt);
 
     btn.innerHTML =
       '<span class="gli-name">' + esc(g.gameName || meta) + '</span>' +
@@ -6025,13 +6035,22 @@ async function saveMatchInfoEdits() {
   if (!startEv) return;
 
   var startedAtValue = $("emiStartedAt").value;
-  var startChanged = startedAtValue && startedAtValue !== toLocalDatetimeValue(new Date(startEv.timestamp));
-  var newStartIso = startChanged ? new Date(startedAtValue).toISOString() : startEv.timestamp;
-  if (newStartIso !== startEv.timestamp) {
-    var earliestOther = events.filter(function (e) { return e !== startEv && e.timestamp; })
+  // The editable start is the first set's start (see deriveGameState); with no sets it's Start Game.
+  var firstSetNum = null;
+  events.forEach(function (e) {
+    if (e.type === "SET_STARTED" && (firstSetNum === null || e.setNumber < firstSetNum)) firstSetNum = e.setNumber;
+  });
+  var startTarget = startEv;
+  if (firstSetNum !== null) {
+    events.forEach(function (e) { if (e.type === "SET_STARTED" && e.setNumber === firstSetNum) startTarget = e; });
+  }
+  var startChanged = startedAtValue && startedAtValue !== toLocalDatetimeValue(new Date(startTarget.timestamp));
+  var newStartIso = startChanged ? new Date(startedAtValue).toISOString() : startTarget.timestamp;
+  if (startChanged) {
+    var earliestAfter = events.slice(events.indexOf(startTarget) + 1).filter(function (e) { return e.timestamp; })
       .reduce(function (min, e) { return !min || e.timestamp < min ? e.timestamp : min; }, null);
-    if (earliestOther && newStartIso > earliestOther) {
-      alert("The start time can't be later than the first recorded event (" + formatDateTime(earliestOther) + ").");
+    if (earliestAfter && newStartIso > earliestAfter) {
+      alert("The start time can't be later than the next recorded event (" + formatDateTime(earliestAfter) + ").");
       return;
     }
   }
@@ -6045,7 +6064,7 @@ async function saveMatchInfoEdits() {
   startEv.league = league;
   startEv.teamAColor = teamAColor;
   startEv.teamBColor = teamBColor;
-  startEv.timestamp = newStartIso;
+  startTarget.timestamp = newStartIso;
 
   if (_emiEventsDirty) {
     record.events = events;
@@ -6055,7 +6074,7 @@ async function saveMatchInfoEdits() {
   record.teamA = teamA;
   record.teamB = teamB;
   record.location = location;
-  record.createdAt = newStartIso;
+  if (startTarget === startEv) record.createdAt = newStartIso;
   await dbSaveGame(record);
 
   if (gameId === controller.currentGameId) {
