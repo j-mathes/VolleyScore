@@ -1172,15 +1172,11 @@ input.color-picker-sm {
   text-align: center;
 }
 
-.to-side-btn  { background: rgba(0, 0, 0, 0.07); }
-.sub-side-btn { background: rgba(0, 0, 0, 0.07); }
+.to-side-btn,
+.sub-side-btn,
 .sanction-side-btn { background: rgba(0, 0, 0, 0.07); }
 
-.to-side-btn.to-exhausted {
-  background: rgba(220, 38, 38, 0.12);
-  color: var(--danger);
-}
-
+.to-side-btn.to-exhausted,
 .sub-side-btn.sub-exhausted {
   background: rgba(220, 38, 38, 0.12);
   color: var(--danger);
@@ -1329,7 +1325,8 @@ input.color-picker-sm {
      leaves less room than the vw-based math above assumes; it only shrinks
      when the row actually doesn't have room, so normal/wide layouts are
      unaffected. */
-  font-size: calc(clamp(1.8rem, 5vw, 2.8rem) * var(--score-btn-scale-w));
+  --score-btn-glyph: calc(clamp(1.8rem, 5vw, 2.8rem) * var(--score-btn-scale-w));
+  font-size: 0; /* the +/− is drawn by ::before so it's centered whatever the font's metrics */
   font-weight: 700;
   width: calc(clamp(54px, 9vw, 86px) * var(--score-btn-scale-w));
   height: calc(clamp(54px, 9vw, 86px) * var(--score-btn-scale-h));
@@ -1366,6 +1363,33 @@ input.color-picker-sm {
 .btn-score-minus {
   background: rgba(0, 0, 0, 0.08);
   color: var(--ink-soft);
+}
+
+/* Glyph geometry matches a bold "+"/"−" (about 0.5em wide, 0.11em thick). */
+.score-btn::before {
+  content: "";
+  flex: none;
+  width: calc(var(--score-btn-glyph) * 0.5);
+  height: calc(var(--score-btn-glyph) * 0.11);
+  background: currentColor;
+}
+
+.btn-score-plus::before {
+  height: calc(var(--score-btn-glyph) * 0.5);
+  background:
+    linear-gradient(currentColor, currentColor) center / 100% calc(var(--score-btn-glyph) * 0.11) no-repeat,
+    linear-gradient(currentColor, currentColor) center / calc(var(--score-btn-glyph) * 0.11) 100% no-repeat;
+  /* Stand-in for the low-contrast text stroke (see updateTeamColorContrastOutlines). */
+  --glyph-stroke: var(--team-a-text-stroke-w);
+  filter:
+    drop-shadow(calc(var(--glyph-stroke) / 2) 0 0 var(--ink))
+    drop-shadow(calc(var(--glyph-stroke) / -2) 0 0 var(--ink))
+    drop-shadow(0 calc(var(--glyph-stroke) / 2) 0 var(--ink))
+    drop-shadow(0 calc(var(--glyph-stroke) / -2) 0 var(--ink));
+}
+
+.team-panel-b .btn-score-plus::before {
+  --glyph-stroke: var(--team-b-text-stroke-w);
 }
 
 /* Score button layout options. The score value must keep an explicit middle
@@ -1585,11 +1609,6 @@ input.color-picker-sm {
   background: rgba(0, 0, 0, 0.04);
   opacity: 0.5;
   transform: scale(0.82);
-}
-
-[data-theme="dark"] .tb-box-prev,
-[data-theme="dark"] .tb-box-next {
-  background: rgba(255, 255, 255, 0.04);
 }
 
 .tb-box-current {
@@ -2354,9 +2373,6 @@ details[open] .event-log-summary::before {
 
 .page-setup .setup-card {
   flex: none;
-}
-
-.page-setup .setup-card {
   break-inside: avoid;
   margin-bottom: 1rem;
 }
@@ -3010,18 +3026,12 @@ details[open] .event-log-summary::before {
   background: rgba(255, 255, 255, 0.14);
 }
 
-[data-theme="dark"] .ml-chip-color {
-  border-color: rgba(255, 255, 255, 0.35);
-}
-
+[data-theme="dark"] .ml-chip-color,
 [data-theme="dark"] .ml-chip-color-dot {
   border-color: rgba(255, 255, 255, 0.35);
 }
 
-[data-theme="dark"] .ml-chip-league-tag {
-  background: rgba(255, 255, 255, 0.14);
-}
-
+[data-theme="dark"] .ml-chip-league-tag,
 [data-theme="dark"] .ml-chip-manage-btn {
   background: rgba(255, 255, 255, 0.14);
 }
@@ -3259,12 +3269,7 @@ details[open] .event-log-summary::before {
 }
 
 .role-btn.active,
-.role-btn.active:hover:not(:disabled) {
-  background: var(--brand-color);
-  color: #fff;
-  border-color: transparent;
-}
-
+.role-btn.active:hover:not(:disabled),
 .rf-team-btn.active,
 .rf-team-btn.active:hover:not(:disabled) {
   background: var(--brand-color);
@@ -3894,15 +3899,11 @@ input.player-num-input {
   transform: none;
 }
 
-.reports-tab-btn.active {
-  background: var(--brand-color);
-  color: #fff;
-}
-
-/* Higher specificity than the plain :hover rule above — needed because on touch
-   devices tapping a button leaves it in a "stuck" :hover state (no real mouse to
+/* Reports tabs — the :hover variant needs higher specificity than the plain :hover rule above:
+   on touch devices tapping a button leaves it in a "stuck" :hover state (no real mouse to
    un-hover), which would otherwise repaint the just-activated tab grey instead
    of blue (only visible after switching tabs via touch, not on initial load). */
+.reports-tab-btn.active,
 .reports-tab-btn.active:hover:not(:disabled) {
   background: var(--brand-color);
   color: #fff;
@@ -4681,19 +4682,15 @@ input.player-num-input {
   background: rgba(255, 255, 255, 0.16);
 }
 
-/* Triple ball prev/next phase boxes (override the too-dark 4% rule above) */
+/* Triple ball prev/next phase boxes in dark mode */
 [data-theme="dark"] .tb-box-prev,
 [data-theme="dark"] .tb-box-next {
   background: rgba(255, 255, 255, 0.10);
 }
 
-/* Timeout / sub indicator pills */
+/* Timeout / sub indicator pills and sanction chips in the team panel */
 [data-theme="dark"] .indicator-to,
-[data-theme="dark"] .indicator-sub {
-  background: rgba(255, 255, 255, 0.09);
-}
-
-/* Sanction chips in team panel */
+[data-theme="dark"] .indicator-sub,
 [data-theme="dark"] .sanction-chip {
   background: rgba(255, 255, 255, 0.09);
 }
@@ -4719,10 +4716,7 @@ input.player-num-input {
   background: rgba(255, 255, 255, 0.09);
 }
 [data-theme="dark"] .role-btn.active,
-[data-theme="dark"] .role-btn.active:hover:not(:disabled) {
-  background: var(--brand-color);
-  color: #fff;
-}
+[data-theme="dark"] .role-btn.active:hover:not(:disabled),
 [data-theme="dark"] .rf-team-btn.active,
 [data-theme="dark"] .rf-team-btn.active:hover:not(:disabled) {
   background: var(--brand-color);
@@ -4751,15 +4745,6 @@ input.player-num-input {
 
 /* ---- Portrait: stack team panels vertically ---- */
 @media (orientation: portrait) {
-  .team-panels {
-    flex-direction: column;
-  }
-
-  .court-divider {
-    width: 100%;
-    height: 3px;
-  }
-
   .score-val {
     font-size: clamp(72px, 22vw, 120px);
   }
