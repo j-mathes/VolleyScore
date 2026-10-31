@@ -1040,13 +1040,13 @@ function deriveGameState(timeline) {
       }
       case "SANCTION": {
         var san = getOrCreateSet(ev.setNumber);
-        var sanList = ev.team === "A" ? san.sanctionsA : san.sanctionsB;
+        var sanList = pickTeam(ev.team, san.sanctionsA, san.sanctionsB);
         sanList.push({ type: ev.sanctionType, player: ev.playerNumber || null, role: ev.role || "player", timestamp: ev.timestamp });
         break;
       }
       case "DELAY_SANCTION": {
         var ds = getOrCreateSet(ev.setNumber);
-        var dsList = ev.team === "A" ? ds.delaySanctionsA : ds.delaySanctionsB;
+        var dsList = pickTeam(ev.team, ds.delaySanctionsA, ds.delaySanctionsB);
         dsList.push({ type: ev.sanctionType, timestamp: ev.timestamp });
         break;
       }
@@ -2256,6 +2256,12 @@ function esc(str) {
 
 function $(id) { return document.getElementById(id); }
 
+// Team A/B helpers: pick between two values by team letter, get the other team,
+// and get a team's display name (falling back to "Team A"/"Team B").
+function pickTeam(team, a, b) { return team === "A" ? a : b; }
+function otherTeam(team) { return team === "A" ? "B" : "A"; }
+function teamLabel(state, team) { return pickTeam(team, state.teamA, state.teamB) || ("Team " + team); }
+
 function formatTime(iso) {
   if (!iso) return "";
   var d = new Date(iso);
@@ -2552,6 +2558,42 @@ function syncLocationFromTeam() {
   if (source) loc.value = source.value.trim();
 }
 
+// Wire a -/+ stepper pair. o.get/o.set read and write the value, o.min/o.max (numbers or
+// functions) bound it, o.step defaults to 1, o.fmt formats the label, and o.onChange runs
+// after each change.
+function wireStepper(downId, upId, labelId, o) {
+  function bound(x) { return typeof x === "function" ? x() : x; }
+  function bump(dir) {
+    var v = o.get();
+    if (dir < 0 ? v > bound(o.min) : v < bound(o.max)) {
+      var n = v + dir * (o.step || 1);
+      o.set(n);
+      $(labelId).textContent = o.fmt ? o.fmt(n) : n;
+      if (o.onChange) o.onChange();
+    }
+  }
+  $(downId).addEventListener("click", function () { bump(-1); });
+  $(upId).addEventListener("click", function () { bump(1); });
+}
+
+// wireStepper bound to settings[key] (falling back to def when unset); saves settings after
+// each change unless o.onChange is given (it then owns any saving).
+function wireSettingStepper(downId, upId, labelId, key, def, o) {
+  o.get = function () { return settings[key] !== undefined ? settings[key] : def; };
+  o.set = function (v) { settings[key] = v; };
+  if (!o.onChange) o.onChange = saveSettings;
+  wireStepper(downId, upId, labelId, o);
+}
+
+// Bind a checkbox to settings[key]; onChange(checked), if given, runs before settings are saved.
+function wireToggle(id, key, onChange) {
+  $(id).addEventListener("change", function () {
+    settings[key] = this.checked;
+    if (onChange) onChange(this.checked);
+    saveSettings();
+  });
+}
+
 function wireGameSetupForm() {
   clearGenericTeamNameOnFocus($("cfgTeamA"), "Team A");
   clearGenericTeamNameOnFocus($("cfgTeamB"), "Team B");
@@ -2596,20 +2638,12 @@ function wireGameSetupForm() {
     updateFirstServeBtnLabels();
   });
 
-  // Timeout stepper
-  $("btnToDown").addEventListener("click", function () {
-    if (setupTimeouts > 0) { setupTimeouts--; $("cfgTimeouts").textContent = setupTimeouts; }
+  // Timeout and sub steppers
+  wireStepper("btnToDown", "btnToUp", "cfgTimeouts", {
+    get: function () { return setupTimeouts; }, set: function (v) { setupTimeouts = v; }, min: 0, max: 5
   });
-  $("btnToUp").addEventListener("click", function () {
-    if (setupTimeouts < 5) { setupTimeouts++; $("cfgTimeouts").textContent = setupTimeouts; }
-  });
-
-  // Sub stepper
-  $("btnSubsDown").addEventListener("click", function () {
-    if (setupSubs > 0) { setupSubs--; $("cfgSubs").textContent = setupSubs; }
-  });
-  $("btnSubsUp").addEventListener("click", function () {
-    if (setupSubs < 18) { setupSubs++; $("cfgSubs").textContent = setupSubs; }
+  wireStepper("btnSubsDown", "btnSubsUp", "cfgSubs", {
+    get: function () { return setupSubs; }, set: function (v) { setupSubs = v; }, min: 0, max: 18
   });
 
   // Variation change → update fair play options
@@ -2623,17 +2657,12 @@ function wireGameSetupForm() {
   });
 
   // Scoring rule steppers — regular sets
-  $("btnSetWinScoreDown").addEventListener("click", function () {
-    if (setupSetWinScore > 1) { setupSetWinScore--; $("cfgSetWinScore").textContent = setupSetWinScore; updateScoringRuleInteractivity(); }
+  wireStepper("btnSetWinScoreDown", "btnSetWinScoreUp", "cfgSetWinScore", {
+    get: function () { return setupSetWinScore; }, set: function (v) { setupSetWinScore = v; },
+    min: 1, max: 50, onChange: updateScoringRuleInteractivity
   });
-  $("btnSetWinScoreUp").addEventListener("click", function () {
-    if (setupSetWinScore < 50) { setupSetWinScore++; $("cfgSetWinScore").textContent = setupSetWinScore; updateScoringRuleInteractivity(); }
-  });
-  $("btnSetWinByDown").addEventListener("click", function () {
-    if (setupSetWinBy > 1) { setupSetWinBy--; $("cfgSetWinBy").textContent = setupSetWinBy; }
-  });
-  $("btnSetWinByUp").addEventListener("click", function () {
-    if (setupSetWinBy < 10) { setupSetWinBy++; $("cfgSetWinBy").textContent = setupSetWinBy; }
+  wireStepper("btnSetWinByDown", "btnSetWinByUp", "cfgSetWinBy", {
+    get: function () { return setupSetWinBy; }, set: function (v) { setupSetWinBy = v; }, min: 1, max: 10
   });
   $("chkSetWinCap").addEventListener("change", function () {
     if (this.checked && setupSetWinCap === 0) {
@@ -2642,25 +2671,18 @@ function wireGameSetupForm() {
     }
     updateScoringRuleInteractivity();
   });
-  $("btnSetWinCapDown").addEventListener("click", function () {
-    if (setupSetWinCap > setupSetWinScore) { setupSetWinCap--; $("cfgSetWinCap").textContent = setupSetWinCap; updateScoringRuleInteractivity(); }
-  });
-  $("btnSetWinCapUp").addEventListener("click", function () {
-    if (setupSetWinCap < 60) { setupSetWinCap++; $("cfgSetWinCap").textContent = setupSetWinCap; updateScoringRuleInteractivity(); }
+  wireStepper("btnSetWinCapDown", "btnSetWinCapUp", "cfgSetWinCap", {
+    get: function () { return setupSetWinCap; }, set: function (v) { setupSetWinCap = v; },
+    min: function () { return setupSetWinScore; }, max: 60, onChange: updateScoringRuleInteractivity
   });
 
   // Scoring rule steppers — deciding set
-  $("btnDeciderWinScoreDown").addEventListener("click", function () {
-    if (setupDeciderWinScore > 1) { setupDeciderWinScore--; $("cfgDeciderWinScore").textContent = setupDeciderWinScore; updateScoringRuleInteractivity(); }
+  wireStepper("btnDeciderWinScoreDown", "btnDeciderWinScoreUp", "cfgDeciderWinScore", {
+    get: function () { return setupDeciderWinScore; }, set: function (v) { setupDeciderWinScore = v; },
+    min: 1, max: 50, onChange: updateScoringRuleInteractivity
   });
-  $("btnDeciderWinScoreUp").addEventListener("click", function () {
-    if (setupDeciderWinScore < 50) { setupDeciderWinScore++; $("cfgDeciderWinScore").textContent = setupDeciderWinScore; updateScoringRuleInteractivity(); }
-  });
-  $("btnDeciderWinByDown").addEventListener("click", function () {
-    if (setupDeciderWinBy > 1) { setupDeciderWinBy--; $("cfgDeciderWinBy").textContent = setupDeciderWinBy; }
-  });
-  $("btnDeciderWinByUp").addEventListener("click", function () {
-    if (setupDeciderWinBy < 10) { setupDeciderWinBy++; $("cfgDeciderWinBy").textContent = setupDeciderWinBy; }
+  wireStepper("btnDeciderWinByDown", "btnDeciderWinByUp", "cfgDeciderWinBy", {
+    get: function () { return setupDeciderWinBy; }, set: function (v) { setupDeciderWinBy = v; }, min: 1, max: 10
   });
   $("chkDeciderWinCap").addEventListener("change", function () {
     if (this.checked && setupDeciderWinCap === 0) {
@@ -2669,11 +2691,9 @@ function wireGameSetupForm() {
     }
     updateScoringRuleInteractivity();
   });
-  $("btnDeciderWinCapDown").addEventListener("click", function () {
-    if (setupDeciderWinCap > setupDeciderWinScore) { setupDeciderWinCap--; $("cfgDeciderWinCap").textContent = setupDeciderWinCap; updateScoringRuleInteractivity(); }
-  });
-  $("btnDeciderWinCapUp").addEventListener("click", function () {
-    if (setupDeciderWinCap < 60) { setupDeciderWinCap++; $("cfgDeciderWinCap").textContent = setupDeciderWinCap; updateScoringRuleInteractivity(); }
+  wireStepper("btnDeciderWinCapDown", "btnDeciderWinCapUp", "cfgDeciderWinCap", {
+    get: function () { return setupDeciderWinCap; }, set: function (v) { setupDeciderWinCap = v; },
+    min: function () { return setupDeciderWinScore; }, max: 60, onChange: updateScoringRuleInteractivity
   });
 
   // Info icon → toggle fair play tooltip
@@ -3055,8 +3075,8 @@ function renameRememberedTeamColor(oldName, newName) {
 // color override field (and live CSS vars) — called whenever the team name
 // field changes, whether typed or picked from the dropdown.
 function applyRememberedTeamColor(letter) {
-  var nameInput = $(letter === "A" ? "cfgTeamA" : "cfgTeamB");
-  var colorInput = $(letter === "A" ? "cfgTeamAColorOverride" : "cfgTeamBColorOverride");
+  var nameInput = $(pickTeam(letter, "cfgTeamA", "cfgTeamB"));
+  var colorInput = $(pickTeam(letter, "cfgTeamAColorOverride", "cfgTeamBColorOverride"));
   var remembered = getRememberedTeamColor(nameInput.value);
   if (remembered && remembered.toLowerCase() !== colorInput.value.toLowerCase()) {
     setColorInputValue(colorInput, remembered);
@@ -3602,7 +3622,7 @@ function renderScoreboard() {
   if (state.variation === "triplebal" && state.activeSetNumber && activeSet) {
     dotTeam = state.tripleBallPhase < 3
       ? activeSet.firstServer
-      : (activeSet.firstServer === "A" ? "B" : "A");
+      : otherTeam(activeSet.firstServer);
   } else {
     dotTeam = state.servingTeam;
   }
@@ -3652,12 +3672,12 @@ function renderScoreboard() {
     if (pendingServePickTeam === null) {
       var prevEndedSets = state.sets.filter(function (s) { return !!s.endedAt; });
       var lastEndedSet = prevEndedSets.length ? prevEndedSets[prevEndedSets.length - 1] : null;
-      pendingServePickTeam = lastEndedSet ? (lastEndedSet.firstServer === "A" ? "B" : "A") : "A";
+      pendingServePickTeam = lastEndedSet ? otherTeam(lastEndedSet.firstServer) : "A";
     }
-    $("servePickerChipTeam").textContent = pendingServePickTeam === "A" ? state.teamA : state.teamB;
+    $("servePickerChipTeam").textContent = teamLabel(state, pendingServePickTeam);
   } else if (canCorrectActiveServe) {
     $("servePickerSetNum").textContent = state.activeSetNumber;
-    $("servePickerChipTeam").textContent = activeSet.firstServer === "A" ? state.teamA : state.teamB;
+    $("servePickerChipTeam").textContent = teamLabel(state, activeSet.firstServer);
   }
 
   // Now that pendingServePickTeam is resolved above, render (or preview) the
@@ -3803,12 +3823,12 @@ function renderSanctionsBar(barId, sanctions, delaySanctions, irUsed) {
 // actual first server is Team B instead.
 function tbPhaseBoxHtml(idx, cls, firstServer) {
   function flip(letter) {
-    return firstServer === "B" ? (letter === "A" ? "B" : "A") : letter;
+    return firstServer === "B" ? otherTeam(letter) : letter;
   }
   var team   = flip(TB_PHASE_TEAMS[idx]);
   var type   = TB_PHASE_TYPES[idx];
   var toward = flip(TB_PHASE_TOWARD[idx]);
-  var teamCls   = team   === "A" ? "tb-a" : "tb-b";
+  var teamCls   = pickTeam(team, "tb-a", "tb-b");
   // Arrow points toward the receiving team (direction), but is colored for
   // the team performing the action (server/tosser), same as the letter.
   var isRight = sidesSwapped ? (toward === "A") : (toward === "B");
@@ -4021,7 +4041,7 @@ function setTimeoutTimerPaused(paused) {
 function startTimeoutCountdown(team) {
   if (!settings.timeoutTimerEnabled) return;
   var state = controller.getState();
-  var teamName = state ? (team === "A" ? state.teamA : state.teamB) : ("Team " + team);
+  var teamName = state ? teamLabel(state, team) : ("Team " + team);
   var remaining = settings.timeoutTimerDuration || 60;
 
   clearTimeoutCountdown();
@@ -4033,8 +4053,8 @@ function startTimeoutCountdown(team) {
   var leftTeam = sidesSwapped ? "B" : "A";
   var rightTeam = sidesSwapped ? "A" : "B";
   var totalTimeouts = state ? state.effectiveTimeoutsPerSet : 0;
-  function scoreFor(t) { return activeSet ? (t === "A" ? activeSet.scoreA : activeSet.scoreB) : 0; }
-  function timeoutsUsedFor(t) { return activeSet ? (t === "A" ? activeSet.timeoutsA : activeSet.timeoutsB) : 0; }
+  function scoreFor(t) { return activeSet ? pickTeam(t, activeSet.scoreA, activeSet.scoreB) : 0; }
+  function timeoutsUsedFor(t) { return activeSet ? pickTeam(t, activeSet.timeoutsA, activeSet.timeoutsB) : 0; }
   var scoreLeftEl = $("timeoutTimerScoreLeft");
   var scoreRightEl = $("timeoutTimerScoreRight");
   scoreLeftEl.textContent = scoreFor(leftTeam);
@@ -4212,7 +4232,7 @@ function wireScoreboardControls() {
                         stateAfterEnd.setsWonB >= stateAfterEnd.setsToWin ? "B" : null;
       if (matchWinner && matchWinner !== _matchWinKey) {
         _matchWinKey = matchWinner;
-        var mTeamName = matchWinner === "A" ? stateAfterEnd.teamA : stateAfterEnd.teamB;
+        var mTeamName = teamLabel(stateAfterEnd, matchWinner);
         var toastMs = (settings.winToastDuration || 3) * 1000;
         showToast("\uD83C\uDFC6 " + mTeamName + " wins the match! (" +
           stateAfterEnd.setsWonA + "\u2013" + stateAfterEnd.setsWonB + " sets)", toastMs, "toast-win");
@@ -4290,7 +4310,7 @@ function wireScoreboardControls() {
       // Default: suggest opposite of last set's first server
       var prevSets = state.sets.filter(function (s) { return !!s.endedAt; });
       var lastSet = prevSets.length ? prevSets[prevSets.length - 1] : null;
-      server = lastSet ? (lastSet.firstServer === "A" ? "B" : "A") : "A";
+      server = lastSet ? otherTeam(lastSet.firstServer) : "A";
     }
     controller.dispatch({
       type: "SET_STARTED",
@@ -4365,8 +4385,7 @@ function dispatchPoint(team, delta) {
   // Don't allow score below 0
   var activeSet = state.sets.find(function (s) { return s.setNumber === state.activeSetNumber; });
   if (delta < 0 && activeSet) {
-    if (team === "A" && activeSet.scoreA <= 0) return;
-    if (team === "B" && activeSet.scoreB <= 0) return;
+    if (pickTeam(team, activeSet.scoreA, activeSet.scoreB) <= 0) return;
   }
   // Capture partial fair play sub status before scoring
   var subsBefore = state.subsAllowedInActiveSet;
@@ -4389,9 +4408,9 @@ function dispatchPoint(team, delta) {
     if (newWinKey !== _setWinKey) {
       _setWinKey = newWinKey;
       // One-shot glow on winning team name and score (fades out, not persistent)
-      applyActionGlow(stateAfter.setWinnerTeam === "A" ? $("sbTeamAName") : $("sbTeamBName"));
-      applyActionGlow(stateAfter.setWinnerTeam === "A" ? $("scoreValA") : $("scoreValB"));
-      var winTeamName = stateAfter.setWinnerTeam === "A" ? stateAfter.teamA : stateAfter.teamB;
+      applyActionGlow($(pickTeam(stateAfter.setWinnerTeam, "sbTeamAName", "sbTeamBName")));
+      applyActionGlow($(pickTeam(stateAfter.setWinnerTeam, "scoreValA", "scoreValB")));
+      var winTeamName = teamLabel(stateAfter, stateAfter.setWinnerTeam);
       var winningSet = stateAfter.sets.find(function (s) { return s.setNumber === stateAfter.activeSetNumber; });
       var wScoreA = winningSet ? winningSet.scoreA : 0;
       var wScoreB = winningSet ? winningSet.scoreB : 0;
@@ -4432,7 +4451,7 @@ function dispatchPoint(team, delta) {
       if (tbReady) {
         _midDeciderSwitchPromptedSet = stateAfter.activeSetNumber;
         var leaderTeam = decSet.scoreA > decSet.scoreB ? "A" : "B";
-        var leaderName = leaderTeam === "A" ? stateAfter.teamA : stateAfter.teamB;
+        var leaderName = teamLabel(stateAfter, leaderTeam);
         renderScoreboard(); // flush the current score/phase before the prompt covers it
         if (confirm("Deciding set: " + leaderName + " has reached " + decMax + " points. Switch sides now?")) {
           sidesSwapped = !sidesSwapped;
@@ -4458,9 +4477,9 @@ function dispatchTimeout(team) {
   }
   var activeSet = state.sets.find(function (s) { return s.setNumber === state.activeSetNumber; });
   if (!activeSet) return;
-  var used = team === "A" ? activeSet.timeoutsA : activeSet.timeoutsB;
+  var used = pickTeam(team, activeSet.timeoutsA, activeSet.timeoutsB);
   if (used >= state.effectiveTimeoutsPerSet) {
-    alert((team === "A" ? state.teamA : state.teamB) + " has no timeouts remaining.");
+    alert(teamLabel(state, team) + " has no timeouts remaining.");
     return;
   }
   controller.dispatch({
@@ -4496,9 +4515,9 @@ function dispatchSub(team) {
   }
   var activeSet = state.sets.find(function (s) { return s.setNumber === state.activeSetNumber; });
   if (!activeSet) return;
-  var used = team === "A" ? activeSet.subsA : activeSet.subsB;
+  var used = pickTeam(team, activeSet.subsA, activeSet.subsB);
   if (used >= state.subsPerSet) {
-    alert((team === "A" ? state.teamA : state.teamB) + " has no substitutions remaining.");
+    alert(teamLabel(state, team) + " has no substitutions remaining.");
     return;
   }
   controller.dispatch({
@@ -4520,7 +4539,7 @@ var SANCTION_LEVELS = { yellow: 1, red: 2, expulsion: 3, disqualification: 4 };
 // cannot distinguish between different assistant coaches on the same bench.
 function getMisconductAvailability(team, role, playerNum, state) {
   var allSanctions = state.sets.reduce(function (acc, s) {
-    return acc.concat(team === "A" ? s.sanctionsA : s.sanctionsB);
+    return acc.concat(pickTeam(team, s.sanctionsA, s.sanctionsB));
   }, []);
 
   // Only one warning (yellow) may be issued per team per match.
@@ -4556,7 +4575,7 @@ function getMisconductAvailability(team, role, playerNum, state) {
 // Returns true if a delay warning can still be issued to this team (only one per match).
 function canIssueDelayWarning(team, state) {
   return !state.sets.some(function (s) {
-    var ds = team === "A" ? s.delaySanctionsA : s.delaySanctionsB;
+    var ds = pickTeam(team, s.delaySanctionsA, s.delaySanctionsB);
     return ds.some(function (d) { return d.type === "warning"; });
   });
 }
@@ -4603,7 +4622,7 @@ function openSanctionModal(team) {
   sanctionSelectedRole = "player";
   _sanctionPlayerNum = "";
   var state = controller.getState();
-  var teamName = state ? (team === "A" ? state.teamA : state.teamB) : ("Team " + team);
+  var teamName = state ? teamLabel(state, team) : ("Team " + team);
   $("sanctionTeamName").textContent = teamName;
   updatePlayerNumDisplay();
 
@@ -4614,7 +4633,7 @@ function openSanctionModal(team) {
   $("playerNumLabel").hidden = false;
 
   // Improper request — disable if already used
-  var irUsed = !!(state && (team === "A" ? state.improperRequestA : state.improperRequestB));
+  var irUsed = !!(state && pickTeam(team, state.improperRequestA, state.improperRequestB));
   $("btnImproperRequest").disabled = irUsed;
   $("irAlreadyUsed").hidden = !irUsed;
 
@@ -4653,6 +4672,35 @@ function dispatchImproperRequest() {
   if (irBar) applyActionGlow(irBar.querySelector(".sanction-chip-ir"));
 }
 
+// Award the opponent of `offender` a point + serve for a penalty. In triple ball, toast that the
+// penalty replaces the current/next ball (captured before the point advances the sequence).
+function awardPenaltyPoint(state, offender, midRallyLabel, label) {
+  var tbPhase = (state.variation === "triplebal" && state.activeSetNumber) ? state.tripleBallPhase : -1;
+  var isMidRally = tbPhase >= 0 && $("cbTbMidRally").checked;
+  controller.dispatch({
+    type: "POINT_SCORED",
+    team: otherTeam(offender),
+    setNumber: state.activeSetNumber,
+    delta: 1,
+    timestamp: new Date().toISOString(),
+  });
+  if (tbPhase >= 0) {
+    if (isMidRally) {
+      showToast("\uD83D\uDFE5 " + midRallyLabel + " \u2014 replaces \u201c" + TB_PHASE_LABELS[tbPhase] + "\u201d (current ball cancelled)");
+    } else {
+      showToast("\uD83D\uDFE5 " + label + " \u2014 replaces \u201c" + TB_PHASE_LABELS[tbPhase] + "\u201d (next ball in sequence)");
+    }
+  }
+}
+
+// Glow the newest chip (last in the bar) for the sanctioned team.
+function glowNewestSanctionChip(team) {
+  var bar = $("sanctionsBar" + team);
+  if (!bar) return;
+  var chips = bar.querySelectorAll(".sanction-chip");
+  if (chips.length) applyActionGlow(chips[chips.length - 1]);
+}
+
 function dispatchSanction(stype) {
   var state = controller.getState();
   if (!state || !state.activeSetNumber || !sanctionTargetTeam) return;
@@ -4672,34 +4720,10 @@ function dispatchSanction(stype) {
   });
   // Only Red card (Penalty) awards a point + serve to the opponent.
   // Expulsion and Disqualification remove the player but do not directly award a point.
-  if (stype === "red") {
-    // Capture triple ball phase BEFORE the point advances the sequence
-    var tbPhase = (state.variation === "triplebal" && state.activeSetNumber) ? state.tripleBallPhase : -1;
-    var isMidRally = tbPhase >= 0 && $("cbTbMidRally").checked;
-    var opponent = sanctionTargetTeam === "A" ? "B" : "A";
-    controller.dispatch({
-      type: "POINT_SCORED",
-      team: opponent,
-      setNumber: state.activeSetNumber,
-      delta: 1,
-      timestamp: new Date().toISOString(),
-    });
-    if (tbPhase >= 0) {
-      if (isMidRally) {
-        showToast("\uD83D\uDFE5 Mid-rally penalty \u2014 replaces \u201c" + TB_PHASE_LABELS[tbPhase] + "\u201d (current ball cancelled)");
-      } else {
-        showToast("\uD83D\uDFE5 Red card penalty \u2014 replaces \u201c" + TB_PHASE_LABELS[tbPhase] + "\u201d (next ball in sequence)");
-      }
-    }
-  }
+  if (stype === "red") awardPenaltyPoint(state, sanctionTargetTeam, "Mid-rally penalty", "Red card penalty");
   closeSanctionModal();
   renderScoreboard();
-  // Glow the newest chip (last in the bar) for the sanctioned team
-  var sanBar = $("sanctionsBar" + glowTeam);
-  if (sanBar) {
-    var chips = sanBar.querySelectorAll(".sanction-chip");
-    if (chips.length) applyActionGlow(chips[chips.length - 1]);
-  }
+  glowNewestSanctionChip(glowTeam);
 }
 
 function dispatchDelaySanction(dtype) {
@@ -4715,34 +4739,10 @@ function dispatchDelaySanction(dtype) {
     timestamp: new Date().toISOString(),
   });
   // Delay penalty awards a point + serve to the opponent
-  if (dtype === "penalty") {
-    // Capture triple ball phase BEFORE the point advances the sequence
-    var tbPhase = (state.variation === "triplebal" && state.activeSetNumber) ? state.tripleBallPhase : -1;
-    var isMidRally = tbPhase >= 0 && $("cbTbMidRally").checked;
-    var opp = sanctionTargetTeam === "A" ? "B" : "A";
-    controller.dispatch({
-      type: "POINT_SCORED",
-      team: opp,
-      setNumber: state.activeSetNumber,
-      delta: 1,
-      timestamp: new Date().toISOString(),
-    });
-    if (tbPhase >= 0) {
-      if (isMidRally) {
-        showToast("\uD83D\uDFE5 Mid-rally delay penalty \u2014 replaces \u201c" + TB_PHASE_LABELS[tbPhase] + "\u201d (current ball cancelled)");
-      } else {
-        showToast("\uD83D\uDFE5 Delay penalty \u2014 replaces \u201c" + TB_PHASE_LABELS[tbPhase] + "\u201d (next ball in sequence)");
-      }
-    }
-  }
+  if (dtype === "penalty") awardPenaltyPoint(state, sanctionTargetTeam, "Mid-rally delay penalty", "Delay penalty");
   closeSanctionModal();
   renderScoreboard();
-  // Glow the newest chip (last in the bar) for the sanctioned team
-  var delBar = $("sanctionsBar" + glowTeam);
-  if (delBar) {
-    var delChips = delBar.querySelectorAll(".sanction-chip");
-    if (delChips.length) applyActionGlow(delChips[delChips.length - 1]);
-  }
+  glowNewestSanctionChip(glowTeam);
 }
 
 function wireSanctionModal() {
@@ -4882,14 +4882,14 @@ function buildEventLogHtml(state, timeline, filterSetNumber) {
         '<span class="elr-time">' + esc(time) + '</span>' +
         '<span class="elr-score">0 – 0</span>' +
         '<span class="elr-desc">Set ' + ev.setNumber + ' started</span>' +
-        '<span class="elr-detail">First serve: ' + esc(ev.firstServer === "A" ? (state.teamA || "Team A") : (state.teamB || "Team B")) + '</span>' +
+        '<span class="elr-detail">First serve: ' + esc(teamLabel(state, ev.firstServer)) + '</span>' +
         '</div>');
     } else if (ev.type === "FIRST_SERVER_CORRECTED") {
       rows.push('<div class="event-log-row event-log-system">' +
         '<span class="elr-time">' + esc(time) + '</span>' +
         '<span class="elr-score">0 – 0</span>' +
         '<span class="elr-desc">Set ' + ev.setNumber + ' first serve corrected</span>' +
-        '<span class="elr-detail">First serve: ' + esc(ev.firstServer === "A" ? (state.teamA || "Team A") : (state.teamB || "Team B")) + '</span>' +
+        '<span class="elr-detail">First serve: ' + esc(teamLabel(state, ev.firstServer)) + '</span>' +
         '</div>');
     } else if (ev.type === "SET_ENDED") {
       var fsc = getScore(ev.setNumber);
@@ -4916,7 +4916,7 @@ function buildEventLogHtml(state, timeline, filterSetNumber) {
       var scoreClass = leadChange ? " lead-" + newLeader.toLowerCase() : "";
       var rowClass = "event-log-team-" + ev.team.toLowerCase();
       var action = ev.delta > 0 ? "Point" : "Point removed";
-      var teamName = ev.team === "A" ? (state.teamA || "Team A") : (state.teamB || "Team B");
+      var teamName = teamLabel(state, ev.team);
       rows.push('<div class="event-log-row ' + rowClass + '">' +
         '<span class="elr-time">' + esc(time) + '</span>' +
         '<span class="elr-score' + scoreClass + '">' + psc.A + ' – ' + psc.B + '</span>' +
@@ -4925,7 +4925,7 @@ function buildEventLogHtml(state, timeline, filterSetNumber) {
         '</div>');
     } else if (ev.type === "TIMEOUT_TAKEN") {
       var tosc = getScore(ev.setNumber);
-      var toTeam = ev.team === "A" ? (state.teamA || "Team A") : (state.teamB || "Team B");
+      var toTeam = teamLabel(state, ev.team);
       var rowClassTo = "event-log-team-" + ev.team.toLowerCase();
       rows.push('<div class="event-log-row ' + rowClassTo + '">' +
         '<span class="elr-time">' + esc(time) + '</span>' +
@@ -4935,7 +4935,7 @@ function buildEventLogHtml(state, timeline, filterSetNumber) {
         '</div>');
     } else if (ev.type === "SUBSTITUTION") {
       var subsc = getScore(ev.setNumber);
-      var subTeam = ev.team === "A" ? (state.teamA || "Team A") : (state.teamB || "Team B");
+      var subTeam = teamLabel(state, ev.team);
       var rowClassSub = "event-log-team-" + ev.team.toLowerCase();
       rows.push('<div class="event-log-row ' + rowClassSub + '">' +
         '<span class="elr-time">' + esc(time) + '</span>' +
@@ -4945,7 +4945,7 @@ function buildEventLogHtml(state, timeline, filterSetNumber) {
         '</div>');
     } else if (ev.type === "SANCTION") {
       var sansc = getScore(ev.setNumber);
-      var sanTeam = ev.team === "A" ? (state.teamA || "Team A") : (state.teamB || "Team B");
+      var sanTeam = teamLabel(state, ev.team);
       var sanLabel = {
         yellow: "Warning", red: "Penalty",
         expulsion: "Expulsion", disqualification: "Disqualification"
@@ -4961,7 +4961,7 @@ function buildEventLogHtml(state, timeline, filterSetNumber) {
         '</div>');
     } else if (ev.type === "DELAY_SANCTION") {
       var dssc = getScore(ev.setNumber);
-      var dsTeam = ev.team === "A" ? (state.teamA || "Team A") : (state.teamB || "Team B");
+      var dsTeam = teamLabel(state, ev.team);
       var dsLabel = ev.sanctionType === "warning" ? "Delay Warning" : "Delay Penalty";
       var dsRowClass = "event-log-team-" + ev.team.toLowerCase();
       rows.push('<div class="event-log-row ' + dsRowClass + '">' +
@@ -4972,7 +4972,7 @@ function buildEventLogHtml(state, timeline, filterSetNumber) {
         '</div>');
     } else if (ev.type === "IMPROPER_REQUEST") {
       var irsc = getScore(ev.setNumber);
-      var irTeam = ev.team === "A" ? (state.teamA || "Team A") : (state.teamB || "Team B");
+      var irTeam = teamLabel(state, ev.team);
       var irRowClass = "event-log-team-" + ev.team.toLowerCase();
       rows.push('<div class="event-log-row ' + irRowClass + '">' +
         '<span class="elr-time">' + esc(time) + '</span>' +
@@ -4981,7 +4981,7 @@ function buildEventLogHtml(state, timeline, filterSetNumber) {
         '<span class="elr-detail">' + esc(irTeam) + '</span>' +
         '</div>');
     } else if (ev.type === "SERVE_CHANGED") {
-      var seTeam = ev.team === "A" ? (state.teamA || "Team A") : (state.teamB || "Team B");
+      var seTeam = teamLabel(state, ev.team);
       var seRowClass = "event-log-team-" + ev.team.toLowerCase();
       rows.push('<div class="event-log-row ' + seRowClass + '">' +
         '<span class="elr-time">' + esc(time) + '</span>' +
@@ -5695,7 +5695,7 @@ function emiState() {
 }
 
 function emiTeamName(team) {
-  var raw = $(team === "A" ? "emiTeamA" : "emiTeamB").value.trim();
+  var raw = $(pickTeam(team, "emiTeamA", "emiTeamB")).value.trim();
   return raw || ("Team " + team);
 }
 
@@ -5809,7 +5809,7 @@ function emiSanctionLabel(ev) {
 
 function renderEmiSanctions() {
   var rows = emiSanctionRows().map(function (r) {
-    var team = r.ev.team === "A" ? emiTeamName("A") : emiTeamName("B");
+    var team = emiTeamName(r.ev.team);
     return '<div class="emi-row">' +
       '<span class="emi-row-text"><strong>' + esc(team) + '</strong> \u2014 ' + esc(emiSanctionLabel(r.ev)) +
       ' <span class="remark-context">(Set ' + esc(r.ev.setNumber) + ', ' + r.a + '\u2013' + r.b + ')</span></span>' +
@@ -5914,7 +5914,7 @@ function saveEmiSanction() {
 
   var ev;
   if (kind === "improper") {
-    if (team === "A" ? state.improperRequestA : state.improperRequestB) {
+    if (pickTeam(team, state.improperRequestA, state.improperRequestB)) {
       alert("This team has already used its improper request.");
       return;
     }
@@ -6538,13 +6538,13 @@ function buildGameReportSanctionRows(record) {
       var recipient = (ev.role && ev.role !== "player") ? (GR_ROLE_ABBR[ev.role] || "?") : ("#" + (ev.playerNumber || "?"));
       rows.push({
         col: col, value: recipient, team: ev.team, setNumber: ev.setNumber,
-        scoreStr: ev.team === "A" ? (sc2.A + ":" + sc2.B) : (sc2.B + ":" + sc2.A),
+        scoreStr: pickTeam(ev.team, sc2.A + ":" + sc2.B, sc2.B + ":" + sc2.A),
       });
     } else if (ev.type === "DELAY_SANCTION") {
       var sc3 = score(ev.setNumber);
       rows.push({
         col: ev.sanctionType === "penalty" ? "P" : "W", value: "D", team: ev.team, setNumber: ev.setNumber,
-        scoreStr: ev.team === "A" ? (sc3.A + ":" + sc3.B) : (sc3.B + ":" + sc3.A),
+        scoreStr: pickTeam(ev.team, sc3.A + ":" + sc3.B, sc3.B + ":" + sc3.A),
       });
     }
   }
@@ -7083,11 +7083,7 @@ function renderSetupPage() {
 }
 
 function wireSetupPage() {
-  $("cfgDarkMode").addEventListener("change", function () {
-    settings.darkMode = this.checked;
-    applyTheme();
-    saveSettings();
-  });
+  wireToggle("cfgDarkMode", "darkMode", applyTheme);
 
   $("cfgFontSize").addEventListener("change", function () {
     settings.fontSize = this.value;
@@ -7105,13 +7101,10 @@ function wireSetupPage() {
   // speed. Past 200% only the button's height keeps growing (see
   // updateTeamColors), so the max here is higher than the point where width
   // stops scaling.
-  $("btnScoreBtnSizeDown").addEventListener("click", function () {
-    var v = settings.scoreBtnSize !== undefined ? settings.scoreBtnSize : 100;
-    if (v > 100) { settings.scoreBtnSize = v - 25; $("cfgScoreBtnSize").textContent = settings.scoreBtnSize + "%"; updateTeamColors(); saveSettings(); }
-  });
-  $("btnScoreBtnSizeUp").addEventListener("click", function () {
-    var v = settings.scoreBtnSize !== undefined ? settings.scoreBtnSize : 100;
-    if (v < 300) { settings.scoreBtnSize = v + 25; $("cfgScoreBtnSize").textContent = settings.scoreBtnSize + "%"; updateTeamColors(); saveSettings(); }
+  wireSettingStepper("btnScoreBtnSizeDown", "btnScoreBtnSizeUp", "cfgScoreBtnSize", "scoreBtnSize", 100, {
+    min: 100, max: 300, step: 25,
+    fmt: function (n) { return n + "%"; },
+    onChange: function () { updateTeamColors(); saveSettings(); }
   });
 
   $("cfgTeamAColor").addEventListener("input", function () {
@@ -7132,13 +7125,9 @@ function wireSetupPage() {
     saveSettings();
   });
 
-  $("btnTbSzDown").addEventListener("click", function () {
-    var sz = settings.tbBoxSize || 84;
-    if (sz > 36) { settings.tbBoxSize = sz - 4; $("cfgTbBoxSize").textContent = settings.tbBoxSize; updateTeamColors(); saveSettings(); }
-  });
-  $("btnTbSzUp").addEventListener("click", function () {
-    var sz = settings.tbBoxSize || 84;
-    if (sz < 112) { settings.tbBoxSize = sz + 4; $("cfgTbBoxSize").textContent = settings.tbBoxSize; updateTeamColors(); saveSettings(); }
+  wireSettingStepper("btnTbSzDown", "btnTbSzUp", "cfgTbBoxSize", "tbBoxSize", 84, {
+    min: 36, max: 112, step: 4,
+    onChange: function () { updateTeamColors(); saveSettings(); }
   });
 
   $("cfgTbHighlight").addEventListener("input", function () {
@@ -7181,73 +7170,26 @@ function wireSetupPage() {
     saveSettings();
   });
 
-  $("cfgStartSidesSwapped").addEventListener("change", function () {
-    settings.startMatchSidesSwapped = this.checked;
-    saveSettings();
-  });
+  wireToggle("cfgStartSidesSwapped", "startMatchSidesSwapped");
+  wireToggle("cfgAutoSwitchSidesBetweenSets", "autoSwitchSidesBetweenSets");
+  wireToggle("cfgPromptSwitchSidesMidDecider", "promptSwitchSidesMidDecider");
 
-  $("cfgAutoSwitchSidesBetweenSets").addEventListener("change", function () {
-    settings.autoSwitchSidesBetweenSets = this.checked;
-    saveSettings();
-  });
-
-  $("cfgPromptSwitchSidesMidDecider").addEventListener("change", function () {
-    settings.promptSwitchSidesMidDecider = this.checked;
-    saveSettings();
-  });
-
-  // Default timeouts stepper
-  $("btnDefToDown").addEventListener("click", function () {
-    if (settings.defaultTimeouts > 0) { settings.defaultTimeouts--; $("cfgDefTimeouts").textContent = settings.defaultTimeouts; saveSettings(); }
-  });
-  $("btnDefToUp").addEventListener("click", function () {
-    if (settings.defaultTimeouts < 5) { settings.defaultTimeouts++; $("cfgDefTimeouts").textContent = settings.defaultTimeouts; saveSettings(); }
-  });
-
-  // Default subs stepper
-  $("btnDefSubsDown").addEventListener("click", function () {
-    if (settings.defaultSubs > 0) { settings.defaultSubs--; $("cfgDefSubs").textContent = settings.defaultSubs; saveSettings(); }
-  });
-  $("btnDefSubsUp").addEventListener("click", function () {
-    if (settings.defaultSubs < 18) { settings.defaultSubs++; $("cfgDefSubs").textContent = settings.defaultSubs; saveSettings(); }
-  });
+  // Default timeouts and subs steppers
+  wireSettingStepper("btnDefToDown", "btnDefToUp", "cfgDefTimeouts", "defaultTimeouts", 2, { min: 0, max: 5 });
+  wireSettingStepper("btnDefSubsDown", "btnDefSubsUp", "cfgDefSubs", "defaultSubs", 6, { min: 0, max: 18 });
 
   // Timeout countdown timer
-  $("cfgTimeoutTimerCountUp").addEventListener("change", function () {
-    settings.timeoutTimerCountUp = this.checked;
-    saveSettings();
-  });
-  $("cfgTimeoutTimerEnabled").addEventListener("change", function () {
-    settings.timeoutTimerEnabled = this.checked;
-    updateTimeoutTimerCountUpEnabled();
-    saveSettings();
-  });
-  $("btnTimeoutTimerDurDown").addEventListener("click", function () {
-    var v = settings.timeoutTimerDuration !== undefined ? settings.timeoutTimerDuration : 60;
-    if (v > 10) { settings.timeoutTimerDuration = v - 5; $("cfgTimeoutTimerDuration").textContent = settings.timeoutTimerDuration; saveSettings(); }
-  });
-  $("btnTimeoutTimerDurUp").addEventListener("click", function () {
-    var v = settings.timeoutTimerDuration !== undefined ? settings.timeoutTimerDuration : 60;
-    if (v < 300) { settings.timeoutTimerDuration = v + 5; $("cfgTimeoutTimerDuration").textContent = settings.timeoutTimerDuration; saveSettings(); }
+  wireToggle("cfgTimeoutTimerCountUp", "timeoutTimerCountUp");
+  wireToggle("cfgTimeoutTimerEnabled", "timeoutTimerEnabled", updateTimeoutTimerCountUpEnabled);
+  wireSettingStepper("btnTimeoutTimerDurDown", "btnTimeoutTimerDurUp", "cfgTimeoutTimerDuration", "timeoutTimerDuration", 60, {
+    min: 10, max: 300, step: 5
   });
 
   // Scoring defaults — regular sets
-  $("btnDefSetWinScoreDown").addEventListener("click", function () {
-    var v = settings.defaultSetWinScore !== undefined ? settings.defaultSetWinScore : 25;
-    if (v > 1) { settings.defaultSetWinScore = v - 1; $("cfgDefSetWinScore").textContent = settings.defaultSetWinScore; updateDefScoringRuleInteractivity(); }
+  wireSettingStepper("btnDefSetWinScoreDown", "btnDefSetWinScoreUp", "cfgDefSetWinScore", "defaultSetWinScore", 25, {
+    min: 1, max: 50, onChange: updateDefScoringRuleInteractivity
   });
-  $("btnDefSetWinScoreUp").addEventListener("click", function () {
-    var v = settings.defaultSetWinScore !== undefined ? settings.defaultSetWinScore : 25;
-    if (v < 50) { settings.defaultSetWinScore = v + 1; $("cfgDefSetWinScore").textContent = settings.defaultSetWinScore; updateDefScoringRuleInteractivity(); }
-  });
-  $("btnDefSetWinByDown").addEventListener("click", function () {
-    var v = settings.defaultSetWinBy !== undefined ? settings.defaultSetWinBy : 2;
-    if (v > 1) { settings.defaultSetWinBy = v - 1; $("cfgDefSetWinBy").textContent = settings.defaultSetWinBy; saveSettings(); }
-  });
-  $("btnDefSetWinByUp").addEventListener("click", function () {
-    var v = settings.defaultSetWinBy !== undefined ? settings.defaultSetWinBy : 2;
-    if (v < 10) { settings.defaultSetWinBy = v + 1; $("cfgDefSetWinBy").textContent = settings.defaultSetWinBy; saveSettings(); }
-  });
+  wireSettingStepper("btnDefSetWinByDown", "btnDefSetWinByUp", "cfgDefSetWinBy", "defaultSetWinBy", 2, { min: 1, max: 10 });
   $("chkDefSetWinCap").addEventListener("change", function () {
     if (this.checked && (settings.defaultSetWinCap || 0) === 0) {
       settings.defaultSetWinCap = settings.defaultSetWinScore || 25;
@@ -7255,33 +7197,16 @@ function wireSetupPage() {
     }
     updateDefScoringRuleInteractivity();
   });
-  $("btnDefSetWinCapDown").addEventListener("click", function () {
-    var min = settings.defaultSetWinScore || 25;
-    var v = settings.defaultSetWinCap !== undefined ? settings.defaultSetWinCap : 0;
-    if (v > min) { settings.defaultSetWinCap = v - 1; $("cfgDefSetWinCap").textContent = settings.defaultSetWinCap; updateDefScoringRuleInteractivity(); }
-  });
-  $("btnDefSetWinCapUp").addEventListener("click", function () {
-    var v = settings.defaultSetWinCap !== undefined ? settings.defaultSetWinCap : 0;
-    if (v < 60) { settings.defaultSetWinCap = v + 1; $("cfgDefSetWinCap").textContent = settings.defaultSetWinCap; updateDefScoringRuleInteractivity(); }
+  wireSettingStepper("btnDefSetWinCapDown", "btnDefSetWinCapUp", "cfgDefSetWinCap", "defaultSetWinCap", 0, {
+    min: function () { return settings.defaultSetWinScore || 25; }, max: 60,
+    onChange: updateDefScoringRuleInteractivity
   });
 
   // Scoring defaults — deciding set
-  $("btnDefDeciderWinScoreDown").addEventListener("click", function () {
-    var v = settings.defaultDeciderWinScore !== undefined ? settings.defaultDeciderWinScore : 15;
-    if (v > 1) { settings.defaultDeciderWinScore = v - 1; $("cfgDefDeciderWinScore").textContent = settings.defaultDeciderWinScore; updateDefScoringRuleInteractivity(); }
+  wireSettingStepper("btnDefDeciderWinScoreDown", "btnDefDeciderWinScoreUp", "cfgDefDeciderWinScore", "defaultDeciderWinScore", 15, {
+    min: 1, max: 50, onChange: updateDefScoringRuleInteractivity
   });
-  $("btnDefDeciderWinScoreUp").addEventListener("click", function () {
-    var v = settings.defaultDeciderWinScore !== undefined ? settings.defaultDeciderWinScore : 15;
-    if (v < 50) { settings.defaultDeciderWinScore = v + 1; $("cfgDefDeciderWinScore").textContent = settings.defaultDeciderWinScore; updateDefScoringRuleInteractivity(); }
-  });
-  $("btnDefDeciderWinByDown").addEventListener("click", function () {
-    var v = settings.defaultDeciderWinBy !== undefined ? settings.defaultDeciderWinBy : 2;
-    if (v > 1) { settings.defaultDeciderWinBy = v - 1; $("cfgDefDeciderWinBy").textContent = settings.defaultDeciderWinBy; saveSettings(); }
-  });
-  $("btnDefDeciderWinByUp").addEventListener("click", function () {
-    var v = settings.defaultDeciderWinBy !== undefined ? settings.defaultDeciderWinBy : 2;
-    if (v < 10) { settings.defaultDeciderWinBy = v + 1; $("cfgDefDeciderWinBy").textContent = settings.defaultDeciderWinBy; saveSettings(); }
-  });
+  wireSettingStepper("btnDefDeciderWinByDown", "btnDefDeciderWinByUp", "cfgDefDeciderWinBy", "defaultDeciderWinBy", 2, { min: 1, max: 10 });
   $("chkDefDeciderWinCap").addEventListener("change", function () {
     if (this.checked && (settings.defaultDeciderWinCap || 0) === 0) {
       settings.defaultDeciderWinCap = settings.defaultDeciderWinScore || 15;
@@ -7289,14 +7214,9 @@ function wireSetupPage() {
     }
     updateDefScoringRuleInteractivity();
   });
-  $("btnDefDeciderWinCapDown").addEventListener("click", function () {
-    var min = settings.defaultDeciderWinScore || 15;
-    var v = settings.defaultDeciderWinCap !== undefined ? settings.defaultDeciderWinCap : 0;
-    if (v > min) { settings.defaultDeciderWinCap = v - 1; $("cfgDefDeciderWinCap").textContent = settings.defaultDeciderWinCap; updateDefScoringRuleInteractivity(); }
-  });
-  $("btnDefDeciderWinCapUp").addEventListener("click", function () {
-    var v = settings.defaultDeciderWinCap !== undefined ? settings.defaultDeciderWinCap : 0;
-    if (v < 60) { settings.defaultDeciderWinCap = v + 1; $("cfgDefDeciderWinCap").textContent = settings.defaultDeciderWinCap; updateDefScoringRuleInteractivity(); }
+  wireSettingStepper("btnDefDeciderWinCapDown", "btnDefDeciderWinCapUp", "cfgDefDeciderWinCap", "defaultDeciderWinCap", 0, {
+    min: function () { return settings.defaultDeciderWinScore || 15; }, max: 60,
+    onChange: updateDefScoringRuleInteractivity
   });
 
   // Win alert — glow color
@@ -7307,24 +7227,12 @@ function wireSetupPage() {
   });
 
   // Win alert — glow duration
-  $("btnWinGlowDurDown").addEventListener("click", function () {
-    var v = settings.winGlowDuration !== undefined ? settings.winGlowDuration : 3;
-    if (v > 1) { settings.winGlowDuration = v - 1; $("cfgWinGlowDuration").textContent = settings.winGlowDuration; updateTeamColors(); saveSettings(); }
-  });
-  $("btnWinGlowDurUp").addEventListener("click", function () {
-    var v = settings.winGlowDuration !== undefined ? settings.winGlowDuration : 3;
-    if (v < 30) { settings.winGlowDuration = v + 1; $("cfgWinGlowDuration").textContent = settings.winGlowDuration; updateTeamColors(); saveSettings(); }
+  wireSettingStepper("btnWinGlowDurDown", "btnWinGlowDurUp", "cfgWinGlowDuration", "winGlowDuration", 3, {
+    min: 1, max: 30, onChange: function () { updateTeamColors(); saveSettings(); }
   });
 
   // Win alert — toast duration
-  $("btnWinToastDurDown").addEventListener("click", function () {
-    var v = settings.winToastDuration !== undefined ? settings.winToastDuration : 3;
-    if (v > 1) { settings.winToastDuration = v - 1; $("cfgWinToastDuration").textContent = settings.winToastDuration; saveSettings(); }
-  });
-  $("btnWinToastDurUp").addEventListener("click", function () {
-    var v = settings.winToastDuration !== undefined ? settings.winToastDuration : 3;
-    if (v < 30) { settings.winToastDuration = v + 1; $("cfgWinToastDuration").textContent = settings.winToastDuration; saveSettings(); }
-  });
+  wireSettingStepper("btnWinToastDurDown", "btnWinToastDurUp", "cfgWinToastDuration", "winToastDuration", 3, { min: 1, max: 30 });
 
   // Action alert — glow color
   $("cfgActionGlowColor").addEventListener("input", function () {
@@ -7334,37 +7242,18 @@ function wireSetupPage() {
   });
 
   // Action alert — glow duration
-  $("btnActionGlowDurDown").addEventListener("click", function () {
-    var v = settings.actionGlowDuration !== undefined ? settings.actionGlowDuration : 2;
-    if (v > 1) { settings.actionGlowDuration = v - 1; $("cfgActionGlowDuration").textContent = settings.actionGlowDuration; saveSettings(); }
-  });
-  $("btnActionGlowDurUp").addEventListener("click", function () {
-    var v = settings.actionGlowDuration !== undefined ? settings.actionGlowDuration : 2;
-    if (v < 30) { settings.actionGlowDuration = v + 1; $("cfgActionGlowDuration").textContent = settings.actionGlowDuration; saveSettings(); }
-  });
+  wireSettingStepper("btnActionGlowDurDown", "btnActionGlowDurUp", "cfgActionGlowDuration", "actionGlowDuration", 2, { min: 1, max: 30 });
 
   // Keep screen awake
-  $("cfgKeepAwake").addEventListener("change", function () {
-    settings.keepScreenAwake = this.checked;
-    if (this.checked) { var st = controller.getState(); if (st && !st.endedAt) requestWakeLock(); }
+  wireToggle("cfgKeepAwake", "keepScreenAwake", function (on) {
+    if (on) { var st = controller.getState(); if (st && !st.endedAt) requestWakeLock(); }
     else releaseWakeLock();
-    saveSettings();
   });
 
   // Confirm before Undo
-  $("cfgConfirmUndo").addEventListener("change", function () {
-    settings.confirmUndo = this.checked;
-    saveSettings();
-  });
-  $("cfgShowMlEditIcons").addEventListener("change", function () {
-    settings.showMasterListEditIcons = this.checked;
-    saveSettings();
-    renderMasterListEditors();
-  });
-  $("cfgPersistNewGameData").addEventListener("change", function () {
-    settings.persistNewGameData = this.checked;
-    saveSettings();
-  });
+  wireToggle("cfgConfirmUndo", "confirmUndo");
+  wireToggle("cfgShowMlEditIcons", "showMasterListEditIcons", renderMasterListEditors);
+  wireToggle("cfgPersistNewGameData", "persistNewGameData");
 
   $("cfgRefereeName").addEventListener("input", function () {
     settings.refereeName = this.value; saveSettings();
@@ -7625,11 +7514,9 @@ function wireSetupPage() {
   });
 
   // Notch padding
-  $("cfgNotchEnabled").addEventListener("change", function () {
-    settings.notchEnabled = this.checked;
-    $("notchOptions").hidden = !this.checked;
+  wireToggle("cfgNotchEnabled", "notchEnabled", function (on) {
+    $("notchOptions").hidden = !on;
     applyNotchPadding();
-    saveSettings();
   });
 
   document.querySelectorAll('input[name="cfgNotchSide"]').forEach(function (radio) {
@@ -7640,13 +7527,9 @@ function wireSetupPage() {
     });
   });
 
-  $("btnNotchPadDown").addEventListener("click", function () {
-    var v = settings.notchPad !== undefined ? settings.notchPad : 50;
-    if (v > 8) { settings.notchPad = v - 4; $("cfgNotchPad").textContent = settings.notchPad; applyNotchPadding(); saveSettings(); }
-  });
-  $("btnNotchPadUp").addEventListener("click", function () {
-    var v = settings.notchPad !== undefined ? settings.notchPad : 50;
-    if (v < 128) { settings.notchPad = v + 4; $("cfgNotchPad").textContent = settings.notchPad; applyNotchPadding(); saveSettings(); }
+  wireSettingStepper("btnNotchPadDown", "btnNotchPadUp", "cfgNotchPad", "notchPad", 50, {
+    min: 8, max: 128, step: 4,
+    onChange: function () { applyNotchPadding(); saveSettings(); }
   });
 
   // Export all
